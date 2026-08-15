@@ -1,0 +1,1545 @@
+[
+ {
+  "id": 1,
+  "chapter": 1,
+  "trigger": {
+   "type": "newGame"
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "病毒爆发第十年。幸存者退守堡垒，靠议会的配给苟活。"
+   },
+   {
+    "who": "narrator",
+    "text": "堡垒7号，全城最破的堡垒。外婆留给你的，只有它，和半块合成核心。"
+   },
+   {
+    "who": "officer",
+    "text": "钢铁议会收编官。三十罐罐头，买你这座垃圾堆。"
+   },
+   {
+    "who": "officer",
+    "text": "抱着两个破木箱想过末日？签字吧，小子。"
+   },
+   {
+    "who": "narrator",
+    "text": "你没有说话，只是把两把锈刀拖到了一起。"
+   },
+   {
+    "who": "narrator",
+    "text": "锈刀相叠，纹路重组——一柄精钢刃，寒光刺眼。"
+   },
+   {
+    "who": "hero",
+    "text": "这座堡垒，只收尸潮，不收叛徒。"
+   },
+   {
+    "who": "officer",
+    "text": "……好，很好。（他转身拨通电话）"
+   },
+   {
+    "who": "officer",
+    "text": "确认。核心，在他手里。"
+   },
+   {
+    "who": "narrator",
+    "text": "把两个相同的物品拖到一起，就能合成更高级的物资。第一天，开始了。"
+   }
+  ]
+ },
+ {
+  "id": 2,
+  "chapter": 1,
+  "trigger": {
+   "type": "nightWin"
+  },
+  "lines": [
+   {
+    "who": "hero",
+    "text": "守住了……第一夜。"
+   },
+   {
+    "who": "narrator",
+    "text": "尸潮踩塌了北侧的废墟——下一夜，它们会从一个新的方向进攻。"
+   },
+   {
+    "who": "narrator",
+    "text": "夜晚掉落的满级材料会送到棋盘上，卖掉换金币，就是修堡垒的底气。"
+   }
+  ],
+  "rewardCoin": 50,
+  "rewardText": "夜晚战利品换得 50 金币"
+ },
+ {
+  "id": 3,
+  "chapter": 1,
+  "trigger": {
+   "type": "level",
+   "value": 3
+  },
+  "lines": [
+   {
+    "who": "mancang",
+    "text": "工具箱越修越顺手了。它等级越高，能翻出的花样越多。"
+   },
+   {
+    "who": "narrator",
+    "text": "两个相同的发射器也能合成升级，别忘了。"
+   }
+  ],
+  "rewardCoin": 20
+ },
+ {
+  "id": 4,
+  "chapter": 2,
+  "trigger": {
+   "type": "building",
+   "value": 203
+  },
+  "lines": [
+   {
+    "who": "xiaoman",
+    "text": "叔叔……我和小黑能留下来吗？我会修东西，也不费电。"
+   },
+   {
+    "who": "hero",
+    "text": "留下吧。堡垒多一台机器，就多一份力——也多一份电力需求，电池得跟上。"
+   }
+  ],
+  "joinHero": "xiaoman"
+ },
+ {
+  "id": 5,
+  "chapter": 2,
+  "trigger": {
+   "type": "level",
+   "value": 6
+  },
+  "lines": [
+   {
+    "who": "laogui",
+    "text": "生意不错嘛。除了订单，金币链、宝箱也是来钱的路子。"
+   },
+   {
+    "who": "laogui",
+    "text": "把堡垒修结实点。冬天还长，我的生意还想做下去呢。"
+   }
+  ],
+  "rewardCoin": 40
+ },
+ {
+  "id": 6,
+  "chapter": 2,
+  "trigger": {
+   "type": "item",
+   "value": 1005
+  },
+  "lines": [
+   {
+    "who": "hero",
+    "text": "旅客寄存的包……还锁着。撬开要点时间，但里面的东西值这个功夫。"
+   }
+  ]
+ },
+ {
+  "id": 7,
+  "chapter": 3,
+  "trigger": {
+   "type": "item",
+   "value": 30019
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "储物柜区的钥匙。旧超市最厚的家底，就锁在那排柜子里。"
+   }
+  ]
+ },
+ {
+  "id": 8,
+  "chapter": 3,
+  "trigger": {
+   "type": "item",
+   "value": 30022
+  },
+  "lines": [
+   {
+    "who": "hero",
+    "text": "自动感应钥匙！储物柜区的大门，开了。"
+   }
+  ]
+ },
+ {
+  "id": 9,
+  "chapter": 3,
+  "trigger": {
+   "type": "item",
+   "value": 30023
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "主管总门禁——感应手环。所有储物柜，应声而开。"
+   },
+   {
+    "who": "mancang",
+    "text": "当年你外婆都舍不得配一个。"
+   }
+  ]
+ },
+ {
+  "id": 10,
+  "chapter": 3,
+  "trigger": {
+   "type": "zombie",
+   "value": "fly"
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "天窗的方向有动静。变异的东西从上面进来了——它们不走大门。"
+   }
+  ]
+ },
+ {
+  "id": 11,
+  "chapter": 4,
+  "trigger": {
+   "type": "item",
+   "value": 60024
+  },
+  "lines": [
+   {
+    "who": "hero",
+    "text": "这零件……是应急电台上的。要是能修好它，也许能联系上别的活人。"
+   }
+  ]
+ },
+ {
+  "id": 12,
+  "chapter": 4,
+  "trigger": {
+   "type": "zombie",
+   "value": "burrow"
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "地面在震。地底有东西在挖——钻地的家伙，会绕开你的防线。"
+   }
+  ]
+ },
+ {
+  "id": 13,
+  "chapter": 4,
+  "trigger": {
+   "type": "item",
+   "value": 60026
+  },
+  "lines": [
+   {
+    "who": "beian",
+    "text": "滋滋……这里是北岸营地。收到请回答，收到请回答。"
+   },
+   {
+    "who": "hero",
+    "text": "……收到！这里是堡垒7号，我们还活着！"
+   },
+   {
+    "who": "beian",
+    "text": "很好。守住它。冬天的尸潮会越来越凶，撑过去，北上找我们。"
+   }
+  ]
+ },
+ {
+  "id": 14,
+  "chapter": 5,
+  "trigger": {
+   "type": "level",
+   "value": 20
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "堡垒7号的名字，已经在废土上传开了。"
+   },
+   {
+    "who": "beian",
+    "text": "北岸等你。"
+   }
+  ]
+ },
+ {
+  "id": 16,
+  "chapter": 1,
+  "trigger": {
+   "type": "merge"
+  },
+  "lines": [
+   {
+    "who": "laogui",
+    "text": "哟，手艺不错嘛，两个破烂真能拼出家伙。我是老鬼，跑黑市的。"
+   },
+   {
+    "who": "laogui",
+    "text": "把订单上的货凑齐给我，星星和金币少不了你。金币，可是修防御的硬通货。"
+   },
+   {
+    "who": "narrator",
+    "text": "棋盘上方就是黑市订单。凑齐材料后点击绿色订单提交，领取星星和金币。"
+   }
+  ],
+  "rewardCoin": 30
+ },
+ {
+  "id": 17,
+  "chapter": 1,
+  "trigger": {
+   "type": "coin",
+   "value": 200
+  },
+  "lines": [
+   {
+    "who": "mancang",
+    "text": "嘎——金币到账！堡垒四周都是废墟，只在东边留了个小缺口，尸潮只会从那边进来。"
+   },
+   {
+    "who": "mancang",
+    "text": "去基地外圈建一座箭塔，把东边给我看死了！"
+   },
+   {
+    "who": "narrator",
+    "text": "点击底部「基地」，在外圈（红色区域）建造箭塔（200 金币）。"
+   }
+  ]
+ },
+ {
+  "id": 18,
+  "chapter": 1,
+  "trigger": {
+   "type": "building",
+   "value": 101
+  },
+  "lines": [
+   {
+    "who": "mancang",
+    "text": "箭塔就位……不过没通电，它就是个摆设。"
+   },
+   {
+    "who": "narrator",
+    "text": "箭塔需要 2 点电力运转。电站蓝图箱已放入卡片栏，返回棋盘点击它，合成蓝图后建发电机给箭塔通电。"
+   }
+  ]
+ },
+ {
+  "id": 19,
+  "chapter": 1,
+  "trigger": {
+   "type": "building",
+   "value": 203
+  },
+  "lines": [
+   {
+    "who": "mancang",
+    "text": "发电机转起来了，箭塔通电开火！"
+   },
+   {
+    "who": "narrator",
+    "text": "天黑前做好准备——在基地界面点击「迎接夜晚」，守住东边缺口！"
+   }
+  ]
+ },
+ {
+  "id": 20,
+  "chapter": 1,
+  "trigger": {
+   "type": "task",
+   "value": 2
+  },
+  "rewardCoin": 40,
+  "lines": [
+   {
+    "who": "laogui",
+    "text": "手脚麻利！这点金币拿去，攒够了先把发电机立起来，堡垒得通电。"
+   },
+   {
+    "who": "laogui",
+    "text": "这箱子也送你——里头是箭塔蓝图碎片，八个碎片逐级拼出蓝图，箭塔就能建了。"
+   }
+  ]
+ },
+ {
+  "id": 21,
+  "chapter": 1,
+  "trigger": {
+   "type": "task",
+   "value": 3
+  },
+  "rewardCoin": 50,
+  "lines": [
+   {
+    "who": "laogui",
+    "text": "干得漂亮，金币拿好。塔要电才转得动——这箱电站蓝图碎片收好，发电机起来堡垒才有电。"
+   }
+  ]
+ },
+ {
+  "id": 22,
+  "chapter": 1,
+  "trigger": {
+   "type": "task",
+   "value": 4
+  },
+  "rewardCoin": 60,
+  "lines": [
+   {
+    "who": "laogui",
+    "text": "越来越顺手了嘛。这点金币赏你，别乱花，堡垒处处要用钱。"
+   }
+  ]
+ },
+ {
+  "id": 23,
+  "chapter": 1,
+  "trigger": {
+   "type": "task",
+   "value": 5
+  },
+  "rewardCoin": 80,
+  "lines": [
+   {
+    "who": "laogui",
+    "text": "好手艺！这笔打赏拿着——把蓝图都拼出来，堡垒才算真正立起来。"
+   }
+  ]
+ },
+ {
+  "id": 24,
+  "chapter": 1,
+  "trigger": {
+   "type": "item",
+   "value": 70104
+  },
+  "lines": [
+   {
+    "who": "laogui",
+    "text": "箭塔蓝图到手！选中蓝图再点一下「使用」，它就到建造列表里了，东边缺口就稳了。"
+   }
+  ]
+ },
+ {
+  "id": 25,
+  "chapter": 1,
+  "trigger": {
+   "type": "item",
+   "value": 70128
+  },
+  "lines": [
+   {
+    "who": "laogui",
+    "text": "电站蓝图到手，选中蓝图再点一下「使用」解锁它。发电机一转，塔才开得火。"
+   }
+  ]
+ },
+ {
+  "id": 26,
+  "chapter": 1,
+  "trigger": {
+   "type": "item",
+   "value": 70128
+  },
+  "lines": [
+   {
+    "who": "laogui",
+    "text": "电站蓝图到手！选中蓝图再点一下「使用」解锁它——堡垒得通电，电不能断。"
+   }
+  ]
+ },
+ {
+  "id": 27,
+  "chapter": 1,
+  "trigger": {
+   "type": "blueprint",
+   "value": 203
+  },
+  "lines": [
+   {
+    "who": "laogui",
+    "text": "发电机解锁了！点下面的「基地」按钮，选发电机，找块空地盖起来。"
+   },
+   {
+    "who": "mancang",
+    "text": "把棋盘上的电池转化为燃料，发电机就能一直转。电力足了，才能撑过每一晚。"
+   }
+  ]
+ },
+ {
+  "id": 102,
+  "chapter": 2,
+  "trigger": {
+   "type": "day",
+   "value": 2
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第二天清晨，大门被人一脚踹响。"
+   },
+   {
+    "who": "tiezhua",
+    "text": "我是铁爪。这片的水和粮，都归我管。"
+   },
+   {
+    "who": "tiezhua",
+    "text": "七天。七天后，我来收这座破堡垒。"
+   },
+   {
+    "who": "laoqiang",
+    "text": "……要打吗。我这把老枪，还没锈透。"
+   },
+   {
+    "who": "hero",
+    "text": "你是谁？"
+   },
+   {
+    "who": "laoqiang",
+    "text": "看门的。管电就行，酒钱抵工钱。"
+   },
+   {
+    "who": "narrator",
+    "text": "他捡起两截断枪管随手一合——老步枪，锃亮。"
+   },
+   {
+    "who": "narrator",
+    "text": "老兵老枪加入堡垒。守住每一夜，撑过这七天。"
+   }
+  ],
+  "joinHero": "laoqiang"
+ },
+ {
+  "id": 103,
+  "chapter": 3,
+  "trigger": {
+   "type": "day",
+   "value": 3
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第三天。铁爪掐了水渠，蓄水池见了底。"
+   },
+   {
+    "who": "mancang",
+    "text": "嘎——水量告急！建议：合成滤水器！"
+   },
+   {
+    "who": "hero",
+    "text": "两块破纱布，一截旧水管……合。"
+   },
+   {
+    "who": "narrator",
+    "text": "泥汤淌过滤水器，变成了能喝的水。"
+   },
+   {
+    "who": "laoqiang",
+    "text": "这手艺，像你外婆。"
+   },
+   {
+    "who": "hero",
+    "text": "你认识我外婆？"
+   },
+   {
+    "who": "laoqiang",
+    "text": "……喝酒，喝酒。"
+   },
+   {
+    "who": "narrator",
+    "text": "老枪别过脸去。他一定有故事。"
+   }
+  ],
+  "spawnProps": [
+   20001
+  ]
+ },
+ {
+  "id": 104,
+  "chapter": 4,
+  "trigger": {
+   "type": "day",
+   "value": 4
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第四天。门口来了个背铁锅的胖大婶。"
+   },
+   {
+    "who": "pangshen",
+    "text": "一勺烩面，换一块落脚地，干不干？"
+   },
+   {
+    "who": "pangshen",
+    "text": "老娘以前是议会首席营养师！"
+   },
+   {
+    "who": "pangshen",
+    "text": "他们往配给里掺锯末，老娘不伺候了！"
+   },
+   {
+    "who": "narrator",
+    "text": "胖婶加入堡垒，厨房的烟火气升起来了。"
+   },
+   {
+    "who": "pangshen",
+    "text": "电足机器才转得欢！多盖发电机，电力足才守得住！"
+   },
+   {
+    "who": "narrator",
+    "text": "建造发电机提供电力，塔和建筑都要电才能运转。"
+   }
+  ],
+  "joinHero": "pangshen"
+ },
+ {
+  "id": 105,
+  "chapter": 5,
+  "trigger": {
+   "type": "day",
+   "value": 5
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第五天。铁爪的手下趁夜摸了进来。"
+   },
+   {
+    "who": "narrator",
+    "text": "菜地被踩烂，水桶被劈成两截。"
+   },
+   {
+    "who": "pangshen",
+    "text": "小兔崽子！老娘刚种的菜！"
+   },
+   {
+    "who": "mancang",
+    "text": "检测到破损木桶×2。建议方案：合成。"
+   },
+   {
+    "who": "narrator",
+    "text": "两个破桶一合，加固水桶，滴水不漏。"
+   },
+   {
+    "who": "laoqiang",
+    "text": "今晚他们还会来。箭塔，架东边。"
+   },
+   {
+    "who": "narrator",
+    "text": "别忘了解锁更多建筑蓝图，防线越厚越稳。"
+   }
+  ]
+ },
+ {
+  "id": 106,
+  "chapter": 6,
+  "trigger": {
+   "type": "day",
+   "value": 6
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第六天。一张最后通牒钉在大门上。"
+   },
+   {
+    "who": "tiezhua",
+    "text": "明夜之前搬走，堡垒留下。"
+   },
+   {
+    "who": "tiezhua",
+    "text": "不然，连人一起喂尸潮。"
+   },
+   {
+    "who": "pangshen",
+    "text": "怕他个铲铲！"
+   },
+   {
+    "who": "laoqiang",
+    "text": "怕。所以才要赢。"
+   },
+   {
+    "who": "mancang",
+    "text": "警报：明夜尸潮信号异常增强！"
+   },
+   {
+    "who": "hero",
+    "text": "那就让他看看，堡垒7号不好惹。"
+   }
+  ]
+ },
+ {
+  "id": 107,
+  "chapter": 7,
+  "trigger": {
+   "type": "day",
+   "value": 7
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第七天，决战日。"
+   },
+   {
+    "who": "mancang",
+    "text": "警告：今夜尸潮规模，超出全部记录！"
+   },
+   {
+    "who": "laoqiang",
+    "text": "弹药、陷阱、城墙——能合的全合出来。"
+   },
+   {
+    "who": "narrator",
+    "text": "两台旧弩机，合成连发弩机，架上东墙。"
+   },
+   {
+    "who": "pangshen",
+    "text": "电力满格，给我狠狠打！都给我上！"
+   },
+   {
+    "who": "hero",
+    "text": "外婆说过：合成师不打没准备的仗。"
+   },
+   {
+    "who": "narrator",
+    "text": "白天合装备，入夜，迎决战。"
+   }
+  ]
+ },
+ {
+  "id": 108,
+  "chapter": 8,
+  "trigger": {
+   "type": "day",
+   "value": 8
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "昨夜，铁爪趁尸潮偷袭，想捡现成的。"
+   },
+   {
+    "who": "narrator",
+    "text": "尸潮爆出的传说图纸，当场合成双管炮塔。"
+   },
+   {
+    "who": "narrator",
+    "text": "一炮，铁爪的装甲车成了废铁。"
+   },
+   {
+    "who": "tiezhua",
+    "text": "……误会！都是误会！"
+   },
+   {
+    "who": "laoqiang",
+    "text": "滚之前，先把水渠修好。"
+   },
+   {
+    "who": "narrator",
+    "text": "第二天，铁爪门口排起长队求购零件。"
+   },
+   {
+    "who": "pangshen",
+    "text": "呸！一个螺丝钉都不卖！"
+   }
+  ]
+ },
+ {
+  "id": 109,
+  "chapter": 9,
+  "trigger": {
+   "type": "day",
+   "value": 9
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第九天。清理北侧废墟，挖出一个铁盒。"
+   },
+   {
+    "who": "mancang",
+    "text": "识别成功：合成核心残片。"
+   },
+   {
+    "who": "mancang",
+    "text": "与我体内的半块核心……同源。"
+   },
+   {
+    "who": "hero",
+    "text": "外婆的东西，为什么埋在废墟里？"
+   },
+   {
+    "who": "laoqiang",
+    "text": "这东西一露头，麻烦就要来了。"
+   },
+   {
+    "who": "narrator",
+    "text": "当夜，有人出价一万罐头，收购残片。"
+   }
+  ]
+ },
+ {
+  "id": 110,
+  "chapter": 10,
+  "trigger": {
+   "type": "day",
+   "value": 10
+  },
+  "lines": [
+   {
+    "who": "wensente",
+    "text": "自我介绍一下。文森特，议会联络官。"
+   },
+   {
+    "who": "wensente",
+    "text": "收购的事不急，可以慢慢谈。"
+   },
+   {
+    "who": "wensente",
+    "text": "你外婆是位传奇。我们……是老朋友。"
+   },
+   {
+    "who": "hero",
+    "text": "你认识我外婆？"
+   },
+   {
+    "who": "wensente",
+    "text": "以后议会的委托，我优先派给你。"
+   },
+   {
+    "who": "mancang",
+    "text": "……声纹匹配87%。加密区，拒绝访问。"
+   },
+   {
+    "who": "narrator",
+    "text": "他笑得温和。满仓却反常地沉默了。"
+   },
+   {
+    "who": "narrator",
+    "text": "第一卷·完。堡垒立住了，棋局才刚开始。"
+   }
+  ]
+ },
+ {
+  "id": 111,
+  "chapter": 11,
+  "trigger": {
+   "type": "day",
+   "value": 11
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第十一天。一个医生晕倒在堡垒门口。"
+   },
+   {
+    "who": "doctor",
+    "text": "水不用……先给我酒精，器械要消毒。"
+   },
+   {
+    "who": "pangshen",
+    "text": "先喝粥！人都要没了还消毒！"
+   },
+   {
+    "who": "doctor",
+    "text": "……谢了。白医生。诊费可以用工抵。"
+   },
+   {
+    "who": "narrator",
+    "text": "两瓶工业酒精，在她手里合成医用酒精。"
+   },
+   {
+    "who": "narrator",
+    "text": "白医生加入堡垒，医务室有了着落。"
+   },
+   {
+    "who": "doctor",
+    "text": "夜战难免挂彩。有医务室，好得快。"
+   }
+  ],
+  "joinHero": "doctor"
+ },
+ {
+  "id": 112,
+  "chapter": 12,
+  "trigger": {
+   "type": "day",
+   "value": 12
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第十二天。堡垒里有人开始发烧。"
+   },
+   {
+    "who": "doctor",
+    "text": "是辐射热。没有抗生素，撑不过三天。"
+   },
+   {
+    "who": "doctor",
+    "text": "我的药箱，连同诊所一起被烧了。"
+   },
+   {
+    "who": "mancang",
+    "text": "检索完毕：废弃药店，坐标已标记。"
+   },
+   {
+    "who": "hero",
+    "text": "走。能合出药的东西，全带回来。"
+   }
+  ]
+ },
+ {
+  "id": 113,
+  "chapter": 13,
+  "trigger": {
+   "type": "day",
+   "value": 13
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "两瓶过期药水，合成一箱无菌试剂。"
+   },
+   {
+    "who": "doctor",
+    "text": "烧退了。……你救了他们。"
+   },
+   {
+    "who": "hero",
+    "text": "白医生，你的手一直在抖。"
+   },
+   {
+    "who": "doctor",
+    "text": "十年前，我经手过第一批感染者。"
+   },
+   {
+    "who": "doctor",
+    "text": "原始病例，我都留着。总有一天用得上。"
+   },
+   {
+    "who": "narrator",
+    "text": "她锁好铁皮箱，箱上的编号已经磨花。"
+   }
+  ]
+ },
+ {
+  "id": 114,
+  "chapter": 14,
+  "trigger": {
+   "type": "day",
+   "value": 14
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第十四天。发电机被人拆成了零件。"
+   },
+   {
+    "who": "narrator",
+    "text": "凶手趴在零件堆里，睡着了。"
+   },
+   {
+    "who": "xiaodian",
+    "text": "我叫小电！不是小偷，我就是……手痒。"
+   },
+   {
+    "who": "xiaodian",
+    "text": "看！装回去了！还顺手改良了电路！"
+   },
+   {
+    "who": "xiaodian",
+    "text": "两截旧线一合就是新线，这活儿我熟！"
+   },
+   {
+    "who": "mancang",
+    "text": "检测：效率提升12%。这丫头，是天才。"
+   },
+   {
+    "who": "narrator",
+    "text": "小电加入堡垒。发电站，提上日程。"
+   }
+  ],
+  "joinHero": "xiaodian"
+ },
+ {
+  "id": 115,
+  "chapter": 15,
+  "trigger": {
+   "type": "day",
+   "value": 15
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第十五天。全堡垒停电，一片漆黑。"
+   },
+   {
+    "who": "xiaodian",
+    "text": "电池全老化了！除非有稳压模块！"
+   },
+   {
+    "who": "xiaodian",
+    "text": "两台报废手电就能合一个，我算过了！"
+   },
+   {
+    "who": "narrator",
+    "text": "报废手电×2，合成稳压模块。"
+   },
+   {
+    "who": "narrator",
+    "text": "灯亮了。小电的眼睛，比灯还亮。"
+   }
+  ]
+ },
+ {
+  "id": 116,
+  "chapter": 16,
+  "trigger": {
+   "type": "day",
+   "value": 16
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第十六天。小电检修时碰到了合成核心。"
+   },
+   {
+    "who": "narrator",
+    "text": "核心骤亮，她手臂上浮起同样的纹路。"
+   },
+   {
+    "who": "xiaodian",
+    "text": "疼……但好熟悉，像很小的时候就……"
+   },
+   {
+    "who": "doctor",
+    "text": "这纹路……我在旧病例上见过。"
+   },
+   {
+    "who": "mancang",
+    "text": "警告：共振反应。档案缺失，无法分析。"
+   },
+   {
+    "who": "narrator",
+    "text": "没人注意，小电的影子闪了一下蓝光。"
+   }
+  ]
+ },
+ {
+  "id": 117,
+  "chapter": 17,
+  "trigger": {
+   "type": "day",
+   "value": 17
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第十七天。发电站合闸成功。"
+   },
+   {
+    "who": "xiaodian",
+    "text": "全废土最亮的堡垒！是我们！"
+   },
+   {
+    "who": "xiaodian",
+    "text": "电系高级塔也能造了，包在我身上！"
+   },
+   {
+    "who": "pangshen",
+    "text": "女娃娃能干！今晚加餐！"
+   },
+   {
+    "who": "narrator",
+    "text": "电力贯通，更高级的防御设施解锁了。"
+   }
+  ]
+ },
+ {
+  "id": 118,
+  "chapter": 18,
+  "trigger": {
+   "type": "day",
+   "value": 18
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第十八天。仓库门口蹲着个咽口水的小孩。"
+   },
+   {
+    "who": "douzi",
+    "text": "我叫豆子！全城的路我都熟！"
+   },
+   {
+    "who": "douzi",
+    "text": "哪有货、尸群几点到，情报换电池！"
+   },
+   {
+    "who": "hero",
+    "text": "留下吧。探索队正好缺个向导。"
+   },
+   {
+    "who": "narrator",
+    "text": "豆子加入堡垒，外出探索解锁。"
+   }
+  ],
+  "joinHero": "douzi"
+ },
+ {
+  "id": 119,
+  "chapter": 19,
+  "trigger": {
+   "type": "day",
+   "value": 19
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第十九天。豆子带路闯废弃超市，被围了。"
+   },
+   {
+    "who": "douzi",
+    "text": "对不起……是我算错了时间……"
+   },
+   {
+    "who": "laoqiang",
+    "text": "省点力气。老子的枪还没老。"
+   },
+   {
+    "who": "narrator",
+    "text": "两台破冷藏箱，合成双门冷藏库——"
+   },
+   {
+    "who": "narrator",
+    "text": "里面冻着整层战备粮！"
+   },
+   {
+    "who": "pangshen",
+    "text": "最底层……怎么冻着个白大褂？！"
+   },
+   {
+    "who": "narrator",
+    "text": "尸体攥着一张字条：「第七研究所」。"
+   }
+  ]
+ },
+ {
+  "id": 120,
+  "chapter": 20,
+  "trigger": {
+   "type": "day",
+   "value": 20
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第二十天。豆子总对着一张合影发呆。"
+   },
+   {
+    "who": "douzi",
+    "text": "我妹妹……失散的时候，她正发着烧。"
+   },
+   {
+    "who": "douzi",
+    "text": "攒够罐头，我就去黑市买她的消息。"
+   },
+   {
+    "who": "hero",
+    "text": "会找到的。堡垒，就是你的家。"
+   },
+   {
+    "who": "narrator",
+    "text": "豆子用力点头，把纸条塞进墙缝。"
+   }
+  ]
+ },
+ {
+  "id": 121,
+  "chapter": 21,
+  "trigger": {
+   "type": "day",
+   "value": 21
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第二十一天。探索队扩编，趟趟满载。"
+   },
+   {
+    "who": "douzi",
+    "text": "跟着我，绝不空车！"
+   },
+   {
+    "who": "mancang",
+    "text": "记录：探索收益+50%。优秀员工，豆子。"
+   },
+   {
+    "who": "narrator",
+    "text": "堡垒日渐兴旺。但有些东西，不对劲了。"
+   }
+  ]
+ },
+ {
+  "id": 122,
+  "chapter": 22,
+  "trigger": {
+   "type": "day",
+   "value": 22
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第二十二天。仓库少了一箱药品。"
+   },
+   {
+    "who": "doctor",
+    "text": "我清点了三遍。堡垒里，有内鬼。"
+   },
+   {
+    "who": "pangshen",
+    "text": "谁？！老娘的米袋也瘪了！"
+   },
+   {
+    "who": "laoqiang",
+    "text": "都冷静。今晚，我守仓库。"
+   },
+   {
+    "who": "narrator",
+    "text": "信任，第一次出现了裂缝。"
+   }
+  ]
+ },
+ {
+  "id": 123,
+  "chapter": 23,
+  "trigger": {
+   "type": "day",
+   "value": 23
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第二十三天。失窃继续——这次是电池。"
+   },
+   {
+    "who": "xiaodian",
+    "text": "那是我熬夜合出来的！谁干的！"
+   },
+   {
+    "who": "pangshen",
+    "text": "会不会是白医生？她的药来路不明！"
+   },
+   {
+    "who": "doctor",
+    "text": "呵。厨子，你的米袋账对得上吗？"
+   },
+   {
+    "who": "laoqiang",
+    "text": "够了！自乱阵脚，正中敌人下怀。"
+   },
+   {
+    "who": "narrator",
+    "text": "每个人都有秘密。每个人都有嫌疑。"
+   }
+  ]
+ },
+ {
+  "id": 124,
+  "chapter": 24,
+  "trigger": {
+   "type": "day",
+   "value": 24
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第二十四天。老枪布了一个局。"
+   },
+   {
+    "who": "laoqiang",
+    "text": "仓库放一箱标记罐头。谁动，谁现形。"
+   },
+   {
+    "who": "mancang",
+    "text": "夜视模式开启。嘎——保持安静。"
+   },
+   {
+    "who": "narrator",
+    "text": "后半夜，一个瘦小的身影溜进仓库。"
+   },
+   {
+    "who": "narrator",
+    "text": "手电亮起的那一刻，所有人都愣住了。"
+   }
+  ]
+ },
+ {
+  "id": 125,
+  "chapter": 25,
+  "trigger": {
+   "type": "day",
+   "value": 25
+  },
+  "lines": [
+   {
+    "who": "douzi",
+    "text": "是我……对不起……是我……"
+   },
+   {
+    "who": "douzi",
+    "text": "议会抓了我妹妹！偷一次，她多活一天！"
+   },
+   {
+    "who": "pangshen",
+    "text": "造孽啊……孩子，你早说啊！"
+   },
+   {
+    "who": "laoqiang",
+    "text": "拿孩子要挟。钢铁议会，好手段。"
+   },
+   {
+    "who": "hero",
+    "text": "豆子，带路。我们去把妹妹抢回来。"
+   }
+  ]
+ },
+ {
+  "id": 126,
+  "chapter": 26,
+  "trigger": {
+   "type": "day",
+   "value": 26
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第二十六天。押运路线，豆子倒背如流。"
+   },
+   {
+    "who": "douzi",
+    "text": "明晚过断桥。守卫六个，枪四把。"
+   },
+   {
+    "who": "laoqiang",
+    "text": "硬拼不行。得用合成师的法子。"
+   },
+   {
+    "who": "mancang",
+    "text": "方案：信号干扰器。零件清单已列出。"
+   },
+   {
+    "who": "hero",
+    "text": "今晚不睡了。合。"
+   }
+  ]
+ },
+ {
+  "id": 127,
+  "chapter": 27,
+  "trigger": {
+   "type": "day",
+   "value": 27
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第二十七天，黎明前。最后一次调试。"
+   },
+   {
+    "who": "narrator",
+    "text": "三台旧电台，合成信号干扰器。"
+   },
+   {
+    "who": "xiaodian",
+    "text": "频段锁定！他们的通讯，说断就断！"
+   },
+   {
+    "who": "doctor",
+    "text": "急救包备好了。人都给我囫囵带回来。"
+   },
+   {
+    "who": "pangshen",
+    "text": "锅里有热汤，等你们回来喝。"
+   },
+   {
+    "who": "narrator",
+    "text": "堡垒7号，第一次主动出击。"
+   }
+  ]
+ },
+ {
+  "id": 128,
+  "chapter": 28,
+  "trigger": {
+   "type": "day",
+   "value": 28
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "昨夜，断桥。通讯中断，守卫自乱。"
+   },
+   {
+    "who": "narrator",
+    "text": "老枪三枪打灭三盏车灯，黑暗里没人敢动。"
+   },
+   {
+    "who": "douzi",
+    "text": "妹妹！是我！哥哥来了！"
+   },
+   {
+    "who": "narrator",
+    "text": "车厢里，瘦小的女孩扑进豆子怀里。"
+   },
+   {
+    "who": "laoqiang",
+    "text": "撤！天亮前回堡垒！"
+   },
+   {
+    "who": "narrator",
+    "text": "这一夜，堡垒7号，无人伤亡。"
+   }
+  ]
+ },
+ {
+  "id": 129,
+  "chapter": 29,
+  "trigger": {
+   "type": "day",
+   "value": 29
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第二十九天。妹妹醒了，却反复念着什么。"
+   },
+   {
+    "who": "douzi",
+    "text": "她一直在念：0-7……实验体……0-7……"
+   },
+   {
+    "who": "doctor",
+    "text": "这个编号格式……和我的病例，一样。"
+   },
+   {
+    "who": "laoqiang",
+    "text": "给我看看。……！！"
+   },
+   {
+    "who": "narrator",
+    "text": "老枪脸色煞白，枪掉在了地上。"
+   },
+   {
+    "who": "laoqiang",
+    "text": "这编号……是当年那座研究所的。"
+   }
+  ]
+ },
+ {
+  "id": 130,
+  "chapter": 30,
+  "trigger": {
+   "type": "day",
+   "value": 30
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "第三十天。所有人围在桌前，气氛凝重。"
+   },
+   {
+    "who": "wensente",
+    "text": "听说你们劫了押运车？别紧张。"
+   },
+   {
+    "who": "wensente",
+    "text": "议会里有人不喜欢你们。但我是朋友。"
+   },
+   {
+    "who": "mancang",
+    "text": "警告：检测到高频扫描。他在找核心。"
+   },
+   {
+    "who": "hero",
+    "text": "文森特到底想要什么？第七研究所又是什么？"
+   },
+   {
+    "who": "narrator",
+    "text": "第二卷·完。各怀鬼胎的人，被牵向同一个真相。"
+   }
+  ]
+ },
+ {
+  "id": 28,
+  "chapter": 0,
+  "trigger": {
+   "type": "nightLose"
+  },
+  "lines": [
+   {
+    "who": "mancang",
+    "text": "警告：核心过载，防线崩溃——"
+   },
+   {
+    "who": "mancang",
+    "text": "别慌。看好了，这是你外婆的手笔。"
+   },
+   {
+    "who": "mancang",
+    "text": "合成核心·时间回溯，启动。"
+   },
+   {
+    "who": "narrator",
+    "text": "光芒倒卷，瓦砾归位。你回到了当天清晨。"
+   },
+   {
+    "who": "mancang",
+    "text": "僵尸不记得发生了什么，但我记得。"
+   },
+   {
+    "who": "mancang",
+    "text": "修好防御，升级箭塔。这次别输。"
+   }
+  ]
+ },
+ {
+  "id": 131,
+  "chapter": 4,
+  "trigger": {
+   "type": "level",
+   "value": 5
+  },
+  "lines": [
+   {
+    "who": "narrator",
+    "text": "入夜，堡垒外传来一阵细弱的猫叫。"
+   },
+   {
+    "who": "laoqiang",
+    "text": "野猫，饿得皮包骨。……养猫比养人省粮。"
+   },
+   {
+    "who": "hero",
+    "text": "那就留下吧。多一张嘴，也多一分人气。"
+   },
+   {
+    "who": "narrator",
+    "text": "猫窝已送到棋盘上——点满 12 次，小猫就在堡垒安家了。"
+   }
+  ],
+  "spawnProps": [
+   50022
+  ]
+ }
+]

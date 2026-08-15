@@ -1,0 +1,56 @@
+[
+  {
+    "key": "xiaoman",
+    "name": "小满",
+    "attack": 6,
+    "range": 2,
+    "speed": 1.0,
+    "fxColor": 8247421,
+    "desc": "最早的过渡帮手，一把弹弓守内圈。"
+  },
+  {
+    "key": "laoqiang",
+    "name": "老枪",
+    "attack": 12,
+    "range": 4,
+    "speed": 0.8,
+    "fxColor": 16766814,
+    "desc": "狙击射程覆盖核心周围，枪法奇准。"
+  },
+  {
+    "key": "pangshen",
+    "name": "胖婶",
+    "attack": 20,
+    "range": 1,
+    "speed": 0.7,
+    "fxColor": 16751680,
+    "desc": "贴身近战高攻，一勺拍翻漏网之鱼。"
+  },
+  {
+    "key": "doctor",
+    "name": "白医生",
+    "attack": 8,
+    "range": 3,
+    "speed": 1.0,
+    "fxColor": 15267071,
+    "desc": "中程均衡输出，手术刀扔得又快又稳。"
+  },
+  {
+    "key": "xiaodian",
+    "name": "小电",
+    "attack": 10,
+    "range": 3,
+    "speed": 1.2,
+    "fxColor": 7260415,
+    "desc": "快攻速电击，拆什么都能装回去。"
+  },
+  {
+    "key": "douzi",
+    "name": "豆子",
+    "attack": 7,
+    "range": 3,
+    "speed": 1.3,
+    "fxColor": 13147391,
+    "desc": "弹弓快射，全堡垒手最快的小孩。"
+  }
+]

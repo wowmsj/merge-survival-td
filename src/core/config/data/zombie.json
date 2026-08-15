@@ -1,0 +1,177 @@
+[
+  {
+    "id": 1,
+    "name": "普通僵尸",
+    "hp": 30,
+    "speed": 0.5,
+    "attack": 3,
+    "defense": 0,
+    "attackInterval": 1000,
+    "moveType": "ground",
+    "color": 7640342,
+    "minDay": 1,
+    "weight": 100,
+    "dropPool": [
+      40011,
+      40027,
+      20011,
+      20021
+    ],
+    "dropMin": 0,
+    "dropMax": 1,
+    "demolish": 0
+  },
+  {
+    "id": 2,
+    "name": "快速僵尸",
+    "hp": 40,
+    "speed": 1.2,
+    "attack": 6,
+    "defense": 0,
+    "attackInterval": 800,
+    "moveType": "ground",
+    "color": 3447003,
+    "minDay": 2,
+    "weight": 40,
+    "dropPool": [
+      20011,
+      20021,
+      20012
+    ],
+    "dropMin": 0,
+    "dropMax": 1,
+    "demolish": 0
+  },
+  {
+    "id": 3,
+    "name": "坦克僵尸",
+    "hp": 220,
+    "speed": 0.3,
+    "attack": 16,
+    "defense": 3,
+    "attackInterval": 1200,
+    "moveType": "ground",
+    "color": 6582118,
+    "minDay": 3,
+    "weight": 25,
+    "dropPool": [
+      20041,
+      20052,
+      30009,
+      30001
+    ],
+    "dropMin": 1,
+    "dropMax": 1,
+    "demolish": 1
+  },
+  {
+    "id": 4,
+    "name": "自爆僵尸",
+    "hp": 50,
+    "speed": 0.6,
+    "attack": 5,
+    "defense": 0,
+    "attackInterval": 1000,
+    "moveType": "ground",
+    "color": 15746887,
+    "minDay": 4,
+    "weight": 20,
+    "explode": 30,
+    "dropPool": [
+      30055,
+      30056,
+      30063
+    ],
+    "dropMin": 1,
+    "dropMax": 1,
+    "demolish": 1
+  },
+  {
+    "id": 5,
+    "name": "精英僵尸",
+    "hp": 320,
+    "speed": 0.5,
+    "attack": 15,
+    "defense": 2,
+    "attackInterval": 1000,
+    "moveType": "ground",
+    "color": 12120005,
+    "minDay": 3,
+    "weight": 8,
+    "dropPool": [
+      10012,
+      10026,
+      30055,
+      30063
+    ],
+    "dropMin": 1,
+    "dropMax": 2,
+    "demolish": 2
+  },
+  {
+    "id": 6,
+    "name": "Boss僵尸",
+    "hp": 1200,
+    "speed": 0.25,
+    "attack": 40,
+    "defense": 6,
+    "attackInterval": 1200,
+    "moveType": "ground",
+    "color": 15158332,
+    "minDay": 5,
+    "weight": 0,
+    "dropPool": [
+      10012,
+      10026,
+      20041,
+      30072,
+      30077,
+      50024
+    ],
+    "dropMin": 2,
+    "dropMax": 3,
+    "demolish": 3
+  },
+  {
+    "id": 7,
+    "name": "飞行僵尸",
+    "hp": 45,
+    "speed": 0.9,
+    "attack": 6,
+    "defense": 0,
+    "attackInterval": 900,
+    "moveType": "fly",
+    "color": 10860522,
+    "minDay": 2,
+    "weight": 35,
+    "dropPool": [
+      20011,
+      20021,
+      20012
+    ],
+    "dropMin": 0,
+    "dropMax": 1,
+    "demolish": 0
+  },
+  {
+    "id": 8,
+    "name": "钻地僵尸",
+    "hp": 90,
+    "speed": 0.45,
+    "attack": 12,
+    "defense": 2,
+    "attackInterval": 1100,
+    "moveType": "burrow",
+    "color": 9850501,
+    "minDay": 3,
+    "weight": 20,
+    "dropPool": [
+      30009,
+      30019,
+      30055
+    ],
+    "dropMin": 1,
+    "dropMax": 1,
+    "demolish": 1
+  }
+]
