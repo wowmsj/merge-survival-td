@@ -31,7 +31,7 @@
     "speed": 2.5,
     "attack": 12,
     "defense": 0,
-    "attackInterval": 800,
+    "attackInterval": 500,
     "moveType": "ground",
     "color": 3447003,
     "minDay": 2,
