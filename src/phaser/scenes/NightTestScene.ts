@@ -29,6 +29,8 @@ export class NightTestScene extends Phaser.Scene {
   private gridLayer!: Phaser.GameObjects.Container;
   private buildingLayer!: Phaser.GameObjects.Container;
   private selectionHint!: Phaser.GameObjects.Graphics;
+  private palettePage = 0;
+  private paletteContainer!: Phaser.GameObjects.Container;
 
   constructor() {
     super({ key: 'NightTestScene' });
@@ -44,6 +46,7 @@ export class NightTestScene extends Phaser.Scene {
 
     this.gridLayer = this.add.container(0, 0);
     this.buildingLayer = this.add.container(0, 0);
+    this.paletteContainer = this.add.container(0, 0).setDepth(20);
     this.selectionHint = this.add.graphics().setDepth(10);
 
     this.add.text(DESIGN_WIDTH / 2, 50, getText('nightTest.title'), {
@@ -59,13 +62,13 @@ export class NightTestScene extends Phaser.Scene {
     this.add.text(DESIGN_WIDTH / 2 - 120, 120, getText('nightTest.day'), {
       fontSize: '26px', color: '#ffffff'
     }).setOrigin(0.5);
-    this.dayText = this.add.text(DESIGN_WIDTH / 2, 120, `${this.state.day}`, {
+    this.dayText = this.add.text(DESIGN_WIDTH / 2, 120, getText('nightTest.day', { day: this.state.day }), {
       fontSize: '30px', color: '#ffd43b', fontStyle: 'bold'
     }).setOrigin(0.5);
-    makeUiButton(this, null, DESIGN_WIDTH / 2 - 56, 120, 56, 56, '<', {
+    makeUiButton(this, null, DESIGN_WIDTH / 2 - 90, 120, 56, 56, '<', {
       box: { radius: 10, fill: 0x2a2f3e, stroke: UI_GOLD, strokeAlpha: 0.6 }
     }, () => this.changeDay(-1));
-    makeUiButton(this, null, DESIGN_WIDTH / 2 + 56, 120, 56, 56, '>', {
+    makeUiButton(this, null, DESIGN_WIDTH / 2 + 90, 120, 56, 56, '>', {
       box: { radius: 10, fill: 0x2a2f3e, stroke: UI_GOLD, strokeAlpha: 0.6 }
     }, () => this.changeDay(1));
 
@@ -95,7 +98,7 @@ export class NightTestScene extends Phaser.Scene {
   private changeDay(delta: number): void {
     const next = Math.max(1, Math.min(99, this.state.day + delta));
     this.state.day = next;
-    this.dayText.setText(`${next}`);
+    this.dayText.setText(getText('nightTest.day', { day: next }));
   }
 
   /** 深拷贝一份 state 并开启测试模式：金币/行动力拉满、解锁全部建筑 */
@@ -238,14 +241,21 @@ export class NightTestScene extends Phaser.Scene {
     this.refreshBuildings();
   }
 
-  /** 底部建筑快捷栏：点击图标选中，再点击网格放置 */
+  /** 底部建筑快捷栏：点击图标选中，再点击网格放置；支持翻页 */
   private renderPalette(): void {
+    this.paletteContainer.removeAll(true);
     const configs = getAllBuildingConfigs()
       .filter(c => c.kind !== 'core' && c.id !== RUIN_ID)
       .sort((a, b) => (a.kind === 'tower' ? 0 : 1) - (b.kind === 'tower' ? 0 : 1) || a.id - b.id);
+
+    const perPage = 7;
+    const totalPages = Math.max(1, Math.ceil(configs.length / perPage));
+    this.palettePage = Math.max(0, Math.min(this.palettePage, totalPages - 1));
+    const pageConfigs = configs.slice(this.palettePage * perPage, (this.palettePage + 1) * perPage);
+
     const size = 92;
     const gap = 14;
-    const totalW = configs.length * size + (configs.length - 1) * gap;
+    const totalW = perPage * size + (perPage - 1) * gap;
     const startX = (DESIGN_WIDTH - totalW) / 2 + size / 2;
     const y = 1790;
 
@@ -254,10 +264,10 @@ export class NightTestScene extends Phaser.Scene {
     bg.fillRoundedRect(16, y - 74, DESIGN_WIDTH - 32, 140, 18);
     bg.lineStyle(2, UI_STROKE, 0.5);
     bg.strokeRoundedRect(16, y - 74, DESIGN_WIDTH - 32, 140, 18);
-    this.add.existing(bg);
+    this.paletteContainer.add(bg);
 
-    for (let i = 0; i < configs.length; i++) {
-      const cfg = configs[i];
+    for (let i = 0; i < pageConfigs.length; i++) {
+      const cfg = pageConfigs[i];
       const x = startX + i * (size + gap);
       const iconKey = KIND_ICON_KEYS[cfg.kind];
       const selected = cfg.id === this.selectedId;
@@ -282,14 +292,34 @@ export class NightTestScene extends Phaser.Scene {
         fontSize: '18px', color: selected ? '#ffd43b' : '#ffffff', fontStyle: 'bold'
       }).setOrigin(0.5));
 
-      // 点击区域
       const hit = this.add.rectangle(0, 0, size, size, 0x000000, 0).setInteractive({ useHandCursor: true });
       hit.on('pointerdown', () => {
         this.selectedId = cfg.id;
         this.renderPalette();
       });
       btn.add(hit);
-      this.add.existing(btn);
+      this.paletteContainer.add(btn);
     }
+
+    // 翻页按钮
+    if (totalPages > 1) {
+      makeUiButton(this, this.paletteContainer, 70, y, 70, 70, '<', {
+        box: { radius: 12, fill: 0x2a2f3e, stroke: UI_GOLD, strokeAlpha: 0.6 }
+      }, () => {
+        this.palettePage--;
+        this.renderPalette();
+      });
+      makeUiButton(this, this.paletteContainer, DESIGN_WIDTH - 70, y, 70, 70, '>', {
+        box: { radius: 12, fill: 0x2a2f3e, stroke: UI_GOLD, strokeAlpha: 0.6 }
+      }, () => {
+        this.palettePage++;
+        this.renderPalette();
+      });
+    }
+
+    // 页码
+    this.paletteContainer.add(this.add.text(DESIGN_WIDTH / 2, y + 70, `${this.palettePage + 1}/${totalPages}`, {
+      fontSize: '20px', color: '#aaaaaa'
+    }).setOrigin(0.5));
   }
 }
