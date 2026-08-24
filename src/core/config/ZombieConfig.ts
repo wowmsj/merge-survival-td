@@ -121,7 +121,8 @@ export function getLevelAttackScale(level: number): number {
 export function genWaveZombies(day: number, wave: number, totalWaves: number): number[] {
   const stage = getThreatStage(day);
   const debutNight = stage.day === day && !!stage.debut;
-  const count = Math.max(2, Math.floor((2 + Math.ceil(day * 0.6) + wave) * (debutNight ? 0.8 : 1)));
+  const scale = day >= 4 ? 2 : 1;
+  const count = Math.max(2, Math.floor((2 + Math.ceil(day * 0.6) + wave) * scale * (debutNight ? 0.8 : 1)));
   const pool = stage.ids.map(id => ZOMBIE_MAP.get(id)).filter((z): z is IZombieConfig => !!z);
 
   const result: number[] = [];
