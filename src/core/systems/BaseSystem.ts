@@ -5,7 +5,7 @@ import {
   getBuildingConfig, getUpgradeCostCoin, getDemolishRefundCoin, getRepairCostCoin,
   hpAtLevel, outputIntervalAtLevel, outputAmountAtLevel, isBuildingUnlocked,
   capResourceKeys, capAmountAtLevel, providePowerAtLevel,
-  MaterialCost, ProductionResult, ResourceOutput
+  MaterialCost, ProductionResult, ResourceOutput, SupportKind
 } from '../config/BuildingConfig';
 import { EconomySystem } from './EconomySystem';
 import { getBuildingName, getPropName, getText } from '../i18n';
@@ -63,14 +63,24 @@ export function isBuildingPowered(state: IGameState, building: IBuilding, now: n
  * 夜战供电判定：防御塔优先于资源建筑。
  * 夜晚资源建筑不产出，电力先保火力——塔只在「排在它之前的塔」之后累计 needPower。
  */
-export function isTowerPoweredAtNight(state: IGameState, building: IBuilding, now: number = Date.now()): boolean {
+function nightPowerPriority(building: IBuilding): number {
+  const cfg = getBuildingConfig(building.cfgId);
+  if (cfg?.support) return 0;
+  if (cfg?.kind === 'tower') return 1;
+  if (cfg?.kind === 'resource') return 2;
+  return 3;
+}
+
+/** 夜战供电：支撑建筑、塔、资源建筑依次分配容量。 */
+export function isBuildingPoweredAtNight(state: IGameState, building: IBuilding, now: number = Date.now()): boolean {
   const base = state.base;
   if (!base || !Array.isArray(base.buildings)) return true;
   const cap = getPowerInfo(state, now).cap;
+  const priority = nightPowerPriority(building);
   let cumulative = 0;
   for (const b of base.buildings) {
     const cfg = getBuildingConfig(b.cfgId);
-    if (cfg?.kind !== 'tower') continue;
+    if (!cfg || cfg.providePower || nightPowerPriority(b) > priority) continue;
     const need = cfg.needPower ?? 0;
     if (b === building) {
       if (need === 0) return true;
@@ -79,6 +89,29 @@ export function isTowerPoweredAtNight(state: IGameState, building: IBuilding, no
     cumulative += need;
   }
   return true;
+}
+
+/** 防御塔夜战供电判定的兼容入口。 */
+export function isTowerPoweredAtNight(state: IGameState, building: IBuilding, now: number = Date.now()): boolean {
+  return isBuildingPoweredAtNight(state, building, now);
+}
+
+/** 指定支撑建筑是否覆盖格子；夜战时使用夜战供电优先级。 */
+export function hasSupportCoverage(state: IGameState, support: SupportKind, row: number, col: number, atNight: boolean = false): boolean {
+  return state.base.buildings.some(building => {
+    const cfg = getBuildingConfig(building.cfgId);
+    if (cfg?.support !== support || Math.max(Math.abs(building.row - row), Math.abs(building.col - col)) > (cfg.supportRange ?? 0)) return false;
+    return atNight ? isBuildingPoweredAtNight(state, building) : isBuildingPowered(state, building);
+  });
+}
+
+/** 夜战中是否存在能攻击飞行敌人的已供电防御塔。 */
+export function canDefendFlyingEnemies(state: IGameState): boolean {
+  return state.base.buildings.some(building => {
+    const cfg = getBuildingConfig(building.cfgId);
+    if (cfg?.kind !== 'tower' || !isTowerPoweredAtNight(state, building)) return false;
+    return building.cfgId !== 101 || hasSupportCoverage(state, 'radar', building.row, building.col, true);
+  });
 }
 
 /** 行动力消耗：升级（SURVIVAL_BUILD_DESIGN.md 6.2）；建造/修复不消耗行动力（修复改收金币） */
@@ -347,5 +380,30 @@ export class BaseSystem {
       }
     }
     return { items, resources };
+  }
+
+  /** 维修站在天亮后消耗废料，修复覆盖范围内的墙和防御塔。 */
+  repairSupportBuildingsAtDay(state: IGameState): number {
+    const base = this.ensure(state);
+    let repaired = 0;
+    for (const station of base.buildings) {
+      const cfg = getBuildingConfig(station.cfgId);
+      if (cfg?.support !== 'repair' || !isBuildingPowered(state, station)) continue;
+      for (const target of base.buildings) {
+        const targetCfg = getBuildingConfig(target.cfgId);
+        if ((targetCfg?.kind !== 'wall' && targetCfg?.kind !== 'tower') || target.hp >= target.maxHp) continue;
+        if (Math.max(Math.abs(station.row - target.row), Math.abs(station.col - target.col)) > (cfg.supportRange ?? 0)) continue;
+        const scrap = Math.min(state.resources.scrap, Math.ceil((target.maxHp - target.hp) / 20));
+        if (scrap <= 0) return repaired;
+        state.resources.scrap -= scrap;
+        target.hp = Math.min(target.maxHp, target.hp + scrap * 20);
+        repaired += scrap;
+      }
+    }
+    if (repaired > 0) {
+      eventBus.emit(GameEvents.RESOURCE_CHANGED, { type: 'scrap', value: state.resources.scrap, delta: -repaired });
+      eventBus.emit(GameEvents.BASE_CHANGED, {});
+    }
+    return repaired;
   }
 }

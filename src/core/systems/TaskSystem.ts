@@ -1,5 +1,5 @@
 import { GameEvents, eventBus } from '../events/EventBus';
-import { getIdByLvUp, getMergeNextId, getProp, getPropLevel, isAutoSpawner, isClickSpawner, PROP_IDS } from '../config/PropConfig';
+import { getIdByLvUp, getMergeChain, getMergeNextId, getProp, getPropLevel, isAutoSpawner, isClickSpawner, PROP_IDS } from '../config/PropConfig';
 import { getHandTask, SAFE_TASKS, TASK_ORDER_TYPES } from '../config/TableConfig';
 import { IGameState, ITask } from '../types';
 import { forEachCell, setItem } from '../model/Grid';
@@ -28,15 +28,24 @@ const MERGE_LOOKAHEAD = 2;
 const ORDER_EXEMPT_ITEM_IDS = new Set([30048]); // 30048 病毒真相（病毒线索链链尾）
 
 /**
- * 任务金币奖励 = 星星 × 10 + 需求物品出售价值总和
- * （出售价值见 prop.levelGold，量级 1~50/件，奖励约为卖掉这些材料的两倍上下）
+ * 目标合成工作量：N 级道具需要 2^(N-1) 个一级材料；多个目标与数量累加。
+ * 封顶避免异常配置把单个订单抬到不可控数值。
  */
+export function calcTaskMergeEffort(propArr: { id: number; num: number }[]): number {
+  return propArr.reduce((total, need) => {
+    const depth = Math.max(1, getMergeChain(need.id).length);
+    return total + Math.min(512, 2 ** (depth - 1)) * need.num;
+  }, 0);
+}
+
+/** 随机订单星星按合成工作量分档，避免一级材料随机拿到高星奖励。 */
+export function calcRandomTaskStars(propArr: { id: number; num: number }[]): number {
+  return Math.max(1, Math.min(10, Math.ceil(Math.log2(Math.max(1, calcTaskMergeEffort(propArr)))) - 1));
+}
+
+/** 任务金币奖励 = 星星 × 10 + 合成工作量；不再读取旧表 levelGold。 */
 export function calcTaskGold(propArr: { id: number; num: number }[], starNum: number): number {
-  let gold = starNum * 10;
-  for (const need of propArr) {
-    gold += (getProp(need.id)?.levelGold ?? 0) * need.num;
-  }
-  return gold;
+  return starNum * 10 + calcTaskMergeEffort(propArr);
 }
 
 /**
@@ -58,6 +67,14 @@ export class TaskSystem {
   constructor(bagSystem: BagSystem, economy: EconomySystem) {
     this.bagSystem = bagSystem;
     this.economy = economy;
+  }
+
+  /** 读档后统一应用当前奖励算法，避免旧订单继续显示旧的金币数。 */
+  refreshTaskRewards(state: IGameState): void {
+    for (const task of state.tasks) {
+      if (!task.hand) task.starNum = calcRandomTaskStars(task.propArr);
+      task.goldNum = calcTaskGold(task.propArr, task.starNum);
+    }
   }
 
   /** 创建新手任务（id 从 1 开始，完成链式推进） */
@@ -143,7 +160,7 @@ export class TaskSystem {
       }
 
       if (propArr.length > 0) {
-        const starNum = retRow.taskReward[Math.floor(Math.random() * retRow.taskReward.length)] || 1;
+        const starNum = calcRandomTaskStars(propArr);
         tasks.push({ id: ++seqId, propArr, starNum, goldNum: calcTaskGold(propArr, starNum) });
         // 本批已用掉的物品也不再重复
         for (const p of propArr) {
@@ -164,8 +181,8 @@ export class TaskSystem {
         tasks.push({
           id: ++seqId,
           propArr,
-          starNum: safe.taskReward,
-          goldNum: calcTaskGold(propArr, safe.taskReward)
+          starNum: calcRandomTaskStars(propArr),
+          goldNum: calcTaskGold(propArr, calcRandomTaskStars(propArr))
         });
       }
     }
@@ -293,7 +310,7 @@ export class TaskSystem {
       if (!item || item.id === PROP_IDS.bag) return;
       if (!itemIsNormal(item, state.timestamp)) return;
       const prop = getProp(item.id);
-      if (!prop || prop.lunc > quality) return;
+      if (!prop || prop.lunc > quality || isClickSpawner(item.id) || isAutoSpawner(item.id)) return;
       idSet.add(item.id);
     });
     return [...idSet];
@@ -482,8 +499,8 @@ export class TaskSystem {
         state.tasks.push({
           id: Date.now() % 100000 + state.tasks.length + 1,
           propArr,
-          starNum: safe.taskReward,
-          goldNum: calcTaskGold(propArr, safe.taskReward)
+          starNum: calcRandomTaskStars(propArr),
+          goldNum: calcTaskGold(propArr, calcRandomTaskStars(propArr))
         });
       }
     }

@@ -19,7 +19,7 @@ export function translateEnglishSpeaker(who: string): string {
 
 const BUILDINGS: Record<number, string> = {
   1: 'Base Core', 101: 'Arrow Tower', 102: 'Cannon Tower', 103: 'Tesla Tower', 104: 'Frost Tower',
-  202: 'Medical Station', 203: 'Wind Power Station', 204: 'Outpost', 205: 'Warehouse', 206: 'Workshop', 207: 'Collection Station',
+  202: 'Medical Station', 203: 'Wind Power Station', 204: 'Outpost', 205: 'Warehouse', 206: 'Workshop', 207: 'Collection Station', 208: 'Ammunition Depot', 209: 'Radar Station', 210: 'Repair Station',
   301: 'Spike Trap', 302: 'Land Mine', 303: 'Slow Bog', 401: 'Wooden Wall', 402: 'Stone Wall', 403: 'Iron Wall', 901: 'Ruins'
 };
 const HEROES: Record<string, string> = { xiaoman: 'Xiaoman', laoqiang: 'Old Gun', pangshen: 'Aunt Pang', doctor: 'Dr. Bai', xiaodian: 'Xiaodian', douzi: 'Douzi' };
@@ -83,12 +83,18 @@ const PROP_GROUPS: Array<[number[], string[]]> = [
 ];
 for (const [ids, names] of PROP_GROUPS) ids.forEach((id, index) => { PROP_NAMES[id] = names[index]; });
 
-const BLUEPRINT_TARGETS: Record<number, string> = { 1: 'Arrow Tower', 2: 'Cannon Tower', 3: 'Tesla Tower', 4: 'Frost Tower', 5: 'Farm', 6: 'Medical Station', 7: 'Power Station', 8: 'Housing', 9: 'Warehouse', 10: 'Workshop', 11: 'Collection Station', 12: 'Spike Trap', 13: 'Land Mine', 14: 'Slow Bog', 15: 'Wooden Wall', 16: 'Stone Wall', 17: 'Iron Wall' };
+const BLUEPRINT_TARGETS: Record<number, string> = { 1: 'Arrow Tower', 2: 'Cannon Tower', 3: 'Tesla Tower', 4: 'Frost Tower', 5: 'Farm', 6: 'Medical Station', 7: 'Power Station', 8: 'Housing', 9: 'Warehouse', 10: 'Workshop', 11: 'Collection Station', 12: 'Spike Trap', 13: 'Land Mine', 14: 'Slow Bog', 15: 'Wooden Wall', 16: 'Stone Wall', 17: 'Iron Wall', 18: 'Ammunition Depot', 19: 'Radar Station', 20: 'Repair Station' };
 for (const [type, target] of Object.entries(BLUEPRINT_TARGETS)) {
   const index = Number(type);
   const base = 70000 + index;
   PROP_NAMES[base] = `${target} Blueprint Emitter`;
   for (let stage = 1; stage <= 4; stage++) PROP_NAMES[70100 + (index - 1) * 4 + stage] = `${target} ${['Blueprint Fragment', 'Blueprint Draft', 'Blueprint Design', 'Blueprint'][stage - 1]}`;
+}
+
+for (const [firstId, target] of [[70201, 'Ammunition Depot'], [70205, 'Radar Station'], [70209, 'Repair Station']] as const) {
+  for (let stage = 0; stage < 4; stage++) {
+    PROP_NAMES[firstId + stage] = `${target} ${['Blueprint Fragment', 'Blueprint Draft', 'Blueprint Design', 'Blueprint'][stage]}`;
+  }
 }
 
 function propName(prop: IPropRow): string {
@@ -125,11 +131,11 @@ const STORY_TEXT: Record<number, string[]> = {
   26: ['Power Station Blueprint acquired. Use it to unlock the station. The fortress cannot afford a blackout.'],
   27: ['Power Station unlocked. Tap Base, choose it, and build it on open ground.','Turn board batteries into Fuel so the station can keep running. Power is how we survive each night.'],
   102: ['Morning of Day Two. Someone kicks the gate open.','I\'m Iron Claw. Water and grain around here answer to me.','Seven days. Then I take this broken fort.','...Want a fight? My old gun has not rusted through.','Who are you?','Gatekeeper. Food and drink count as wages.','He joins two broken barrels into an old rifle, sharp and clean.','Old Gun joins the fortress. Hold every night and last these seven days.'],
-  103: ['Day Three. Iron Claw cut the water line; the reserve is dry.','Water emergency. Recommendation: Merge a filter.','Two scraps of cloth and an old pipe... Merge.','Muddy water passes through the filter and becomes drinkable.','Those hands are like your grandmother\'s.','You knew my grandmother?','...Drink. Just drink.','Old Gun looks away. He has a story.'],
+  103: ['Day Three. Iron Claw cut the water line; the reserve is dry.','Water emergency. Recommendation: Merge a filter.','Two scraps of cloth and an old pipe... Merge.','Muddy water passes through the filter and becomes drinkable.','Those hands are like your grandmother\'s.','You knew my grandmother?','...Drink. Just drink.','Old Gun looks away. He has a story.','High-altitude movement detected: flying hordes arrive from Night Five. Arrow Towers need Radar lock; the Radar Station is at the front of the Black Market.'],
   104: ['Day Four. A stout woman carrying an iron wok arrives at the gate.','One pot of noodles for a place to sleep. Deal?','I used to be the Council\'s chief nutritionist.','They put rust powder in the rations. I quit.','Aunt Pang joins the fortress; the kitchen has life again.','Machines run best on power. Build more stations and keep the lights on.','Build Power Stations for electricity. Towers and buildings need it to work.'],
   105: ['Day Five. Iron Claw\'s men sneak in at night.','The vegetable patch is trampled; the water pipe is snapped in two.','You little brats! I just planted those greens!','Two damaged pipes detected. Recommendation: Merge.','Two broken pipes become reinforced plumbing. Not a drop leaks.','They\'ll return tonight. Put the Arrow Tower on the east side.','Unlock more building Blueprints. Thicker defenses hold longer.'],
-  106: ['Day Six. A final notice is nailed to the gate.','Leave before tomorrow night. The fort stays.','Or we feed you to the horde.','Afraid of one rusty claw?','Afraid. That\'s why we win.','Alert: tomorrow night\'s horde signal is rising abnormally.','Then let him learn not to provoke Fortress 7.'],
-  107: ['Day Seven. The decisive battle.','Warning: tonight\'s horde exceeds every record.','Ammo, traps, walls. Merge everything you can.','Two old crossbows Merge into a repeating crossbow on the east wall.','Power full. Hit them hard!','Grandma said a Merge master never fights unprepared.','Merge gear by day. At night, meet the final battle.'],
+  106: ['Day Six. A final notice is nailed to the gate.','Leave before tomorrow night. The fort stays.','Or we feed you to the horde.','Afraid of one rusty claw?','Afraid. That\'s why we win.','Alert: armored and burrowing units arrive tomorrow. Tesla Towers counter armor; Radar reveals burrowers early.','Then let him learn not to provoke Fortress 7.'],
+  107: ['Day Seven. The decisive battle.','Warning: tonight\'s horde exceeds every record.','Ammo Depots, traps, walls, Repair Stations. Every key corridor needs its tools.','Two old crossbows Merge into a repeating crossbow on the east wall.','Power full. Hit them hard!','Grandma said a Merge master never fights unprepared.','Merge gear by day. At night, meet the final battle.'],
   108: ['Last night Iron Claw tried to loot the horde.','A Legendary drop Merged into a twin-barrel flame tower.','One shot turned his armored truck into scrap.','...A misunderstanding! All a misunderstanding!','Before you run, fix the water line.','Next day, Iron Claw queues at the gate to buy parts.','Not one screw for sale!'],
   109: ['Day Nine. Clearing the northern ruins reveals an iron box.','Identification complete: Merge Core fragment.','It shares an origin with the half-core inside me.','Why did Grandma bury this in the ruins?','Once this is exposed, trouble will follow.','That night, someone offers ten thousand cans for the fragment.'],
   110: ['Let me introduce myself. Vincent, Council liaison.','No rush on the purchase. We can talk.','Your grandmother was a legend. We were... old friends.','You knew my grandmother?','Future Council commissions will come to you first.','...Voice match 97%. Encrypted area. Access denied.','He smiles warmly. Mancang falls strangely silent.','Volume One ends. Fortress 7 stands, but the game is just beginning.'],
@@ -189,9 +195,9 @@ export const enRuntimeUi: Record<string, string> = { ...enCommonUi,
   'toast.spiderCannotMove': 'Webbed items cannot move. Merge with a matching unwebbed item to free it.',
   'toast.spiderBoth': 'Both items are webbed. A matching unwebbed item is needed.', 'toast.maxLevel': 'Already at max level.',
   'toast.spiderTarget': 'The target is webbed and cannot be swapped.', 'toast.spiderSource': 'A webbed item can only merge with a matching unwebbed item.',
-  'toast.heroNotJoined': 'This hero has not joined the fortress.', 'toast.heroDeployed': 'This hero is already deployed. Recall them before moving.', 'toast.cannotDeploy': 'Cannot deploy here.',
+  'toast.heroNotJoined': 'This hero has not joined the fortress.', 'toast.heroDeployed': 'This hero is already deployed. Recall them before moving.', 'toast.heroCritical': 'Critical injury: {days} day(s) remaining.', 'toast.cannotDeploy': 'Cannot deploy here.',
   'toast.unlimitedEnergy': 'Unlimited energy for {seconds} seconds!', 'toast.acceleratorStarted': 'Accelerator started.', 'toast.oneUnlockOnly': 'Only one item can unlock at a time.',
-  'toast.nightStarts': 'Night falls. Energy is fully restored.', 'toast.waveIncoming': 'Wave {wave}/{total} incoming!', 'toast.daybreakLoot': 'Daybreak! Loot: {loot}',
+  'toast.nightStarts': 'Night falls. Current energy is retained.', 'toast.waveIncoming': 'Wave {wave}/{total} incoming!', 'toast.daybreakLoot': 'Daybreak! Loot: {loot}',
   'toast.timeRewind': 'Time rewind: back to this morning. The core is repaired to 50%.', 'toast.ruinsCollapse': 'The horde collapsed the {side} ruins. They will attack from a new direction next night.',
   'toast.zombieEmerged': '{zombie} emerged from underground!', 'toast.zombieEnraged': '{zombie} is enraged and starts demolishing buildings!', 'toast.zombieExploded': '{zombie} exploded!',
   'toast.towerNoFuel': 'Arrow Tower is unpowered: the station has no fuel. Convert batteries into fuel first.', 'toast.towerNoPower': 'Arrow Tower is unpowered: add generators or reduce power use.', 'toast.buildingDestroyed': '{building} was destroyed!',
@@ -218,7 +224,7 @@ Object.assign(enRuntimeUi, {
   ,'hud.roleLv.name': 'Level', 'hud.roleLv.desc': 'Level up through orders and merges.', 'hud.roleLv.source': 'Orders and merges',
   'hud.coin.name': 'Coins', 'hud.coin.desc': 'Buy and upgrade buildings.', 'hud.coin.source': 'Sales, chests, tasks',
   'hud.diamond.name': 'Diamonds', 'hud.diamond.desc': 'Speed up or buy special items.', 'hud.diamond.source': 'Tasks, chests, shop',
-  'hud.power.name': 'Energy', 'hud.power.desc': 'Used for spawners and building.', 'hud.power.source': 'Night battles and items',
+  'hud.power.name': 'Energy', 'hud.power.desc': 'Used for spawners and building.', 'hud.power.source': 'Recovers 1 every 5 min. Night wins grant 100.',
   'hud.star.name': 'Stars', 'hud.star.desc': 'Earned from tasks to unlock content.', 'hud.star.source': 'Orders',
   'hud.electric.name': 'Power', 'hud.electric.desc': 'Wind stations power the base grid.', 'hud.electric.source': 'Wind Power Station',
   'hud.fuel.name': 'Fuel', 'hud.fuel.desc': 'Convert batteries into Fuel.', 'hud.fuel.source': 'Batteries',
@@ -226,13 +232,26 @@ Object.assign(enRuntimeUi, {
   'hud.scrap.name': 'Scrap', 'hud.scrap.desc': 'For repairs and low-level merges.', 'hud.scrap.source': 'Recycling and demolition', 'hud.source': 'Source: {source}'
   ,'boot.title': 'Merge Fortress', 'boot.subtitle': 'Merge supplies. Defend the last fortress.', 'boot.loading': 'Loading supplies...', 'boot.ready': 'Ready!',
   'night.title': 'Day {day} · Night', 'night.incoming': 'Zombies incoming...', 'night.coreHp': 'Core HP: {hp}/{maxHp}', 'night.nextWave': 'Next wave... ({wave}/{total})', 'night.waveRemaining': 'Wave {wave}/{total} · {count} left',
-  'night.win': 'Daybreak! The base held.', 'night.loss': 'Core overload. Time rewind begins.', 'night.winSub': 'Loot stored. Energy restored.', 'night.lossSub': 'The Merge Core rewinds to morning. Defenses remain.', 'night.returnBase': 'Return to Base', 'night.rewind': 'Back to Morning'
-  ,'menu.story': 'Story', 'menu.characters': 'Characters', 'menu.base': 'Base', 'menu.shop': 'Shop', 'menu.settings': 'Settings', 'menu.restart': 'Restart', 'menu.confirm': 'Confirm?'
+  'night.win': 'Daybreak! The base held.', 'night.loss': 'Core overload. Time rewind begins.', 'night.winSub': 'Loot stored. +100 Energy.', 'night.lossSub': 'The Merge Core rewinds to morning. Defenses remain.', 'night.returnBase': 'Return to Base', 'night.rewind': 'Back to Morning'
+  ,'menu.story': 'Story', 'menu.characters': 'Characters', 'menu.monsters': 'Monsters', 'menu.base': 'Base', 'menu.shop': 'Shop', 'menu.settings': 'Settings', 'menu.restart': 'Restart', 'menu.confirm': 'Confirm?'
 });
 
 Object.assign(enRuntimeUi, {
   'archive.unlock.newGame': 'Start a new game to unlock', 'archive.unlock.day': 'Survive until Day {day} to unlock', 'archive.unlock.continue': 'Keep playing to unlock',
   'story.reward': '{name} gave an extra {coins} Coins'
+});
+
+Object.assign(enRuntimeUi, {
+  'monster.title': 'Monster Codex', 'monster.subtitle': 'Know the enemy before you build the line.',
+  'monster.day': 'Day {day}', 'monster.hp': 'HP {value}', 'monster.attack': 'ATK {value}', 'monster.defense': 'DEF {value}', 'monster.abilityLabel': 'Ability',
+  'monster.ability.normal': 'Standard ground unit. Basic defenses can hold it.',
+  'monster.ability.fast': 'Moves quickly. Use a longer route or slowing defenses.',
+  'monster.ability.breakWall': 'Can demolish wooden walls. Keep it away from the outer ring.',
+  'monster.ability.explode': 'Blows up beside walls. Stop it with traps or ranged fire.',
+  'monster.ability.armor': 'High armor reduces Arrow Tower damage. Tesla Towers counter it.',
+  'monster.ability.elite': 'Higher demolition tier. Layer multiple walls and towers.',
+  'monster.ability.fly': 'Ignores walls and traps. Radar lets Arrow Towers lock on.',
+  'monster.ability.burrow': 'Hidden underground while moving. Radar reveals it early.'
 });
 
 Object.assign(enRuntimeUi, {
@@ -246,14 +265,19 @@ Object.assign(enRuntimeUi, {
 
 Object.assign(enRuntimeUi, {
   'base.tab.tower': 'Towers', 'base.tab.resource': 'Resources', 'base.tab.trap': 'Traps', 'base.tab.wall': 'Walls', 'base.tab.hero': 'Heroes',
-  'base.back': 'Back', 'base.day': 'Day {day}', 'base.coreHp': 'Core: {hp}/{maxHp}', 'base.night': 'Face Night', 'base.blackMarket': 'Black Market', 'base.marketStars': 'Stars: {star}', 'base.marketWallet': 'Stars: {star}  Diamonds: {diamond}', 'base.marketExchange': '1 Diamond = 100 Coins', 'base.marketExchanged': 'Exchanged for 100 Coins', 'base.marketPrice': '{star} Stars', 'base.marketBought': '{building} blueprint purchased', 'base.none': 'None', 'base.resourceGain': 'Resource building output: {gain}',
+  'base.back': 'Back', 'base.day': 'Day {day}', 'base.coreHp': 'Core: {hp}/{maxHp}', 'base.night': 'Face Night', 'base.blackMarket': 'Black Market', 'base.marketStars': 'Stars: {star}', 'base.marketWallet': 'Stars: {star}  Diamonds: {diamond}', 'base.marketExchange': '1 Diamond = 100 Coins', 'base.marketExchanged': 'Exchanged for 100 Coins', 'base.marketPrice': '{star} Stars', 'base.marketFragments': '{count} fragments', 'base.marketBought': '{building} blueprint fragments purchased', 'base.recommendedCounter': 'Recommended Counter', 'base.recommendedCounterBody': 'Exchange for {building} fragments at the Black Market, then merge a complete blueprint.', 'base.none': 'None', 'base.resourceGain': 'Resource building output: {gain}',
   'base.heroJoined': '{hero} joined the fortress! Deploy them from the Base Heroes tab to defend the inner zone.', 'base.noPower': 'No Power', 'base.buildCancel': 'Tap the building button again to cancel placement.',
   'base.buildHint': 'Tap a building for details, upgrades, or demolition. Resource buildings produce automatically.', 'base.heroGuide': 'Companions who join during the story appear here.',
   'base.heroDeployCancel': 'Tap an empty inner cell to deploy. Tap the hero card again to cancel.', 'base.heroDeployHint': 'Tap a hero card to deploy. Tap a deployed hero to recall or move them.',
-  'base.heroStats': 'ATK {attack}  RNG {range}  SPD {speed}', 'base.deployed': 'Deployed', 'base.attackRange': 'Attack / Range', 'base.heroRangeValue': '{attack} / {range} cells',
+  'base.heroStats': 'ATK {attack}  RNG {range}  SPD {speed}', 'base.heroHealth': 'HP {hp}/{maxHp}', 'base.heroCritical': 'Critical: {days} days', 'base.deployed': 'Deployed', 'base.attackRange': 'Attack / Range', 'base.heroRangeValue': '{attack} / {range} cells',
   'base.attackSpeed': 'Attack Speed', 'base.heroSpeedValue': '{speed} / sec', 'base.description': 'Description', 'base.recall': 'Recall', 'base.move': 'Move', 'base.close': 'Close',
   'base.blueprint': 'Blueprint', 'base.needBlueprint': 'Needs {blueprint}', 'base.towerDesc': 'Attack {attack} Range {range}{slow}', 'base.slow': ' Slow',
   'base.resourceOutput': 'Every {interval}s: {resource}+{amount}', 'base.capIncrease': 'Increase {resources} cap', 'base.lowResourceOutput': 'Low-tier materials every {interval}s',
+  'base.support.ammo': 'Towers within {range} cells gain +50% attack speed', 'base.support.radar': 'Within {range} cells: Arrow Towers gain anti-air lock; burrowers are revealed', 'base.support.repair': 'At daybreak, spend Scrap to repair walls and towers within {range} cells',
+  'base.buildingDesc.101': 'Ground fire only. Radar coverage enables anti-air.', 'base.buildingDesc.102': 'High single-target damage. Can attack air.', 'base.buildingDesc.103': 'Ignores armor and chains targets. Can attack air.', 'base.buildingDesc.104': 'Slows enemies in range. Can attack air.',
+  'base.buildingDesc.202': 'Produces Medicine every 5 minutes. Needs power.', 'base.buildingDesc.203': 'Provides night power for defense buildings.', 'base.buildingDesc.204': 'Claims nearby territory and opens build cells.', 'base.buildingDesc.205': 'Raises Medicine storage capacity. Needs power.', 'base.buildingDesc.206': 'Produces Scrap every 5 minutes. Needs power.', 'base.buildingDesc.207': 'Produces low-tier merge materials every 5 minutes.', 'base.buildingDesc.208': 'Towers in range gain +50% attack speed.', 'base.buildingDesc.209': 'Lets Arrow Towers target air and reveals burrowers.', 'base.buildingDesc.210': 'At daybreak, spends Scrap to repair nearby walls and towers.',
+  'base.buildingDesc.301': 'Damages ground enemies that cross it. Cannot hit air.', 'base.buildingDesc.302': 'Explodes once when stepped on. Cannot hit air.', 'base.buildingDesc.303': 'Strongly slows ground enemies that cross it. Cannot hit air.',
+  'base.buildingDesc.401': 'Blocks ground enemies. Tank-grade enemies can demolish it.', 'base.buildingDesc.402': 'Blocks ground enemies. Elite enemies can demolish it.', 'base.buildingDesc.403': 'Blocks ground enemies. Only Bosses can demolish it.',
   'base.resourceBuilding': 'Resource Building', 'base.attack': 'Attack {attack}', 'base.slowPercent': 'Slow {percent}%', 'base.durability': 'Durability {hp}', 'base.placeHint': 'Tap a cell to place',
   'base.buildingLocked': '{building} is locked: merge {blueprint} fragments to get {blueprint}.', 'base.notEnoughCoins': 'Not enough Coins: need {coins}. Sell materials on the black market.',
   'base.health': 'HP', 'base.buildingRangeValue': '{attack} / {range} cells', 'base.output': 'Output', 'base.resourceOutputSpaced': 'Every {interval}s: {resource}+{amount}',
@@ -264,6 +288,7 @@ Object.assign(enRuntimeUi, {
   'base.repair': 'Repair ({coins} Coins)', 'base.upgrade': 'Upgrade', 'base.demolish': 'Demolish', 'base.hordePreview': 'Day {day} · Horde Preview',
   'base.coreDamaged': '⚠ Core HP {hp}/{maxHp}. Repair it first.', 'base.coreHealth': 'Core HP {hp}/{maxHp}', 'base.attackSide': '{side} ({count} cells)',
   'base.listSeparator': ', ', 'base.allSidesBlocked': 'All sides are blocked. Zombies will demolish in place.', 'base.attackDirection': 'Attack Direction',
+  'base.routeLengthLabel': 'Shortest Ground Route', 'base.routeLength': '{cells} cells', 'base.routeLengthBlocked': 'No open route',
   'base.waveScale': '{waves} waves · about {total} zombies · Zombie Lv.{level}', 'base.bossLast': ' · Boss in the last wave!', 'base.eliteLast': ' · Elite guaranteed in the last wave',
-  'base.waveScaleLabel': 'Wave Scale', 'base.enemyType': 'Enemy Types', 'base.guaranteedLast': ' (last-wave guaranteed)', 'base.fight': 'Fight', 'base.prepareMore': 'Prepare More'
+  'base.waveScaleLabel': 'Wave Scale', 'base.defenseWarning': 'Defense Warning', 'base.noAntiAirWarning': 'Flying enemies are expected tonight. You have no anti-air tower. Cover Arrow Towers with Radar or deploy another tower before fighting.', 'base.enemyType': 'Enemy Types', 'base.guaranteedLast': ' (last-wave guaranteed)', 'base.fight': 'Fight', 'base.prepareMore': 'Prepare More'
 });

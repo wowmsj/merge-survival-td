@@ -22,6 +22,8 @@ export interface IHeroConfig {
   range: number;
   /** 攻速（次/秒），攻击冷却 = 1000/speed 毫秒 */
   speed: number;
+  /** 最大生命 */
+  hp: number;
   /** 弹道特效颜色（十六进制数，表现层画弹道用） */
   fxColor: number;
   /** 一句简介 */

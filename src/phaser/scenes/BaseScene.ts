@@ -3,14 +3,14 @@ import { IGameState, IBuilding, BuildingKind } from '../../core/types';
 import { GameEvents, eventBus } from '../../core/events/EventBus';
 import { StorageSystem } from '../../core/systems/StorageSystem';
 import { EconomySystem } from '../../core/systems/EconomySystem';
-import { BaseSystem, formatGains, formatResourceGains, getPowerInfo, isTowerPoweredAtNight } from '../../core/systems/BaseSystem';
-import { zoneOf, BaseZone, buildingAt } from '../../core/model/Base';
+import { BaseSystem, canDefendFlyingEnemies, formatGains, formatResourceGains, getPowerInfo, isTowerPoweredAtNight } from '../../core/systems/BaseSystem';
+import { zoneOf, BaseZone, buildingAt, getShortestEntryPathLength } from '../../core/model/Base';
 import {
   getBuildingConfig, getBuildableList, getUpgradeCostCoin, getDemolishRefundCoin, getRepairCostCoin,
   attackAtLevel, outputIntervalAtLevel, outputAmountAtLevel, capResourceKeys, capAmountAtLevel, isBuildingUnlocked,
   BUILDING_MAX_LEVEL, IBuildingConfig, RESOURCE_NAME, formatUpgradeCost
 } from '../../core/config/BuildingConfig';
-import { getNightPreview } from '../../core/config/ZombieConfig';
+import { getNightPreview, getZombieConfig } from '../../core/config/ZombieConfig';
 import { getAttackSides } from '../../core/systems/NightSystem';
 import { HeroSystem } from '../../core/systems/HeroSystem';
 import { getHeroConfig } from '../../core/config/HeroConfig';
@@ -22,7 +22,7 @@ import { UI_FILL, UI_GOLD, UI_ORANGE, UI_SLOT_FILL, UI_STROKE, drawUiBox } from 
 import { addFullscreenBg, showSceneToast } from '../ui/UiWidgets';
 import { KIND_COLORS, KIND_ICON_KEYS } from '../config/BuildingKindStyle';
 import { getBuildingName, getHeroDescription, getHeroName, getLanguage, getPropName, getText, getZombieName } from '../../core/i18n';
-import { BLACK_MARKET_ITEMS, buyBlackMarketBlueprint, exchangeDiamondForCoins } from '../../core/systems/BlackMarketSystem';
+import { BLACK_MARKET_ITEMS, buyBlackMarketBlueprint, exchangeDiamondForCoins, getRecommendedMarketItem } from '../../core/systems/BlackMarketSystem';
 
 /** 顶栏（返回/天数/核心/迎接夜晚）中线 Y：压在 HUD 第二行胶囊之下 */
 const TOP_BAR_Y = HUD_BOTTOM + 40;
@@ -62,6 +62,7 @@ export class BaseScene extends Phaser.Scene {
   private nightEndStory: { won: boolean; day: number } | null = null;
   private openMarketOnEnter = false;
   private storage!: StorageSystem;
+  private economy!: EconomySystem;
   private baseSystem!: BaseSystem;
   private heroSystem!: HeroSystem;
   private storySystem!: StorySystem;
@@ -73,6 +74,13 @@ export class BaseScene extends Phaser.Scene {
   private dayText!: Phaser.GameObjects.Text;
   private coreText!: Phaser.GameObjects.Text;
   private nightPreviewWheel?: (pointer: Phaser.Input.Pointer, objects: Phaser.GameObjects.GameObject[], dx: number, dy: number) => void;
+  private marketScrollWheel?: (pointer: Phaser.Input.Pointer, objects: Phaser.GameObjects.GameObject[], dx: number, dy: number) => void;
+  private marketScrollHandlers?: {
+    down: (pointer: Phaser.Input.Pointer) => void;
+    move: (pointer: Phaser.Input.Pointer) => void;
+    up: () => void;
+  };
+  private marketClipShape?: Phaser.GameObjects.Graphics;
 
   private activeTab: TabKey = 'tower';
   /** 建造栏当前页码（每页 2×2 张卡片，切页签时归零） */
@@ -98,7 +106,9 @@ export class BaseScene extends Phaser.Scene {
 
   create(): void {
     this.storage = new StorageSystem();
-    this.baseSystem = new BaseSystem(new EconomySystem());
+    this.economy = new EconomySystem();
+    this.economy.recoverPower(this.state);
+    this.baseSystem = new BaseSystem(this.economy);
     this.heroSystem = new HeroSystem();
     this.baseSystem.ensure(this.state);
     // 夜晚中途退出（刷新/切后台被杀）重置为白天，视为未入夜
@@ -200,6 +210,7 @@ export class BaseScene extends Phaser.Scene {
     this.time.addEvent({
       delay: 5000, loop: true, callback: () => {
         this.baseSystem.tickProduction(this.state);
+        this.economy.recoverPower(this.state);
         this.renderGrid();
         this.save();
       }
@@ -370,7 +381,6 @@ export class BaseScene extends Phaser.Scene {
       wordWrap: isEnglish ? { width: CELL - 6, useAdvancedWrap: true } : undefined, maxLines: isEnglish ? 2 : undefined
     }).setOrigin(0.5);
     this.gridLayer.add(name);
-
     const lv = this.add.text(x, hasIcon ? y + CELL / 2 - 26 : y + 16, `Lv.${building.level}`, {
       fontSize: '16px', color: '#ffe066', fontStyle: 'bold', stroke: '#000000', strokeThickness: 2
     }).setOrigin(0.5);
@@ -422,6 +432,12 @@ export class BaseScene extends Phaser.Scene {
       wordWrap: isEnglish ? { width: CELL - 6, useAdvancedWrap: true } : undefined, maxLines: isEnglish ? 2 : undefined
     }).setOrigin(0.5);
     this.gridLayer.add(name);
+    const maxHp = hero.maxHp ?? cfg?.hp ?? 100;
+    const hp = hero.hp ?? maxHp;
+    const bar = this.add.graphics();
+    bar.fillStyle(0x241f28, 0.9).fillRect(x - 27, y + CELL / 2 - 5, 54, 6);
+    bar.fillStyle(0x60d394, 1).fillRect(x - 27, y + CELL / 2 - 5, 54 * Math.max(0, hp / maxHp), 6);
+    this.gridLayer.add(bar);
   }
 
   private handleCellTap(row: number, col: number): void {
@@ -603,6 +619,7 @@ export class BaseScene extends Phaser.Scene {
     const cfg = getHeroConfig(hero.key);
     if (!cfg) return;
     const deployed = hero.row >= 0;
+    const critical = (hero.hp ?? cfg.hp) <= 0 || !!hero.recoveryDays;
     const selected = this.placingHero === hero.key;
 
     // 卡片底：与建筑卡片同款；部署模式选中金描边
@@ -613,7 +630,7 @@ export class BaseScene extends Phaser.Scene {
       strokeWidth: selected ? 4 : 2,
       radius: 14
     });
-    if (deployed) g.setAlpha(0.55);
+    if (deployed || critical) g.setAlpha(0.55);
     this.paletteLayer.add(g);
 
     // 左侧：立绘头像 110×110（char- 纹理），缺失回退色块
@@ -639,6 +656,11 @@ export class BaseScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
     this.paletteLayer.add(stats);
 
+    const health = critical
+      ? getText('base.heroCritical', { days: hero.recoveryDays ?? 0 })
+      : getText('base.heroHealth', { hp: hero.hp ?? cfg.hp, maxHp: hero.maxHp ?? cfg.hp });
+    this.paletteLayer.add(this.add.text(x - 104, y - 2, health, { fontSize: '22px', color: critical ? '#ff8f8f' : '#60d394' }).setOrigin(0, 0.5));
+
     const desc = this.add.text(x - 104, y + 22, getHeroDescription(cfg.key), {
       fontSize: '22px', color: '#9fa4b8', wordWrap: { width: CARD_W - 150 }
     }).setOrigin(0, 0.5);
@@ -658,6 +680,7 @@ export class BaseScene extends Phaser.Scene {
       return;
     }
 
+    if (critical) return;
     g.setInteractive(new Phaser.Geom.Rectangle(x - CARD_W / 2, y - CARD_H / 2, CARD_W, CARD_H), Phaser.Geom.Rectangle.Contains);
     g.on('pointerup', () => {
       // 再点一次取消部署模式（与建筑摆放一致）
@@ -771,6 +794,7 @@ export class BaseScene extends Phaser.Scene {
     g.on('pointerup', () => this.handlePaletteTap(cfg));
     this.paletteLayer.add(g);
     const buildingTitleFontSize = getLanguage() === 'en' ? '28px' : '34px';
+    const description = getText(`base.buildingDesc.${cfg.id}`);
 
     // 未解锁：整卡压暗 + 锁图标 + 解锁途径文字，不再绘制消耗明细
     if (!unlocked) {
@@ -783,11 +807,15 @@ export class BaseScene extends Phaser.Scene {
         const lockIcon = this.add.image(x - 175, y, 'lock').setDisplaySize(72, 72);
         this.paletteLayer.add(lockIcon);
       }
-      const lockName = this.add.text(x - 104, y - 30, getBuildingName(cfg.id), {
+      const lockName = this.add.text(x - 104, y - 80, getBuildingName(cfg.id), {
         fontSize: buildingTitleFontSize, color: '#9999aa', fontStyle: 'bold', padding: { x: 2, y: 8 }
       }).setOrigin(0, 0.5);
       this.paletteLayer.add(lockName);
-      const lockTip = this.add.text(x - 104, y + 20, getText('base.needBlueprint', { blueprint: bpName }), {
+      const lockDesc = this.add.text(x - 104, y - 10, description, {
+        fontSize: getLanguage() === 'en' ? '18px' : '20px', color: '#aeb3c5', wordWrap: { width: CARD_W - 150, useAdvancedWrap: true }, maxLines: 2
+      }).setOrigin(0, 0.5);
+      this.paletteLayer.add(lockDesc);
+      const lockTip = this.add.text(x - 104, y + 40, getText('base.needBlueprint', { blueprint: bpName }), {
         fontSize: getLanguage() === 'en' ? '20px' : '26px', color: '#ffd43b', fontStyle: 'bold'
       }).setOrigin(0, 0.5);
       this.paletteLayer.add(lockTip);
@@ -807,28 +835,14 @@ export class BaseScene extends Phaser.Scene {
     }
 
     // 右上：建筑名（34px 左对齐）+ 一行小字简介（选中时替换为放置提示）
-    const name = this.add.text(x - 104, y - 74, getBuildingName(cfg.id), {
+    const name = this.add.text(x - 104, y - 80, getBuildingName(cfg.id), {
       fontSize: buildingTitleFontSize, color: '#ffffff', fontStyle: 'bold', padding: { x: 2, y: 8 }
     }).setOrigin(0, 0.5);
     this.paletteLayer.add(name);
 
-    let desc = '';
-    if (cfg.kind === 'tower') desc = getText('base.towerDesc', { attack: cfg.attack ?? 0, range: cfg.range ?? 0, slow: cfg.slow ? getText('base.slow') : '' });
-    else if (cfg.kind === 'resource') {
-      if (cfg.outputResource && cfg.outputAmount && cfg.outputInterval) {
-        desc = getText('base.resourceOutput', { interval: cfg.outputInterval ?? 0, resource: RESOURCE_NAME[cfg.outputResource] ?? cfg.outputResource, amount: cfg.outputAmount ?? 0 });
-      } else if (cfg.capResource && cfg.capAmount) {
-        const capNames = capResourceKeys(cfg).map(k => RESOURCE_NAME[k.replace('Max', '') as keyof typeof RESOURCE_NAME] ?? k).join('/');
-        desc = getText('base.capIncrease', { resources: capNames });
-      } else if (cfg.outputPool && cfg.outputPool.length > 0) {
-        desc = getText('base.lowResourceOutput', { interval: cfg.outputInterval ?? 0 });
-      } else {
-        desc = getText('base.resourceBuilding');
-      }
-    } else if (cfg.kind === 'trap') desc = cfg.attack ? getText('base.attack', { attack: cfg.attack }) : getText('base.slowPercent', { percent: Math.round((cfg.slow ?? 0) * 100) });
-    else desc = getText('base.durability', { hp: cfg.hp });
-    const sub = this.add.text(x - 104, y - 36, selected ? getText('base.placeHint') : desc, {
-      fontSize: '24px', color: selected ? '#ffe066' : '#8899aa'
+    const sub = this.add.text(x - 104, y - 10, selected ? getText('base.placeHint') : description, {
+      fontSize: getLanguage() === 'en' ? '18px' : '20px', color: selected ? '#ffe066' : '#8899aa',
+      wordWrap: { width: CARD_W - 150, useAdvancedWrap: true }, maxLines: 2
     }).setOrigin(0, 0.5);
     this.paletteLayer.add(sub);
 
@@ -839,7 +853,7 @@ export class BaseScene extends Phaser.Scene {
     }
 
     rows.forEach((row, j) => {
-      const rowY = y + 4 + j * 44;
+      const rowY = y + 56 + j * 44;
       const enough = row.have >= row.need;
       if (row.icon && this.textures.exists(row.icon)) {
         const mIcon = this.add.image(x - 82, rowY, row.icon).setDisplaySize(44, 44);
@@ -1032,6 +1046,14 @@ export class BaseScene extends Phaser.Scene {
     // ---- 底部按钮：升级 / 拆除 / 关闭，等宽均匀分布（均在面板内部） ----
     const btnY = py + panelH - 64;
     if (cfg.kind === 'core') {
+      if (building.hp < building.maxHp) {
+        const repairCost = getRepairCostCoin(building.cfgId, building.hp, building.maxHp);
+        this.addDialogButton(px + panelW / 2, py + panelH - 140, getText('base.repair', { coins: repairCost }),
+          this.state.resources.coin >= repairCost, () => {
+            this.baseSystem.repair(this.state, building.row, building.col);
+            this.closeDialog();
+          }, panelW - 80, 56);
+      }
       this.addDialogButton(px + panelW / 2, btnY, getText('base.close'), true, () => this.closeDialog(), 200, 64);
       return;
     }
@@ -1119,14 +1141,28 @@ export class BaseScene extends Phaser.Scene {
     const cols = 2;
     const cardW = 370;
     const cardH = 102;
-    BLACK_MARKET_ITEMS.forEach((item, index) => {
+    const cardGap = 16;
+    const listTop = py + 138;
+    const listBottom = py + panelH - 132;
+    const listHeight = listBottom - listTop;
+    const marketList = this.add.container(0, 0);
+    this.marketClipShape = this.make.graphics();
+    this.marketClipShape.fillRect(px + 24, listTop, panelW - 48, listHeight);
+    marketList.setMask(this.marketClipShape.createGeometryMask());
+    this.dialogLayer.add(marketList);
+    let didDrag = false;
+    const marketItems: { y: number; objects: Phaser.GameObjects.GameObject[] }[] = [];
+    const recommended = getRecommendedMarketItem(this.state.day);
+    const marketCatalog = [...BLACK_MARKET_ITEMS].sort((a, b) => Number(b.cfgId === recommended?.cfgId) - Number(a.cfgId === recommended?.cfgId));
+    marketCatalog.forEach((item, index) => {
       const cfg = getBuildingConfig(item.cfgId)!;
       const x = px + 38 + (index % cols) * (cardW + 42);
-      const y = py + 138 + Math.floor(index / cols) * (cardH + 16);
+      const y = listTop + Math.floor(index / cols) * (cardH + cardGap);
       const card = this.add.graphics();
       drawUiBox(card, x + cardW / 2, y + cardH / 2, cardW, cardH, { fill: 0x202435, fillAlpha: 0.95, stroke: UI_STROKE, strokeAlpha: 0.75, radius: 10 });
       card.setInteractive(new Phaser.Geom.Rectangle(x, y, cardW, cardH), Phaser.Geom.Rectangle.Contains);
       card.on('pointerup', () => {
+        if (didDrag) return;
         const result = buyBlackMarketBlueprint(this.state, item.cfgId);
         if (!result.ok) return;
         this.save();
@@ -1134,12 +1170,71 @@ export class BaseScene extends Phaser.Scene {
         this.showToast(getText('base.marketBought', { building: getBuildingName(item.cfgId) }));
       });
       const iconKey = cfg.kind === 'tower' ? KIND_ICON_KEYS.tower : cfg.kind === 'resource' ? KIND_ICON_KEYS.resource : cfg.kind === 'trap' ? KIND_ICON_KEYS.trap : KIND_ICON_KEYS.wall;
-      this.dialogLayer.add([card,
-        this.add.image(x + 52, y + cardH / 2, iconKey).setDisplaySize(64, 64),
-        this.add.text(x + 100, y + 32, getBuildingName(item.cfgId), { fontSize: '23px', color: '#ffffff', fontStyle: 'bold', wordWrap: { width: 175 }, maxLines: 1 }).setOrigin(0, 0.5),
-        this.add.text(x + 100, y + 72, getText('base.marketPrice', { star: item.star }), { fontSize: '22px', color: '#ffd75e', fontStyle: 'bold' }).setOrigin(0, 0.5)
-      ]);
+      const icon = this.add.image(x + 52, y + cardH / 2, iconKey).setDisplaySize(64, 64);
+      const name = this.add.text(x + 100, y + 32, getBuildingName(item.cfgId), { fontSize: '23px', color: '#ffffff', fontStyle: 'bold', wordWrap: { width: 175 }, maxLines: 1 }).setOrigin(0, 0.5);
+      const price = this.add.text(x + 100, y + 64, `${getText('base.marketPrice', { star: item.star })} · ${getText('base.marketFragments', { count: item.fragmentCount })}`, { fontSize: '19px', color: '#ffd75e', fontStyle: 'bold' }).setOrigin(0, 0.5);
+      marketList.add([card, icon, name, price]);
+      marketItems.push({ y, objects: [card, icon, name, price] });
     });
+    const rows = Math.ceil(marketCatalog.length / cols);
+    const contentHeight = rows * cardH + Math.max(0, rows - 1) * cardGap;
+    const maxScroll = Math.max(0, contentHeight - listHeight);
+    const updateMarketItems = () => {
+      for (const entry of marketItems) {
+        const top = entry.y + (marketList.y || 0);
+        const visible = top + cardH >= listTop && top <= listBottom;
+        for (const object of entry.objects) (object as Phaser.GameObjects.GameObject & { setVisible: (value: boolean) => void }).setVisible(visible);
+      }
+    };
+    updateMarketItems();
+    if (maxScroll > 0) {
+      let scrollY = 0;
+      const trackX = px + panelW - 28;
+      const trackY = listTop + 8;
+      const trackH = listHeight - 16;
+      const thumbH = Math.max(72, trackH * listHeight / contentHeight);
+      const scrollbar = this.add.graphics();
+      const drawScrollbar = () => {
+        scrollbar.clear();
+        scrollbar.fillStyle(0x111827, 0.7);
+        scrollbar.fillRoundedRect(trackX - 5, trackY, 10, trackH, 5);
+        scrollbar.fillStyle(UI_GOLD, 0.9);
+        scrollbar.fillRoundedRect(trackX - 5, trackY + (trackH - thumbH) * scrollY / maxScroll, 10, thumbH, 5);
+      };
+      const setScroll = (value: number) => {
+        scrollY = Phaser.Math.Clamp(value, 0, maxScroll);
+        marketList.y = -scrollY;
+        updateMarketItems();
+        drawScrollbar();
+      };
+      drawScrollbar();
+      this.dialogLayer.add(scrollbar);
+      this.marketScrollWheel = (_pointer, _objects, _dx, dy) => setScroll(scrollY + dy * 0.6);
+      this.input.on('wheel', this.marketScrollWheel);
+      let dragStartY = 0;
+      let dragStartScroll = 0;
+      this.marketScrollHandlers = {
+        down: (pointer) => {
+          didDrag = false;
+          if (pointer.x >= px + 24 && pointer.x <= px + panelW - 24 && pointer.y >= listTop && pointer.y <= listBottom) {
+            dragStartY = pointer.y;
+            dragStartScroll = scrollY;
+          } else {
+            dragStartY = 0;
+          }
+        },
+        move: (pointer) => {
+          if (!dragStartY || !pointer.isDown) return;
+          const deltaY = pointer.y - dragStartY;
+          if (Math.abs(deltaY) > 8) didDrag = true;
+          setScroll(dragStartScroll - deltaY);
+        },
+        up: () => { dragStartY = 0; }
+      };
+      this.input.on('pointerdown', this.marketScrollHandlers.down);
+      this.input.on('pointermove', this.marketScrollHandlers.move);
+      this.input.on('pointerup', this.marketScrollHandlers.up);
+    }
     this.addDialogButton(width / 2, py + panelH - 52, getText('base.close'), true, () => this.closeDialog(), 240, 64);
   }
 
@@ -1150,6 +1245,7 @@ export class BaseScene extends Phaser.Scene {
     const core = this.baseSystem.getCore(this.state);
     const preview = getNightPreview(this.state.day);
     const sides = getAttackSides(this.state.base);
+    const routeLength = getShortestEntryPathLength(this.state.base);
 
     const mask = this.add.rectangle(0, 0, width, height, 0x000000, 0.65).setOrigin(0).setInteractive();
     this.dialogLayer.add(mask);
@@ -1191,7 +1287,7 @@ export class BaseScene extends Phaser.Scene {
     const addSection = (label: string, body: string, y: number, bodyColor = '#ffffff'): number => {
       const l = this.add.text(lx, y, label, { fontSize: '22px', color: '#8f94a8', fontStyle: 'bold' });
       const b = this.add.text(bx, y + 32, body, {
-        fontSize: '24px', color: bodyColor, fontStyle: 'bold', wordWrap: { width: panelW - 150 }
+        fontSize: '24px', color: bodyColor, fontStyle: 'bold', wordWrap: { width: panelW - 150, useAdvancedWrap: true }
       });
       this.dialogLayer.add([l, b]);
       return y + 32 + b.height + 22;
@@ -1203,10 +1299,25 @@ export class BaseScene extends Phaser.Scene {
       : getText('base.allSidesBlocked');
     let y = addSection(getText('base.attackDirection'), dirText, py + 168);
 
+    y = addSection(getText('base.routeLengthLabel'), routeLength === null
+      ? getText('base.routeLengthBlocked')
+      : getText('base.routeLength', { cells: routeLength - 1 }), y);
+
     // 波次规模 + 僵尸等级
     const waveText = getText('base.waveScale', { waves: preview.waves, total: preview.total, level: preview.level })
       + (preview.bossLast ? getText('base.bossLast') : preview.eliteLast ? getText('base.eliteLast') : '');
     y = addSection(getText('base.waveScaleLabel'), waveText, y, preview.bossLast ? '#ff8787' : '#ffffff');
+
+    if (preview.types.some(type => getZombieConfig(type.id)?.moveType === 'fly') && !canDefendFlyingEnemies(this.state)) {
+      y = addSection(getText('base.defenseWarning'), getText('base.noAntiAirWarning'), y, '#ff8787');
+    }
+
+    const recommended = getRecommendedMarketItem(this.state.day);
+    if (recommended) {
+      y = addSection(getText('base.recommendedCounter'), getText('base.recommendedCounterBody', {
+        building: getBuildingName(recommended.cfgId)
+      }), y, '#ffd43b');
+    }
 
     // 敌人类型：可滚动，避免长名单挤压底部操作。
     const typeLabel = this.add.text(lx, y, getText('base.enemyType'), { fontSize: '22px', color: '#8f94a8', fontStyle: 'bold' });
@@ -1298,6 +1409,18 @@ export class BaseScene extends Phaser.Scene {
       this.input.off('wheel', this.nightPreviewWheel);
       this.nightPreviewWheel = undefined;
     }
+    if (this.marketScrollWheel) {
+      this.input.off('wheel', this.marketScrollWheel);
+      this.marketScrollWheel = undefined;
+    }
+    if (this.marketScrollHandlers) {
+      this.input.off('pointerdown', this.marketScrollHandlers.down);
+      this.input.off('pointermove', this.marketScrollHandlers.move);
+      this.input.off('pointerup', this.marketScrollHandlers.up);
+      this.marketScrollHandlers = undefined;
+    }
+    this.marketClipShape?.destroy();
+    this.marketClipShape = undefined;
     this.dialogLayer.removeAll(true);
     this.selectedRangeHint.setVisible(false);
   }

@@ -16,6 +16,11 @@ export class CardBar {
   private container: Phaser.GameObjects.Container;
   private allCards: Phaser.GameObjects.Container | null = null;
   private wheelHandler: ((pointer: Phaser.Input.Pointer, objects: Phaser.GameObjects.GameObject[], dx: number, dy: number) => void) | null = null;
+  private dragHandlers: {
+    down: (pointer: Phaser.Input.Pointer) => void;
+    move: (pointer: Phaser.Input.Pointer) => void;
+    up: () => void;
+  } | null = null;
 
   /** 由 GameScene 注入 */
   onUseCard: (index: number) => void = () => {};
@@ -108,6 +113,7 @@ export class CardBar {
   private openAllCards(): void {
     this.closeAllCards();
     this.onOpenAllCards();
+    this.container.setVisible(false);
     const { width, height } = this.scene.scale;
     const panelW = Math.min(width - 80, 900);
     const panelH = Math.min(height - 180, 1120);
@@ -149,6 +155,8 @@ export class CardBar {
     const contentW = cols * cellW + (cols - 1) * gap;
     const startX = width / 2 - contentW / 2 + cellW / 2;
     const cards = this.state.cardArr;
+    const listItems: { y: number; objects: Phaser.GameObjects.GameObject[] }[] = [];
+    let didDrag = false;
     cards.slice().reverse().forEach((id, displayIndex) => {
       const row = Math.floor(displayIndex / cols);
       const col = displayIndex % cols;
@@ -158,22 +166,80 @@ export class CardBar {
       const bg = this.scene.add.graphics();
       drawUiBox(bg, x, y, cellW, cellH, { fill: UI_SLOT_FILL, fillAlpha: 0.94, stroke: UI_STROKE, strokeAlpha: 0.9, radius: 12 });
       bg.setInteractive(new Phaser.Geom.Rectangle(x - cellW / 2, y - cellH / 2, cellW, cellH), Phaser.Geom.Rectangle.Contains);
-      bg.on('pointerup', () => this.onUseCard(cardIndex));
+      bg.on('pointerup', () => {
+        if (!didDrag) this.onUseCard(cardIndex);
+      });
       list.add(bg);
       const iconKey = getItemIconKey(id, this.scene.textures);
-      if (iconKey) list.add(this.scene.add.image(x, y, iconKey).setDisplaySize(104, 104));
+      const objects: Phaser.GameObjects.GameObject[] = [bg];
+      if (iconKey) {
+        const icon = this.scene.add.image(x, y, iconKey).setDisplaySize(104, 104);
+        list.add(icon);
+        objects.push(icon);
+      }
+      listItems.push({ y, objects });
     });
 
     const rows = Math.ceil(cards.length / cols);
     const contentHeight = rows * cellH + Math.max(0, rows - 1) * gap;
     const maxScroll = Math.max(0, contentHeight - listHeight);
     let scrollY = 0;
+    const updateVisibleItems = () => {
+      for (const entry of listItems) {
+        const visible = entry.y + cellH / 2 - scrollY >= listTop && entry.y - cellH / 2 - scrollY <= listBottom;
+        for (const object of entry.objects) (object as Phaser.GameObjects.GameObject & { setVisible: (value: boolean) => void }).setVisible(visible);
+      }
+    };
+    updateVisibleItems();
     if (maxScroll > 0) {
-      this.wheelHandler = (_pointer, _objects, _dx, dy) => {
-        scrollY = Phaser.Math.Clamp(scrollY + dy * 0.6, 0, maxScroll);
+      const trackX = px + panelW - 38;
+      const trackY = listTop + 8;
+      const trackH = listHeight - 16;
+      const thumbH = Math.max(72, trackH * listHeight / contentHeight);
+      const scrollbar = this.scene.add.graphics();
+      const drawScrollbar = () => {
+        scrollbar.clear();
+        scrollbar.fillStyle(0x111827, 0.7);
+        scrollbar.fillRoundedRect(trackX - 5, trackY, 10, trackH, 5);
+        const thumbY = trackY + (trackH - thumbH) * scrollY / maxScroll;
+        scrollbar.fillStyle(UI_GOLD, 0.9);
+        scrollbar.fillRoundedRect(trackX - 5, thumbY, 10, thumbH, 5);
+      };
+      const setScroll = (nextY: number) => {
+        scrollY = Phaser.Math.Clamp(nextY, 0, maxScroll);
         list.y = -scrollY;
+        updateVisibleItems();
+        drawScrollbar();
+      };
+      drawScrollbar();
+      panel.add(scrollbar);
+      this.wheelHandler = (_pointer, _objects, _dx, dy) => {
+        setScroll(scrollY + dy * 0.6);
       };
       this.scene.input.on('wheel', this.wheelHandler);
+      let dragStartY = 0;
+      let dragStartScroll = 0;
+      this.dragHandlers = {
+        down: (pointer) => {
+          didDrag = false;
+          if (pointer.x >= px + 24 && pointer.x <= px + panelW - 24 && pointer.y >= listTop && pointer.y <= listBottom) {
+            dragStartY = pointer.y;
+            dragStartScroll = scrollY;
+          } else {
+            dragStartY = 0;
+          }
+        },
+        move: (pointer) => {
+          if (!dragStartY || !pointer.isDown) return;
+          const deltaY = pointer.y - dragStartY;
+          if (Math.abs(deltaY) > 8) didDrag = true;
+          setScroll(dragStartScroll - deltaY);
+        },
+        up: () => { dragStartY = 0; }
+      };
+      this.scene.input.on('pointerdown', this.dragHandlers.down);
+      this.scene.input.on('pointermove', this.dragHandlers.move);
+      this.scene.input.on('pointerup', this.dragHandlers.up);
     }
     panel.add(this.scene.add.text(width / 2, py + panelH - 27, getText('card.hint'), {
       fontSize: '20px', color: '#a9afc0'
@@ -185,7 +251,14 @@ export class CardBar {
       this.scene.input.off('wheel', this.wheelHandler);
       this.wheelHandler = null;
     }
+    if (this.dragHandlers) {
+      this.scene.input.off('pointerdown', this.dragHandlers.down);
+      this.scene.input.off('pointermove', this.dragHandlers.move);
+      this.scene.input.off('pointerup', this.dragHandlers.up);
+      this.dragHandlers = null;
+    }
     this.allCards?.destroy();
     this.allCards = null;
+    this.container.setVisible(true);
   }
 }

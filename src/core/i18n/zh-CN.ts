@@ -36,9 +36,9 @@ export const zhCNRuntimeUi: Record<string, string> = { ...zhCNCommonUi,
   'toast.spiderCannotMove': '被蜘蛛网缠住的物品不能移动，用相同的无网物品合成可解开',
   'toast.spiderBoth': '两个都被蜘蛛网缠住了，需要一个无网的相同物品来解开', 'toast.maxLevel': '已满级，不可合成',
   'toast.spiderTarget': '目标被蜘蛛网缠住，无法交换', 'toast.spiderSource': '被蜘蛛网缠住的物品只能与相同的无网物品合成解开',
-  'toast.heroNotJoined': '该英雄还未加入堡垒', 'toast.heroDeployed': '该英雄已部署，先撤回再调整位置', 'toast.cannotDeploy': '无法部署',
+  'toast.heroNotJoined': '该英雄还未加入堡垒', 'toast.heroDeployed': '该英雄已部署，先撤回再调整位置', 'toast.heroCritical': '重伤中，还需恢复 {days} 天', 'toast.cannotDeploy': '无法部署',
   'toast.unlimitedEnergy': '无限能量 {seconds} 秒！', 'toast.acceleratorStarted': '加速装置已启动', 'toast.oneUnlockOnly': '同时只能解锁一个',
-  'toast.nightStarts': '夜幕降临，行动力已回满', 'toast.waveIncoming': '第 {wave}/{total} 波僵尸来袭！', 'toast.daybreakLoot': '天亮了！战利品：{loot}',
+  'toast.nightStarts': '夜幕降临，保留当前行动力', 'toast.waveIncoming': '第 {wave}/{total} 波僵尸来袭！', 'toast.daybreakLoot': '天亮了！战利品：{loot}',
   'toast.timeRewind': '时间回溯：回到当天清晨，核心修复至 50%，整顿后再战', 'toast.ruinsCollapse': '尸潮踩塌了{side}的废墟，下一夜它们会从新的方向进攻',
   'toast.zombieEmerged': '{zombie}钻出了地面！', 'toast.zombieEnraged': '{zombie}久攻不下，狂暴了！开始强拆建筑', 'toast.zombieExploded': '{zombie}爆炸！',
   'toast.towerNoFuel': '箭塔缺电：电站没有燃料，请先将电池转化为燃料', 'toast.towerNoPower': '箭塔缺电：当前电力不足，请增加发电机或减少用电建筑', 'toast.buildingDestroyed': '{building}被摧毁！',
@@ -65,7 +65,7 @@ Object.assign(zhCNRuntimeUi, {
   ,'hud.roleLv.name': '玩家等级', 'hud.roleLv.desc': '当前等级，完成订单与合成可升级。', 'hud.roleLv.source': '订单、合成物品',
   'hud.coin.name': '金币', 'hud.coin.desc': '可购买建筑并升级基地。', 'hud.coin.source': '出售材料、宝箱、任务',
   'hud.diamond.name': '钻石', 'hud.diamond.desc': '可加速或购买特殊道具。', 'hud.diamond.source': '任务、宝箱、商店',
-  'hud.power.name': '行动力', 'hud.power.desc': '点击发射器和建造时消耗。', 'hud.power.source': '夜战回满、能量道具',
+  'hud.power.name': '行动力', 'hud.power.desc': '点击发射器和建造时消耗。', 'hud.power.source': '每5分钟恢复1点、夜战胜利奖励100点',
   'hud.star.name': '星星', 'hud.star.desc': '完成任务获得，解锁建造与剧情。', 'hud.star.source': '订单任务',
   'hud.electric.name': '电力', 'hud.electric.desc': '风力发电站为阵地稳定供电。', 'hud.electric.source': '风力发电站',
   'hud.fuel.name': '燃料', 'hud.fuel.desc': '电池可转化为燃料。', 'hud.fuel.source': '电池转化',
@@ -73,13 +73,26 @@ Object.assign(zhCNRuntimeUi, {
   'hud.scrap.name': '废料', 'hud.scrap.desc': '用于工坊修复和低级合成。', 'hud.scrap.source': '回收、拆除', 'hud.source': '来源：{source}'
   ,'boot.title': '合合堡垒', 'boot.subtitle': '合成物资，守住最后的堡垒', 'boot.loading': '物资装载中…', 'boot.ready': '装载完成！',
   'night.title': '第 {day} 天 · 夜晚', 'night.incoming': '僵尸即将来袭…', 'night.coreHp': '核心血量:{hp}/{maxHp}', 'night.nextWave': '下一波准备中… ({wave}/{total})', 'night.waveRemaining': '波次 {wave}/{total} 剩余僵尸:{count}',
-  'night.win': '天亮了，基地守住了！', 'night.loss': '核心过载……时间回溯启动', 'night.winSub': '战利品已入库，行动力回满', 'night.lossSub': '合成核心将时间倒回清晨，防御布局保留，整顿后再战', 'night.returnBase': '返回基地', 'night.rewind': '回到清晨'
-  ,'menu.story': '剧情', 'menu.characters': '角色', 'menu.base': '基地', 'menu.shop': '商店', 'menu.settings': '设置', 'menu.restart': '重开', 'menu.confirm': '确认？'
+  'night.win': '天亮了，基地守住了！', 'night.loss': '核心过载……时间回溯启动', 'night.winSub': '战利品已入库，获得100行动力', 'night.lossSub': '合成核心将时间倒回清晨，防御布局保留，整顿后再战', 'night.returnBase': '返回基地', 'night.rewind': '回到清晨'
+  ,'menu.story': '剧情', 'menu.characters': '角色', 'menu.monsters': '怪物', 'menu.base': '基地', 'menu.shop': '商店', 'menu.settings': '设置', 'menu.restart': '重开', 'menu.confirm': '确认？'
 });
 
 Object.assign(zhCNRuntimeUi, {
   'archive.unlock.newGame': '开始新游戏解锁', 'archive.unlock.day': '存活到第 {day} 天解锁', 'archive.unlock.continue': '继续游戏解锁',
   'story.reward': '{name}额外打赏了 {coins} 金币'
+});
+
+Object.assign(zhCNRuntimeUi, {
+  'monster.title': '怪物图鉴', 'monster.subtitle': '了解敌人特性，提前部署克制建筑',
+  'monster.day': '第 {day} 天', 'monster.hp': '血 {value}', 'monster.attack': '攻 {value}', 'monster.defense': '防 {value}', 'monster.abilityLabel': '特性',
+  'monster.ability.normal': '普通地面敌人。基础防线即可拦截。',
+  'monster.ability.fast': '移动很快，需要更长路线或减速。',
+  'monster.ability.breakWall': '可主动拆除木墙，不要让它接近外围。',
+  'monster.ability.explode': '靠近墙体主动爆破，请用地雷或远程攻击处理。',
+  'monster.ability.armor': '高护甲，普通箭塔效果差；电磁塔克制。',
+  'monster.ability.elite': '拆墙等级更高，需要多层建筑拦截。',
+  'monster.ability.fly': '飞行无视墙和陷阱，雷达覆盖后箭塔才能锁定。',
+  'monster.ability.burrow': '钻地时不可被索敌，雷达可提前显形。'
 });
 
 Object.assign(zhCNRuntimeUi, {
@@ -93,14 +106,19 @@ Object.assign(zhCNRuntimeUi, {
 
 Object.assign(zhCNRuntimeUi, {
   'base.tab.tower': '防御塔', 'base.tab.resource': '资源', 'base.tab.trap': '陷阱', 'base.tab.wall': '城墙', 'base.tab.hero': '英雄',
-  'base.back': '返回', 'base.day': '第 {day} 天', 'base.coreHp': '核心:{hp}/{maxHp}', 'base.night': '迎接夜晚', 'base.blackMarket': '黑市', 'base.marketStars': '星星：{star}', 'base.marketWallet': '星星：{star}  钻石：{diamond}', 'base.marketExchange': '1钻石 = 100金币', 'base.marketExchanged': '已兑换 100 金币', 'base.marketPrice': '{star} 星星', 'base.marketBought': '已购入 {building} 蓝图', 'base.none': '无', 'base.resourceGain': '资源建筑产出：{gain}',
+  'base.back': '返回', 'base.day': '第 {day} 天', 'base.coreHp': '核心:{hp}/{maxHp}', 'base.night': '迎接夜晚', 'base.blackMarket': '黑市', 'base.marketStars': '星星：{star}', 'base.marketWallet': '星星：{star}  钻石：{diamond}', 'base.marketExchange': '1钻石 = 100金币', 'base.marketExchanged': '已兑换 100 金币', 'base.marketPrice': '{star} 星星', 'base.marketFragments': '含 {count} 枚碎片', 'base.marketBought': '已购入 {building} 蓝图碎片', 'base.recommendedCounter': '推荐应对', 'base.recommendedCounterBody': '建议在黑市兑换 {building} 碎片，再合成为完整蓝图。', 'base.none': '无', 'base.resourceGain': '资源建筑产出：{gain}',
   'base.heroJoined': '{hero} 加入了堡垒！可在基地『英雄』页部署，协助防守内圈。', 'base.noPower': '缺电', 'base.buildCancel': '再点一次建筑按钮取消摆放',
   'base.buildHint': '点建筑查看详情/升级/拆除；资源建筑随时间自动产出', 'base.heroGuide': '剧情中加入堡垒的伙伴会出现在这里',
   'base.heroDeployCancel': '点击内圈空格部署，再点一次英雄卡片取消', 'base.heroDeployHint': '点英雄卡片进入部署；点格子上的英雄可撤回/移动',
-  'base.heroStats': '攻{attack}  程{range}  速{speed}', 'base.deployed': '已部署', 'base.attackRange': '攻击/射程', 'base.heroRangeValue': '{attack} / {range} 格',
+  'base.heroStats': '攻{attack}  程{range}  速{speed}', 'base.heroHealth': '血量 {hp}/{maxHp}', 'base.heroCritical': '重伤恢复：{days} 天', 'base.deployed': '已部署', 'base.attackRange': '攻击/射程', 'base.heroRangeValue': '{attack} / {range} 格',
   'base.attackSpeed': '攻速', 'base.heroSpeedValue': '{speed} 次/秒', 'base.description': '简介', 'base.recall': '撤回', 'base.move': '移动', 'base.close': '关闭',
   'base.blueprint': '蓝图', 'base.needBlueprint': '需要 {blueprint}', 'base.towerDesc': '攻击{attack} 射程{range}{slow}', 'base.slow': '减速',
   'base.resourceOutput': '每{interval}秒产出 {resource}+{amount}', 'base.capIncrease': '增加 {resources} 上限', 'base.lowResourceOutput': '每{interval}秒产出低级原料',
+  'base.support.ammo': '覆盖 {range} 格内防御塔攻速 +50%', 'base.support.radar': '覆盖 {range} 格：箭塔获得对空锁定，钻地敌显形', 'base.support.repair': '天亮消耗废料，修复 {range} 格内墙和塔',
+  'base.buildingDesc.101': '对地射击；需雷达覆盖后才能对空。', 'base.buildingDesc.102': '高伤害单体塔，可攻击飞行敌人。', 'base.buildingDesc.103': '无视护甲并连锁多名敌人，可对空。', 'base.buildingDesc.104': '减速范围内敌人，可攻击飞行敌人。',
+  'base.buildingDesc.202': '每 5 分钟产出药品，需供电。', 'base.buildingDesc.203': '提供夜间电力，保障防御建筑运行。', 'base.buildingDesc.204': '扩张周围领地，解锁新的建造格。', 'base.buildingDesc.205': '提高药品储存上限，需供电。', 'base.buildingDesc.206': '每 5 分钟产出废料，需供电。', 'base.buildingDesc.207': '每 5 分钟产出低级合成材料，需供电。', 'base.buildingDesc.208': '覆盖范围内防御塔攻速 +50%。', 'base.buildingDesc.209': '让箭塔对空，并提前发现钻地敌。', 'base.buildingDesc.210': '天亮消耗废料，修复范围内墙和塔。',
+  'base.buildingDesc.301': '踩过的地面敌人持续受伤，不能对空。', 'base.buildingDesc.302': '敌人踩中爆炸后消失，不能对空。', 'base.buildingDesc.303': '大幅减速踩过的地面敌人，不能对空。',
+  'base.buildingDesc.401': '阻挡地面敌人；坦克及以上可拆除。', 'base.buildingDesc.402': '阻挡地面敌人；精英及以上可拆除。', 'base.buildingDesc.403': '阻挡地面敌人；仅 Boss 可拆除。',
   'base.resourceBuilding': '资源建筑', 'base.attack': '攻击{attack}', 'base.slowPercent': '减速{percent}%', 'base.durability': '耐久{hp}', 'base.placeHint': '点击格子放置',
   'base.buildingLocked': '「{building}」未解锁：合成 {blueprint}碎片可获得{blueprint}', 'base.notEnoughCoins': '金币不足：需要 {coins} 金币，可在黑市出售材料换取',
   'base.health': '血量', 'base.buildingRangeValue': '{attack} / {range} 格', 'base.output': '产出', 'base.resourceOutputSpaced': '每 {interval} 秒 {resource}+{amount}',
@@ -111,6 +129,7 @@ Object.assign(zhCNRuntimeUi, {
   'base.repair': '修复（{coins} 金币）', 'base.upgrade': '升级', 'base.demolish': '拆除', 'base.hordePreview': '第 {day} 天 · 尸潮预告',
   'base.coreDamaged': '⚠ 核心血量 {hp}/{maxHp}，建议先修复！', 'base.coreHealth': '核心血量 {hp}/{maxHp}', 'base.attackSide': '{side}（{count} 格）',
   'base.listSeparator': '、', 'base.allSidesBlocked': '四边全被堵死——僵尸将原地强拆', 'base.attackDirection': '进攻方向',
+  'base.routeLengthLabel': '最短地面路线', 'base.routeLength': '{cells} 格', 'base.routeLengthBlocked': '无可用路线',
   'base.waveScale': '{waves} 波 · 共约 {total} 只 · 僵尸 Lv.{level}', 'base.bossLast': ' · 末波有 Boss！', 'base.eliteLast': ' · 末波保底精英',
-  'base.waveScaleLabel': '波次规模', 'base.enemyType': '敌人类型', 'base.guaranteedLast': '（末波保底）', 'base.fight': '迎战', 'base.prepareMore': '再准备下'
+  'base.waveScaleLabel': '波次规模', 'base.defenseWarning': '防线预警', 'base.noAntiAirWarning': '本夜有飞行敌人；当前没有可对空的防御塔。雷达覆盖箭塔，或部署其他防御塔后再迎战。', 'base.enemyType': '敌人类型', 'base.guaranteedLast': '（末波保底）', 'base.fight': '迎战', 'base.prepareMore': '再准备下'
 });

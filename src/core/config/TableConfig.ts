@@ -109,7 +109,7 @@ export function getHeroLevel(lv: number): IHeroLevelRow | undefined {
 
 /**
  * 行动力上限：基础 energyMax（100）+ 玩家等级加成（每升 1 级 +1，Lv1 无加成）。
- * 行动力不再随时间恢复；守夜胜利后保留余量，并额外补充一次此上限。
+ * 行动力每 5 分钟恢复 1 点；守夜胜利保留余量，并固定奖励 100 点。
  */
 export function getPowerMax(state: { roleLv: number }): number {
   return getConfigValue('energyMax', 100) + Math.max(0, state.roleLv - 1);

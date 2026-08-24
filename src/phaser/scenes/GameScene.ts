@@ -26,6 +26,7 @@ import { SpawnerProductsPanel } from '../ui/SpawnerProductsPanel';
 import { HandGuide } from '../ui/HandGuide';
 import { StoryArchivePanel } from '../ui/StoryArchivePanel';
 import { CharacterPanel } from '../ui/CharacterPanel';
+import { MonsterPanel } from '../ui/MonsterPanel';
 import { SettingsPanel } from '../ui/SettingsPanel';
 import { StoryDialog } from '../ui/StoryDialog';
 import { StorySystem } from '../../core/systems/StorySystem';
@@ -64,6 +65,7 @@ export class GameScene extends Phaser.Scene {
   private storyPanel: StoryArchivePanel | null = null;
   /** 角色图鉴面板（同上，用完即弃） */
   private characterPanel: CharacterPanel | null = null;
+  private monsterPanel: MonsterPanel | null = null;
   private settingsPanel: SettingsPanel | null = null;
 
   private selected: IPoint | null = null;
@@ -98,6 +100,7 @@ export class GameScene extends Phaser.Scene {
       // 从基地场景返回用已有状态；否则读档或新开局
       const saved = this.passedState ? null : this.storage.loadState();
       this.state = this.passedState ?? ((saved && this.gridHasItem(saved)) ? saved : GameInitializer.initNewGame(this.taskSystem));
+      this.economySystem.recoverPower(this.state);
       const isNewGame = !this.passedState && !(saved && this.gridHasItem(saved));
       const browserLanguage = typeof navigator === 'undefined' ? undefined : navigator.language;
       if (isNewGame) this.state.language = browserLanguage?.toLowerCase().startsWith('zh') ? 'zh-CN' : browserLanguage ? 'en' : resolveLanguage();
@@ -106,6 +109,7 @@ export class GameScene extends Phaser.Scene {
       if (saved && this.state === saved) {
         this.taskSystem.pruneImpossibleTasks(this.state);
       }
+      this.taskSystem.refreshTaskRewards(this.state);
 
       // 表现层
       this.gridRenderer = new GridRenderer(this, this.state);
@@ -114,7 +118,7 @@ export class GameScene extends Phaser.Scene {
       this.gridRenderer.isTaskNeeded = (id) => this.taskSystem.isTaskNeedWithId(this.state, id);
       // 剧情对话/剧情回顾/角色图鉴面板打开时屏蔽棋盘输入（遮罩挡不住场景级 pointer 监听，会点穿到棋盘）
       this.gridRenderer.inputBlocked = () =>
-        (this.storyDialog?.isOpen ?? false) || (this.storyPanel?.isOpen ?? false) || (this.characterPanel?.isOpen ?? false) || (this.settingsPanel?.isOpen ?? false) || (this.taskChainPanel?.isOpen ?? false) || (this.cardBar?.isOpen ?? false) || (this.bagPanel?.isVisible() ?? false) || (this.spawnerPanel?.isVisible() ?? false);
+        (this.storyDialog?.isOpen ?? false) || (this.storyPanel?.isOpen ?? false) || (this.characterPanel?.isOpen ?? false) || (this.monsterPanel?.isOpen ?? false) || (this.settingsPanel?.isOpen ?? false) || (this.taskChainPanel?.isOpen ?? false) || (this.cardBar?.isOpen ?? false) || (this.bagPanel?.isVisible() ?? false) || (this.spawnerPanel?.isVisible() ?? false);
 
       this.hud = new HUD(this, this.state);
       this.hud.getPowerFreeRemain = () => this.specialSystem.getPowerFreeRemain(this.state);
@@ -145,7 +149,7 @@ export class GameScene extends Phaser.Scene {
 
       this.spawnerPanel = new SpawnerProductsPanel(this);
 
-      // 底部菜单行：剧情 / 角色 / 基地 / 商店 / 设置（屏幕底端居中，不与其他组件重叠）
+      // 底部菜单行：剧情 / 角色 / 怪物 / 基地 / 商店 / 设置
       const MENU_Y = 1852;
       const menuButtons: {
         x: number;
@@ -153,7 +157,7 @@ export class GameScene extends Phaser.Scene {
         onTap: () => void;
       }[] = [
         // 剧情回顾：主线章节列表（已解锁可重播，未解锁显示条件）
-        { x: 110, label: getText('menu.story'), onTap: () => {
+        { x: 90, label: getText('menu.story'), onTap: () => {
           const panel = new StoryArchivePanel(this, this.state);
           this.storyPanel = panel;
           panel.onReplay = (beat) => {
@@ -163,25 +167,29 @@ export class GameScene extends Phaser.Scene {
           panel.open();
         } },
         // 角色图鉴：已遇到 NPC 的立绘与背景故事（含玩家自己）
-        { x: 325, label: getText('menu.characters'), onTap: () => {
+        { x: 260, label: getText('menu.characters'), onTap: () => {
           this.characterPanel = new CharacterPanel(this, this.state);
           this.characterPanel.open();
         } },
-        { x: 540, label: getText('menu.base'), onTap: () => {
+        { x: 430, label: getText('menu.monsters'), onTap: () => {
+          this.monsterPanel = new MonsterPanel(this);
+          this.monsterPanel.open();
+        } },
+        { x: 600, label: getText('menu.base'), onTap: () => {
           this.save();
           this.scene.start('BaseScene', { state: this.state });
         } },
-        { x: 755, label: getText('menu.shop'), onTap: () => {
+        { x: 770, label: getText('menu.shop'), onTap: () => {
           this.save();
           this.scene.start('BaseScene', { state: this.state, openBlackMarket: true });
         } },
-        { x: 970, label: getText('menu.settings'), onTap: () => {
+        { x: 940, label: getText('menu.settings'), onTap: () => {
           this.settingsPanel = new SettingsPanel(this, (language: Language) => this.changeLanguage(language), () => this.resetGame());
           this.settingsPanel.open();
         } }
       ];
       for (const m of menuButtons) {
-        makeUiButton(this, null, m.x, MENU_Y, 170, 64, m.label, { box: { radius: 14 }, fontSize: '28px', depth: 100 }, m.onTap);
+        makeUiButton(this, null, m.x, MENU_Y, 150, 64, m.label, { box: { radius: 14 }, fontSize: '24px', depth: 100 }, m.onTap);
       }
 
       new HandGuide(this, this.state);
@@ -206,6 +214,7 @@ export class GameScene extends Phaser.Scene {
       // 定时存档 + 基地产出结算 + 页面隐藏存档
       this.time.addEvent({ delay: 5000, loop: true, callback: () => {
         this.baseSystem.tickProduction(this.state);
+        this.economySystem.recoverPower(this.state);
         this.save();
       } });
       this.time.addEvent({ delay: 500, loop: true, callback: () => this.spawnSystem.update(this.state, 500) });

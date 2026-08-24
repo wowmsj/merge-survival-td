@@ -12,9 +12,9 @@ import { EconomySystem } from '../src/core/systems/EconomySystem';
 import { SpecialItemSystem } from '../src/core/systems/SpecialItemSystem';
 import { MergeSystem } from '../src/core/systems/MergeSystem';
 import { SpawnSystem } from '../src/core/systems/SpawnSystem';
-import { TaskSystem, calcTaskGold } from '../src/core/systems/TaskSystem';
+import { TaskSystem, calcRandomTaskStars, calcTaskGold, calcTaskMergeEffort } from '../src/core/systems/TaskSystem';
 import { LevelSystem } from '../src/core/systems/LevelSystem';
-import { BaseSystem, PRODUCE_ACCUM_CAP, formatGains, formatResourceGains, getPowerInfo, isBuildingPowered, isTowerPoweredAtNight } from '../src/core/systems/BaseSystem';
+import { BaseSystem, PRODUCE_ACCUM_CAP, canDefendFlyingEnemies, formatGains, formatResourceGains, getPowerInfo, isBuildingPowered, isTowerPoweredAtNight } from '../src/core/systems/BaseSystem';
 import { NightSystem, IBattle, getAttackSides, getOpenEdgeCells } from '../src/core/systems/NightSystem';
 import { HeroSystem } from '../src/core/systems/HeroSystem';
 import { getAllHeroConfigs, getHeroConfig } from '../src/core/config/HeroConfig';
@@ -25,20 +25,20 @@ import { StorySystem } from '../src/core/systems/StorySystem';
 import { GameEvents, eventBus } from '../src/core/events/EventBus';
 import { IStoryBeat, STORY_BEATS, getMainStoryBeats, getUnlockCondition, hasTaskStoryBeat, getMetCharacters } from '../src/core/config/StoryConfig';
 import { genWaveZombies, getTotalWaves, getZombieConfig, getNightPreview, getZombieLevel, rollDrops } from '../src/core/config/ZombieConfig';
-import { getAllProps, getMergeChainSpawner, getSpawnerProductView, isMergeChainTop, isMaxBadgeItem } from '../src/core/config/PropConfig';
+import { getAllProps, getMergeChain, getMergeChainSpawner, getSpawnerProductView, isMergeChainTop, isMaxBadgeItem } from '../src/core/config/PropConfig';
 import { getAllBuildingConfigs, getBuildingConfig, outputIntervalAtLevel, getBuildableList, RUIN_ID, getRepairCostCoin } from '../src/core/config/BuildingConfig';
 import { getAllZombieConfigs } from '../src/core/config/ZombieConfig';
 import { getPowerMax } from '../src/core/config/TableConfig';
-import { BASE_CENTER, createDefaultBase, isClaimed, claimAround, hasKillCorridor } from '../src/core/model/Base';
+import { BASE_CENTER, createDefaultBase, findPathToCore, getShortestEntryPathLength, isClaimed, claimAround, hasKillCorridor } from '../src/core/model/Base';
 import { useBlueprint, ensureUnlockedBuildings } from '../src/core/systems/UnlockSystem';
-import { BLACK_MARKET_ITEMS, buyBlackMarketBlueprint, exchangeDiamondForCoins } from '../src/core/systems/BlackMarketSystem';
+import { BLACK_MARKET_ITEMS, buyBlackMarketBlueprint, exchangeDiamondForCoins, getRecommendedMarketItem } from '../src/core/systems/BlackMarketSystem';
 
 /** 解锁全部需蓝图的建筑（测试建造/产出逻辑时跳过蓝图前置） */
 function unlockAllBuildings(state: { unlockedBuildings: number[] }) {
   state.unlockedBuildings = getBuildableList().map(b => b.id);
 }
 
-/** 注入一座风力发电站（Lv1 providePower 10）；放在西北角 (2,2)，远离东侧进攻路线。 */
+/** 注入一座风力发电站（Lv1 providePower 6）；放在西北角 (2,2)，远离东侧进攻路线。 */
 function addFueledGenerator(state: IGameState) {
   state.base.buildings.push({ cfgId: 203, level: 1, hp: 150, maxHp: 150, row: 2, col: 2 });
 }
@@ -85,6 +85,7 @@ console.log('== 领地与引流走廊 ==');
   assert(base.place(corridorState, 401, 4, 12), '还有其他入口时允许封一处入口');
   assert(base.place(corridorState, 401, 5, 12), '还有最后入口时允许继续布防');
   assert(!base.canPlace(corridorState, 401, 6, 12).ok, '不允许封死最后引流走廊');
+  assert((getShortestEntryPathLength(corridorState.base) ?? 0) > 0, '预告可获得最短地面路线长度');
 }
 
 // ============ 1. 初始化 ============
@@ -491,6 +492,10 @@ console.log('== 出售 ==');
   // 开局发射器不可出售
   setItem(state.grid, 0, 1, createItemFromConfig(10001));
   assert(economy.sellItem(state, { row: 0, col: 1 }) === null && getItem(state.grid, 0, 1)?.id === 10001, '1 级工具箱不可出售');
+  const sellTestState = createInitialGameState();
+  setItem(sellTestState.grid, 0, 2, createItemFromConfig(10028));
+  const taskOnlySell = economy.sellItem(sellTestState, { row: 0, col: 2 });
+  assert(taskOnlySell !== null && taskOnlySell.coin === 4 && getItem(sellTestState.grid, 0, 2) === null, '满级任务道具可出售');
 }
 
 // ============ 9. 卡片 ============
@@ -524,6 +529,13 @@ console.log('== 任务 ==');
   const randomTasks = task.createRandomTasks(3, state);
   assert(randomTasks.length >= 1, `随机任务生成（${randomTasks.length} 个）`);
 
+  const spawnerTargetState = createInitialGameState();
+  setItem(spawnerTargetState.grid, 0, 0, createItemFromConfig(50022)); // 猫窝：可点击发射器
+  setItem(spawnerTargetState.grid, 0, 1, createItemFromConfig(10012));
+  const taskCandidates = (task as unknown as { collectCandidateIds(res1: number, quality: number, state: typeof spawnerTargetState): number[] })
+    .collectCandidateIds(2, Number.MAX_SAFE_INTEGER, spawnerTargetState);
+  assert(!taskCandidates.includes(50022) && taskCandidates.includes(10012), '任务候选排除发射器，保留普通材料');
+
   // 任务按棋盘发射器链分流：有空闲链时优先使用，只有一条链时允许复用。
   const routeState = createInitialGameState();
   setItem(routeState.grid, 0, 0, createItemFromConfig(10001));
@@ -551,6 +563,19 @@ console.log('== 任务 ==');
   const handTaskGold = task.createHandTask(1);
   assert(handTaskGold !== null && handTaskGold.goldNum === calcTaskGold(handTaskGold.propArr, handTaskGold.starNum), '新任务生成带金币奖励');
   assert(randomTasks.every(t => t.goldNum !== undefined && t.goldNum > 0), '随机任务带金币奖励');
+  const shallowProps = [{ id: 30001, num: 1 }];
+  const deepProps = [{ id: 30015, num: 1 }];
+  const twoDeepProps = [{ id: 30015, num: 1 }, { id: 20049, num: 1 }];
+  const shallowGold = calcTaskGold(shallowProps, calcRandomTaskStars(shallowProps));
+  const deepGold = calcTaskGold(deepProps, calcRandomTaskStars(deepProps));
+  const twoDeepGold = calcTaskGold(twoDeepProps, calcRandomTaskStars(twoDeepProps));
+  assert(calcTaskMergeEffort(twoDeepProps) > 300 && deepGold > shallowGold && twoDeepGold > deepGold, '任务金币随真实合成工作量和材料数量递增');
+  const oldRewardTask = { id: 999999, propArr: [{ id: 30015, num: 1 }], starNum: 7, goldNum: 80 };
+  const previousTasks = state.tasks;
+  state.tasks = [oldRewardTask];
+  task.refreshTaskRewards(state);
+  assert(oldRewardTask.starNum === calcRandomTaskStars(oldRewardTask.propArr) && oldRewardTask.goldNum === calcTaskGold(oldRewardTask.propArr, oldRewardTask.starNum), '读档任务按新奖励算法重算星星和金币');
+  state.tasks = previousTasks;
   assert(getItem(state.grid, 0, 0) === null || getItem(state.grid, 0, 1) === null, '任务扣物品');
   assert(!state.tasks.includes(t1), '任务移除');
   assert(state.tasks.length === 5, '完成 1 个后补满 5 个并发任务');
@@ -742,9 +767,17 @@ console.log('== 黑市蓝图 ==');
   const state = createInitialGameState();
   state.resources.star = 20;
   assert(!BLACK_MARKET_ITEMS.some(item => [101, 203, 401].includes(item.cfgId)), '箭塔、风电站、木墙不在黑市出售');
+  assert(BLACK_MARKET_ITEMS.slice(0, 2).map(item => item.cfgId).join(',') === '209,208'
+    && BLACK_MARKET_ITEMS.find(item => item.cfgId === 209)?.star === 3
+    && BLACK_MARKET_ITEMS.find(item => item.cfgId === 208)?.star === 3,
+  '雷达站与弹药库改为每包 3 星的碎片商品');
   const item = BLACK_MARKET_ITEMS.find(entry => entry.cfgId === 102)!;
   const bought = buyBlackMarketBlueprint(state, item.cfgId);
-  assert(bought.ok && state.resources.star === 20 - item.star && getItem(state.grid, 0, 0)?.id === item.blueprintId, '黑市扣星星并发放最终蓝图');
+  assert(item.fragmentCount === 2 && bought.ok && state.resources.star === 20 - item.star && getItem(state.grid, 0, 0)?.id === item.fragmentId, '黑市扣星星并发放两枚一级蓝图碎片');
+  assert(getRecommendedMarketItem(4)?.cfgId === 303 && getRecommendedMarketItem(8)?.cfgId === 209, '快速和飞行僵尸分别推荐减速沼泽与雷达站');
+  assert(getMergeChain(getBuildingConfig(208)?.blueprint ?? 0).join(',') === '70201,70202,70203,70169', '弹药库碎片可正常合成为完整蓝图');
+  assert(getMergeChain(getBuildingConfig(209)?.blueprint ?? 0).join(',') === '70205,70206,70207,70170', '雷达站碎片可正常合成为完整蓝图');
+  assert(getMergeChain(getBuildingConfig(210)?.blueprint ?? 0).join(',') === '70209,70210,70211,70171', '维修站碎片可正常合成为完整蓝图');
   state.resources.diamond = 1;
   state.resources.coin = 0;
   assert(exchangeDiamondForCoins(state) && state.resources.diamond === 0 && state.resources.coin === 100, '黑市 1 钻石兑换 100 金币');
@@ -902,6 +935,7 @@ console.log('== 基地建造 ==');
   assert(state.resources.medicineMax === 40, '仓库增加药品上限');
 
   // 收集站 207 产出低级合成材料，发到棋盘（满则进卡片）
+  addFueledGenerator(state); // 本段验证产出，补一座发电站避免前序建筑占满新的 6 点容量。
   assert(base.place(state, 207, 5, 5), '收集站摆放成功');
   const collector = state.base.buildings.find(b => b.row === 5 && b.col === 5)!;
   const boardCountBefore = state.grid.cells.flat().filter(c => c.item).length + state.cardArr.length;
@@ -934,6 +968,15 @@ console.log('== 基地建造 ==');
   assert(base.repair(state, 6, 8) && wall.hp === wall.maxHp, '修复受损建筑');
   assert(state.resources.coin === coinBeforeRepair - 105, '修复消耗 105 金币');
   assert(state.resources.power === powerBefore2, '修复不消耗行动力');
+
+  const damagedCore = state.base.buildings.find(b => b.cfgId === 1)!;
+  damagedCore.hp = 500;
+  const coreRepairCost = getRepairCostCoin(1, damagedCore.hp, damagedCore.maxHp);
+  assert(coreRepairCost === 500, '核心修复按每点损失血量 1 金币计价');
+  state.resources.coin = 500;
+  assert(base.repair(state, damagedCore.row, damagedCore.col) && damagedCore.hp === damagedCore.maxHp, '核心基地可花金币修复至满血');
+  assert(state.resources.coin === 0, '核心修复扣除 500 金币');
+
   // 金币不足时修复失败
   wall.hp = 50;
   state.resources.coin = 10;
@@ -958,11 +1001,11 @@ console.log('== 电力系统 ==');
     assert((getBuildingConfig(id)?.needPower ?? 1) === 0, `${getBuildingConfig(id)?.name ?? id} 不需要电力`);
   }
 
-  // 风力发电站（203）：providePower=10、无自然产出。
+  // 风力发电站（203）：providePower=6、无自然产出。
   const genCfg = getBuildingConfig(203)!;
-  assert(genCfg.name === '风力发电站' && genCfg.providePower === 10 && !genCfg.outputResource, '风力发电站 providePower=10 且不产出资源');
+  assert(genCfg.name === '风力发电站' && genCfg.providePower === 6 && !genCfg.outputResource, '风力发电站 providePower=6 且不产出资源');
 
-  // getPowerInfo：1 台有燃料发电机 cap=10；6 座箭塔 used=12
+  // getPowerInfo：1 台风力发电站 cap=6；6 座箭塔 used=12
   const state = createInitialGameState();
   addFueledGenerator(state);
   for (let i = 0; i < 6; i++) {
@@ -970,10 +1013,10 @@ console.log('== 电力系统 ==');
   }
   const towers = state.base.buildings.filter(b => b.cfgId === 101);
   const pi1 = getPowerInfo(state);
-  assert(pi1.cap === 10 && pi1.used === 12, '电力容量实时计算：cap=10 / used=12');
-  // 按摆放顺序累计 needPower：前 5 座（累计 ≤10）通电，第 6 座（累计 12>10）缺电
-  assert(towers.slice(0, 5).every(b => isBuildingPowered(state, b)), '电力按摆放顺序累计，前 5 座塔通电');
-  assert(!isBuildingPowered(state, towers[5]), '第 6 座塔缺电');
+  assert(pi1.cap === 6 && pi1.used === 12, '电力容量实时计算：cap=6 / used=12');
+  // 按摆放顺序累计 needPower：前 3 座（累计 ≤6）通电，第 4 座开始缺电。
+  assert(towers.slice(0, 3).every(b => isBuildingPowered(state, b)), '电力按摆放顺序累计，前 3 座塔通电');
+  assert(!isBuildingPowered(state, towers[3]), '第 4 座塔缺电');
   // 0 耗电建筑不被前面缺电建筑连带
   state.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row: 6, col: 4 });
   const wall0 = state.base.buildings.find(b => b.cfgId === 401)!;
@@ -982,12 +1025,12 @@ console.log('== 电力系统 ==');
   // 基础风电不消耗燃料：即使未来柴油库存为零，仍提供稳定容量。
   const gen = state.base.buildings.find(b => b.cfgId === 203)!;
   state.resources.fuel = 0;
-  assert(getPowerInfo(state).cap === 10 && isBuildingPowered(state, towers[0]), '基础风电不因燃料不足停机');
+  assert(getPowerInfo(state).cap === 6 && isBuildingPowered(state, towers[0]), '基础风电不因燃料不足停机');
   state.resources.fuel = 24;
 
-  // 发电机升级缩放：Lv2 providePower = round(10×1.5) = 15
+  // 发电机升级缩放：Lv2 providePower = round(6×1.5) = 9
   gen.level = 2;
-  assert(getPowerInfo(state).cap === 15, '发电机升级电力 ×1.5 取整（10→15）');
+  assert(getPowerInfo(state).cap === 9, '发电机升级电力 ×1.5 取整（6→9）');
   gen.level = 1;
 
   // 缺电塔夜晚不攻击（僵尸只在第 6 座缺电塔射程内）；夜战口径塔优先：只算塔时全部通电
@@ -999,9 +1042,9 @@ console.log('== 电力系统 ==');
   }
   const towers2 = state2.base.buildings.filter(b => b.cfgId === 101);
   const farmNp = state2.base.buildings.find(b => b.cfgId === 202)!;
-  // 白天口径：医疗站(2)+塔(10) 累计 12>10 → 第 5 座塔缺电；夜战口径只在塔间累计 10≤10 → 全部通电
-  assert(isBuildingPowered(state2, farmNp) && !isBuildingPowered(state2, towers2[4]), '白天按摆放顺序：医疗站通电、第 5 座塔缺电');
-  assert(towers2.every(b => isTowerPoweredAtNight(state2, b)), '夜战塔优先：5 座塔全部通电');
+  // 白天口径：医疗站(2)+塔(10) 累计超出 6 → 第 3 座塔缺电；夜战只给塔供电 → 前 3 座通电。
+  assert(isBuildingPowered(state2, farmNp) && !isBuildingPowered(state2, towers2[2]), '白天按摆放顺序：医疗站通电、第 3 座塔缺电');
+  assert(towers2.slice(0, 3).every(b => isTowerPoweredAtNight(state2, b)) && !isTowerPoweredAtNight(state2, towers2[3]), '夜战塔优先：前 3 座塔通电');
 
   // 缺电塔夜晚不攻击 → 通电后恢复
   const battle = night.startBattle(state2);
@@ -1032,14 +1075,110 @@ console.log('== 电力系统 ==');
 
 }
 
+// ============ 13.5 阵地组合（第二期） ============
+console.log('== 阵地组合 ==');
+{
+  const night = new NightSystem();
+
+  assert(getBuildingConfig(208)?.name === '弹药库' && getBuildingConfig(209)?.name === '雷达站' && getBuildingConfig(210)?.name === '维修站', '三座支撑建筑已配置');
+
+  // 夜间支撑建筑先供电，剩余电力才给防御塔和资源建筑。
+  {
+    const state = createInitialGameState();
+    addFueledGenerator(state);
+    state.base.buildings.push({ cfgId: 208, level: 1, hp: 180, maxHp: 180, row: 2, col: 2 });
+    for (let i = 0; i < 5; i++) state.base.buildings.push({ cfgId: 101, level: 1, hp: 400, maxHp: 400, row: 0, col: i * 2 });
+    const towers = state.base.buildings.filter(b => b.cfgId === 101);
+    assert(towers.slice(0, 2).every(tower => isTowerPoweredAtNight(state, tower)) && !isTowerPoweredAtNight(state, towers[2]), '夜间弹药库优先于防御塔供电');
+  }
+
+  // 弹药库覆盖内的箭塔攻速 +50%。
+  {
+    const state = createInitialGameState();
+    addFueledGenerator(state);
+    state.base.buildings.push({ cfgId: 208, level: 1, hp: 180, maxHp: 180, row: 2, col: 2 });
+    state.base.buildings.push({ cfgId: 101, level: 1, hp: 400, maxHp: 400, row: 2, col: 4 });
+    const battle = night.startBattle(state);
+    battle.status = 'fighting';
+    battle.wave = 1;
+    battle.zombies.push({ uid: 9977, cfgId: 1, hp: 100, maxHp: 100, row: 2, col: 6, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 });
+    night.tick(state, battle, 100);
+    assert(Math.abs((battle.towerCds['2,4'] ?? 0) - 1000 / 1.5) < 0.01, '弹药库令覆盖内箭塔攻速提升 50%');
+  }
+
+  // 箭塔必须在雷达覆盖内才能对空；雷达也让钻地敌提前显形。
+  {
+    const state = createInitialGameState();
+    addFueledGenerator(state);
+    state.base.buildings.push({ cfgId: 101, level: 1, hp: 400, maxHp: 400, row: 2, col: 4 });
+    assert(!canDefendFlyingEnemies(state), '无雷达覆盖的箭塔无法防御飞行敌人');
+    const battle = night.startBattle(state);
+    battle.status = 'fighting';
+    battle.wave = 1;
+    battle.zombies.push({ uid: 9976, cfgId: 7, hp: 100, maxHp: 100, row: 2, col: 6, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 });
+    night.tick(state, battle, 100);
+    assert(battle.zombies[0]?.hp === 100, '无雷达覆盖的箭塔不能攻击飞行敌人');
+  }
+
+  // 雷达覆盖内的箭塔优先射击飞行敌，钻地敌直接显形。
+  {
+    const state = createInitialGameState();
+    addFueledGenerator(state);
+    state.base.buildings.push({ cfgId: 209, level: 1, hp: 160, maxHp: 160, row: 2, col: 2 });
+    state.base.buildings.push({ cfgId: 101, level: 1, hp: 400, maxHp: 400, row: 2, col: 4 });
+    assert(canDefendFlyingEnemies(state), '雷达覆盖的箭塔可以防御飞行敌人');
+    const fires: { toRow: number; toCol: number }[] = [];
+    const offFire = eventBus.on(GameEvents.NIGHT_TOWER_FIRE, (event: { toRow: number; toCol: number }) => fires.push(event));
+    const battle = night.startBattle(state);
+    battle.status = 'fighting';
+    battle.wave = 1;
+    battle.zombies.push(
+      { uid: 9978, cfgId: 1, hp: 100, maxHp: 100, row: 2, col: 5, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 },
+      { uid: 9979, cfgId: 7, hp: 100, maxHp: 100, row: 2, col: 6, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 },
+      { uid: 9980, cfgId: 8, hp: 90, maxHp: 90, row: 2, col: 5, moveCd: 0, attackCd: 1e9, slowUntil: 0, burrowed: true }
+    );
+    night.tick(state, battle, 100);
+    offFire();
+    assert(fires[0]?.toCol === 6, '雷达覆盖的箭塔优先攻击飞行敌人');
+    assert(battle.zombies.find(z => z.uid === 9980)?.burrowed === false, '雷达覆盖内的钻地敌提前显形');
+  }
+
+  // 自爆僵尸在墙边主动引爆；维修站在胜利天亮时消耗废料修复墙和塔。
+  {
+    const state = createInitialGameState();
+    state.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row: 6, col: 7 });
+    const battle = night.startBattle(state);
+    battle.status = 'fighting';
+    battle.wave = 1;
+    battle.zombies.push({ uid: 9981, cfgId: 4, hp: 50, maxHp: 50, row: 6, col: 8, moveCd: 0, attackCd: 0, slowUntil: 0 });
+    night.tick(state, battle, 100);
+    assert(state.base.buildings.find(b => b.cfgId === 401)?.hp === 120, '自爆僵尸贴近墙体时主动爆破');
+
+    const repairState = createInitialGameState();
+    repairState.resources.scrap = 2;
+    addFueledGenerator(repairState);
+    repairState.base.buildings.push({ cfgId: 210, level: 1, hp: 180, maxHp: 180, row: 6, col: 5 });
+    repairState.base.buildings.push({ cfgId: 401, level: 1, hp: 100, maxHp: 150, row: 6, col: 4 });
+    const repairBattle = night.startBattle(repairState);
+    repairBattle.status = 'won';
+    night.endBattle(repairState, repairBattle);
+    assert(repairState.base.buildings.find(b => b.cfgId === 401)?.hp === 140 && repairState.resources.scrap === 0, '维修站天亮消耗废料修复邻近墙体');
+  }
+}
+
 // ============ 14. 夜晚战斗 ============
 console.log('== 夜晚战斗 ==');
 {
+  assert(getZombieLevel(4) === 1 && getZombieLevel(5) === 2, '僵尸等级每四夜提升一次');
+  assert(getNightPreview(3).types.every(type => type.id === 1), '第 3 夜前只有普通僵尸');
+  assert(getNightPreview(4).types.some(type => type.id === 2), '第 4 夜首次出现快速僵尸');
+  assert(getNightPreview(8).types.some(type => type.id === 7), '第 8 夜首次出现飞行僵尸');
+  assert(!getNightPreview(20).bossLast && getNightPreview(28).bossLast && !getNightPreview(29).bossLast && getNightPreview(35).bossLast, '首个 Boss 延后到第 28 夜，之后每 7 夜一次');
   const night = new NightSystem();
 
   // 波次配置
   assert(getTotalWaves(1) === 3 && getTotalWaves(6) === 4, '波次随天数递增');
-  assert(genWaveZombies(5, 4, 4).includes(6), '第 5 天最后一波出 Boss');
+  assert(genWaveZombies(28, getTotalWaves(28), getTotalWaves(28)).includes(6), '第 28 天最后一波出 Boss');
 
   // --- 夜战预告：波次/总数/类型/方向 ---
   {
@@ -1047,14 +1186,16 @@ console.log('== 夜晚战斗 ==');
     assert(p1.waves === 3 && p1.total === 4 + 5 + 6, '第 1 天预告：3 波共 15 只');
     assert(p1.level === 1, '第 1 天预告：僵尸 Lv1');
     assert(p1.types.length === 1 && p1.types[0].id === 1 && !p1.eliteLast && !p1.bossLast, '第 1 天预告：只有普通僵尸');
-    const p3 = getNightPreview(3);
-    assert(p3.eliteLast && p3.types.some(t => t.id === 5 && t.guaranteed), '第 3 天预告：末波保底精英');
-    const p5 = getNightPreview(5);
-    assert(p5.bossLast && p5.types.some(t => t.id === 6 && t.guaranteed), '第 5 天预告：末波 Boss');
-    assert(p5.total === 8 + 9 + 10 + 1, '第 5 天预告：总数含 Boss');
+    const p4 = getNightPreview(4);
+    assert(!p4.eliteLast && !p4.bossLast && p4.types.some(t => t.id === 2), '第 4 天预告：快速僵尸首次出现');
+    const p28 = getNightPreview(28);
+    assert(p28.bossLast && p28.types.some(t => t.id === 6 && t.guaranteed), '第 28 天预告：首个 Boss');
+    const p8 = getNightPreview(8);
+    assert(p8.types.some(t => t.id === 7) && !p8.types.some(t => t.id === 3), '第 8 天起出现飞行敌，高甲敌延后出现');
+    assert(p28.total === 189, '第 28 天预告：总数含 Boss');
 
-    // 僵尸等级：每 2 天 +1 级，封顶 Lv8
-    assert(getZombieLevel(1) === 1 && getZombieLevel(2) === 1 && getZombieLevel(3) === 2 && getZombieLevel(16) === 8, '僵尸等级：每 2 天 +1，封顶 Lv8');
+    // 僵尸等级：每 4 天 +1 级，封顶 Lv8
+    assert(getZombieLevel(1) === 1 && getZombieLevel(4) === 1 && getZombieLevel(5) === 2 && getZombieLevel(29) === 8, '僵尸等级：每 4 天 +1，封顶 Lv8');
 
     // 进攻方向：新开局只从东边 3 格缺口；北/西/南被废墟封死
     const fresh = createInitialGameState();
@@ -1065,6 +1206,50 @@ console.log('== 夜晚战斗 ==');
     fresh.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row: 5, col: 12 });
     fresh.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row: 6, col: 12 });
     assert(getAttackSides(fresh.base).length === 0, '堵死缺口后无开放进攻方向');
+  }
+
+  // --- 地面路线：绕开建筑时使用四方向最短路 ---
+  {
+    const state = createInitialGameState();
+    state.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row: 4, col: 11 });
+    const path = findPathToCore(state.base, { row: 4, col: 12 });
+    assert(path?.[1].row === 5 && path[1].col === 12, 'BFS 绕开墙体选择四方向下一格');
+    const battle = night.startBattle(state);
+    battle.status = 'fighting';
+    battle.wave = 1;
+    battle.zombies.push({ uid: 9971, cfgId: 1, hp: 60, maxHp: 60, row: 4, col: 12, moveCd: 0, attackCd: 0, slowUntil: 0 });
+    night.tick(state, battle, 100);
+    assert(battle.zombies[0]?.row === 5 && battle.zombies[0]?.col === 12, '地面僵尸按路线移动而非斜向直冲');
+  }
+
+  // --- 塔职能：炮塔范围伤害 / 电磁塔递减跳链 ---
+  {
+    const cannonState = createInitialGameState();
+    addFueledGenerator(cannonState);
+    cannonState.base.buildings.push({ cfgId: 102, level: 1, hp: 300, maxHp: 300, row: 5, col: 6 });
+    const cannonBattle = night.startBattle(cannonState);
+    cannonBattle.status = 'fighting';
+    cannonBattle.wave = 1;
+    cannonBattle.zombies.push(
+      { uid: 9972, cfgId: 1, hp: 100, maxHp: 100, row: 6, col: 8, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 },
+      { uid: 9973, cfgId: 1, hp: 100, maxHp: 100, row: 7, col: 8, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 }
+    );
+    night.tick(cannonState, cannonBattle, 100);
+    assert(cannonBattle.zombies.every(z => z.hp === 70), '炮塔命中点 1 格范围同时受伤');
+
+    const arcState = createInitialGameState();
+    addFueledGenerator(arcState);
+    arcState.base.buildings.push({ cfgId: 103, level: 1, hp: 200, maxHp: 200, row: 6, col: 5 });
+    const arcBattle = night.startBattle(arcState);
+    arcBattle.status = 'fighting';
+    arcBattle.wave = 1;
+    arcBattle.zombies.push(
+      { uid: 9974, cfgId: 1, hp: 100, maxHp: 100, row: 6, col: 8, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 },
+      { uid: 9975, cfgId: 1, hp: 100, maxHp: 100, row: 7, col: 8, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 },
+      { uid: 9976, cfgId: 1, hp: 100, maxHp: 100, row: 8, col: 8, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 }
+    );
+    night.tick(arcState, arcBattle, 100);
+    assert(arcBattle.zombies[0].hp === 60 && arcBattle.zombies[1].hp === 70 && arcBattle.zombies[2].hp === 78, '电磁塔跳链最多 5 个目标且伤害递减');
   }
 
   // --- 地雷触发 ---
@@ -1088,14 +1273,13 @@ console.log('== 夜晚战斗 ==');
   // --- 城墙阻挡：僵尸停下拆墙（坦克 demolish 1 可拆木墙 sturdy 1） ---
   {
     const state = createInitialGameState();
-    state.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row: 6, col: 7 }); // 木墙
+    for (let row = 0; row < 13; row++) state.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row, col: 7 });
     const battle = night.startBattle(state);
     battle.status = 'fighting';
     battle.wave = 1;
     battle.zombies.push({ uid: 998, cfgId: 3, hp: 220, maxHp: 220, row: 6, col: 8, moveCd: 0, attackCd: 0, slowUntil: 0 }); // 坦克僵尸
     night.tick(state, battle, 100);
-    const wall = state.base.buildings.find(b => b.cfgId === 401);
-    assert(wall !== undefined && wall.hp < 150, '僵尸攻击挡路城墙');
+    assert(state.base.buildings.some(b => b.cfgId === 401 && b.hp < 150), '僵尸攻击挡路城墙');
     assert(battle.zombies[0]?.row === 6 && battle.zombies[0]?.col === 8, '僵尸被墙挡在原地');
   }
 
@@ -1103,7 +1287,7 @@ console.log('== 夜晚战斗 ==');
   {
     const state = createInitialGameState();
     addFueledGenerator(state);
-    state.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row: 6, col: 7 }); // 木墙
+    for (let row = 0; row < 13; row++) state.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row, col: 7 });
     state.base.buildings.push({ cfgId: 101, level: 1, hp: 200, maxHp: 200, row: 0, col: 0 }); // 箭塔
     const battle = night.startBattle(state);
     battle.status = 'fighting';
@@ -1115,16 +1299,17 @@ console.log('== 夜晚战斗 ==');
     const fly = battle.zombies[0];
     assert(fly !== undefined && (fly.row !== 6 || fly.col !== 8), '飞行僵尸飞过城墙继续逼近');
 
-    // 飞行僵尸可被塔正常攻击（箭塔 14 攻 - 0 防 = 14 伤）
+    // 雷达覆盖后，箭塔才能攻击飞行僵尸（14 攻 - 0 防 = 14 伤）。
     const state2 = createInitialGameState();
     addFueledGenerator(state2);
+    state2.base.buildings.push({ cfgId: 209, level: 1, hp: 160, maxHp: 160, row: 0, col: 2 });
     state2.base.buildings.push({ cfgId: 101, level: 1, hp: 200, maxHp: 200, row: 0, col: 0 });
     const battle2 = night.startBattle(state2);
     battle2.status = 'fighting';
     battle2.wave = 1;
     battle2.zombies.push({ uid: 993, cfgId: 7, hp: 45, maxHp: 45, row: 0, col: 3, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 });
     night.tick(state2, battle2, 100);
-    assert(battle2.zombies[0]?.hp === 45 - 14, '飞行僵尸可被防御塔攻击');
+    assert(battle2.zombies[0]?.hp === 45 - 14, '雷达覆盖后箭塔可攻击飞行僵尸');
   }
 
   // --- 战斗特效事件：塔开火弹道 / 僵尸爪击 / 僵尸死亡爆灭 ---
@@ -1132,7 +1317,7 @@ console.log('== 夜晚战斗 ==');
     const state = createInitialGameState();
     addFueledGenerator(state);
     state.base.buildings.push({ cfgId: 101, level: 1, hp: 200, maxHp: 200, row: 0, col: 0 }); // 箭塔
-    state.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row: 6, col: 7 }); // 木墙
+    for (let row = 0; row < 13; row++) state.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row, col: 7 });
     const fires: { cfgId: number; fromRow: number; fromCol: number; damage?: number }[] = [];
     const attacks: { toRow: number; toCol: number }[] = [];
     const dies: { row: number; col: number }[] = [];
@@ -1151,7 +1336,7 @@ console.log('== 夜晚战斗 ==');
     offDie();
     assert(fires.length === 1 && fires[0].fromRow === 0 && fires[0].fromCol === 0 && fires[0].cfgId === 101, '塔开火发出弹道事件');
     assert(fires[0].damage === 14, '弹道事件带伤害值（箭塔 14 攻 - 0 防）');
-    assert(attacks.length === 1 && attacks[0].toRow === 6 && attacks[0].toCol === 7, '僵尸攻击建筑发出爪击事件');
+    assert(attacks.length === 1 && attacks[0].toCol === 7 && attacks[0].toRow >= 5 && attacks[0].toRow <= 7, '僵尸攻击建筑发出爪击事件');
     assert(dies.length === 1 && dies[0].row === 0 && dies[0].col === 3, '僵尸死亡发出爆灭事件');
   }
 
@@ -1159,7 +1344,7 @@ console.log('== 夜晚战斗 ==');
   {
     const state = createInitialGameState();
     addFueledGenerator(state); // 发电机供电，箭塔通电
-    state.base.buildings.push({ cfgId: 101, level: 1, hp: 400, maxHp: 400, row: 5, col: 11 });
+    state.base.buildings.push({ cfgId: 101, level: 1, hp: 400, maxHp: 400, row: 6, col: 9 });
     const battle = night.startBattle(state);
     let steps = 0;
     while (battle.status !== 'won' && battle.status !== 'lost' && steps < 6000) {
@@ -1192,17 +1377,34 @@ console.log('== 夜晚战斗 ==');
     night.tick(state, battle, 100);
     assert(battle.zombies.length === open.length && battle.spawnQueue.length === 1, '腾出空格后恢复生成');
 
-    // 移动避让：前方唯一更近的格有僵尸 → 原地等待
+    // 移动避让：路线的下一格有僵尸 → 原地等待
     const state2 = createInitialGameState();
     const battle2 = night.startBattle(state2);
     battle2.status = 'fighting';
     battle2.wave = 1;
     battle2.spawnQueue = [];
-    battle2.zombies.push({ uid: 810, cfgId: 1, hp: 30, maxHp: 30, row: 5, col: 7, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 });
-    battle2.zombies.push({ uid: 811, cfgId: 1, hp: 30, maxHp: 30, row: 4, col: 8, moveCd: 0, attackCd: 1e9, slowUntil: 0 });
+    const start = { row: 4, col: 12 };
+    const next = findPathToCore(state2.base, start)![1];
+    battle2.zombies.push({ uid: 810, cfgId: 1, hp: 30, maxHp: 30, row: next.row, col: next.col, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 });
+    battle2.zombies.push({ uid: 811, cfgId: 1, hp: 30, maxHp: 30, row: start.row, col: start.col, moveCd: 0, attackCd: 1e9, slowUntil: 0 });
     night.tick(state2, battle2, 100);
     const back = battle2.zombies.find(z => z.uid === 811)!;
-    assert(back.row === 4 && back.col === 8, '前方占位时僵尸原地等待，不重叠');
+    assert(back.row === start.row && back.col === start.col, '前方占位时僵尸原地等待，不重叠');
+
+    const fastState = createInitialGameState();
+    const fastBattle = night.startBattle(fastState);
+    fastBattle.status = 'fighting';
+    fastBattle.wave = 1;
+    fastBattle.spawnQueue = [];
+    const fastStart = { row: 4, col: 12 };
+    const fastNext = findPathToCore(fastState.base, fastStart)![1];
+    fastBattle.zombies.push(
+      { uid: 812, cfgId: 1, hp: 30, maxHp: 30, row: fastNext.row, col: fastNext.col, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 },
+      { uid: 813, cfgId: 2, hp: 40, maxHp: 40, row: fastStart.row, col: fastStart.col, moveCd: 0, attackCd: 1e9, slowUntil: 0 }
+    );
+    night.tick(fastState, fastBattle, 100);
+    const fast = fastBattle.zombies.find(z => z.uid === 813)!;
+    assert(getZombieConfig(2)?.speed === 2 && fast.row === fastNext.row && fast.col === fastNext.col, '快速僵尸以 2 格/秒越过更慢的地面僵尸');
   }
 
   // --- 钻地僵尸：潜行不被塔索敌，距核心 ≤2 格钻出 ---
@@ -1263,19 +1465,19 @@ console.log('== 夜晚战斗 ==');
     const lootBefore = state.grid.cells.flat().filter(c => c.item).length + state.cardArr.length;
     night.endBattle(state, battle);
     assert(state.phase === 'day' && state.day === 2, '胜利进入第 2 天');
-    assert(state.resources.power === 130, '胜利天亮后保留余量并补充行动力上限');
+    assert(state.resources.power === 130, '胜利天亮后保留余量并固定奖励 100 行动力');
     const lootAfter = state.grid.cells.flat().filter(c => c.item).length + state.cardArr.length;
     assert(lootAfter === lootBefore + totalDrops, '战利品发到棋盘（满则进卡片）');
   }
 
   // --- 拆迁等级：低级僵尸拆不动废墟/墙，高级逐级可拆；卡死 15 秒狂暴强拆 ---
   {
-    // 僵尸放在 (6,12)，前方 3 个更近核心的格子 (5,11)(6,11)(7,11) 全堵上指定建筑
+    // 僵尸放在 (6,12)，用一整列墙切断其到核心的所有四方向路线。
     const mkBlocked = (zombieCfgId: number, wallId: number) => {
       const st = createInitialGameState();
       const wcfg = getBuildingConfig(wallId)!;
-      for (const [r, c] of [[5, 11], [6, 11], [7, 11]] as const) {
-        st.base.buildings.push({ cfgId: wallId, level: 1, hp: wcfg.hp, maxHp: wcfg.hp, row: r, col: c });
+      for (let row = 0; row < 13; row++) {
+        st.base.buildings.push({ cfgId: wallId, level: 1, hp: wcfg.hp, maxHp: wcfg.hp, row, col: 11 });
       }
       const bt = night.startBattle(st);
       bt.status = 'fighting';
@@ -1283,7 +1485,7 @@ console.log('== 夜晚战斗 ==');
       const zcfg = getZombieConfig(zombieCfgId)!;
       bt.zombies.push({ uid: 990, cfgId: zombieCfgId, hp: zcfg.hp, maxHp: zcfg.hp, row: 6, col: 12, moveCd: 0, attackCd: 0, slowUntil: 0 });
       const wallsTotal = () => st.base.buildings
-        .filter(b => b.col === 11 && b.row >= 5 && b.row <= 7)
+        .filter(b => b.col === 11 && b.cfgId === wallId)
         .reduce((s, b) => s + b.hp, 0);
       return { st, bt, wallsTotal };
     };
@@ -1301,29 +1503,32 @@ console.log('== 夜晚战斗 ==');
     // 坦克僵尸(demolish 1) 能拆废墟/木墙，拆不动石墙(sturdy 2)
     {
       const { st, bt, wallsTotal } = mkBlocked(3, 901);
+      const before = wallsTotal();
       for (let i = 0; i < 30; i++) night.tick(st, bt, 100);
-      assert(wallsTotal() < 80 * 3, '坦克僵尸能拆废墟');
+      assert(wallsTotal() < before, '坦克僵尸能拆废墟');
       const s2 = mkBlocked(3, 402);
       for (let i = 0; i < 30; i++) night.tick(s2.st, s2.bt, 100);
-      assert(s2.wallsTotal() === 300 * 3 && !s2.bt.zombies[0]?.enraged, '坦克僵尸拆不动石墙');
+      assert(s2.wallsTotal() === 300 * 13 && !s2.bt.zombies[0]?.enraged, '坦克僵尸拆不动石墙');
     }
     // 精英(demolish 2) 拆石墙、拆不动铁墙；Boss(demolish 3) 拆铁墙
     {
       const { st, bt, wallsTotal } = mkBlocked(5, 402);
+      const before = wallsTotal();
       for (let i = 0; i < 30; i++) night.tick(st, bt, 100);
-      assert(wallsTotal() < 300 * 3, '精英僵尸能拆石墙');
+      assert(wallsTotal() < before, '精英僵尸能拆石墙');
       const s2 = mkBlocked(5, 403);
       for (let i = 0; i < 30; i++) night.tick(s2.st, s2.bt, 100);
-      assert(s2.wallsTotal() === 500 * 3, '精英僵尸拆不动铁墙');
+      assert(s2.wallsTotal() === 500 * 13, '精英僵尸拆不动铁墙');
       const s3 = mkBlocked(6, 403);
+      const bossBefore = s3.wallsTotal();
       for (let i = 0; i < 30; i++) night.tick(s3.st, s3.bt, 100);
-      assert(s3.wallsTotal() < 500 * 3, 'Boss 僵尸能拆铁墙');
+      assert(s3.wallsTotal() < bossBefore, 'Boss 僵尸能拆铁墙');
     }
   }
 
-  // --- 行动力上限随等级 +1；入夜回满，守夜胜利后保留余量再补满一次；无分钟恢复 ---
+  // --- 行动力：守夜胜利固定奖励 100；每 5 分钟自然恢复 1 点 ---
   {
-    const { spawn } = makeSystems();
+    const economy = new EconomySystem();
     const state = createInitialGameState();
     state.roleLv = 6;
     assert(getPowerMax(state) === 105, 'Lv6 行动力上限 = 100 + 5');
@@ -1332,17 +1537,31 @@ console.log('== 夜晚战斗 ==');
     assert(state.resources.power === 10, '入夜保留白天剩余行动力');
     b.status = 'won';
     night.endBattle(state, b);
-    assert(state.resources.power === 115, '守夜胜利后保留白天余量，并额外补满一次行动力');
+    assert(state.resources.power === 110, '守夜胜利后保留白天余量，并固定奖励 100 行动力');
 
     const lossBattle = night.startBattle(state);
     lossBattle.status = 'lost';
     night.endBattle(state, lossBattle);
     assert(state.resources.power === 105, '守夜失败后仍按上限回满行动力');
 
-    // 分钟恢复已取消：tick 不再涨行动力
     state.resources.power = 50;
-    spawn.update(state, 100);
-    assert(state.resources.power === 50, '行动力不再随时间恢复');
+    state.powerRecoverAt = 1_000;
+    economy.recoverPower(state, 1_000 + 5 * 60 * 1000);
+    assert(state.resources.power === 51, '每 5 分钟自然恢复 1 点行动力');
+    economy.recoverPower(state, 1_000 + 15 * 60 * 1000);
+    assert(state.resources.power === 53, '自然恢复按完整的 5 分钟累计结算');
+
+    state.resources.power = 104;
+    state.powerRecoverAt = 1_000;
+    economy.recoverPower(state, 1_000 + 10 * 60 * 1000);
+    assert(state.resources.power === 105, '自然恢复不超过行动力上限');
+
+    const oldSave = createInitialGameState();
+    oldSave.resources.power = 50;
+    oldSave.timestamp = 1_000;
+    delete oldSave.powerRecoverAt;
+    economy.recoverPower(oldSave, 1_000 + 10 * 60 * 1000);
+    assert(oldSave.resources.power === 52, '旧存档缺恢复时间时按保存时间补算离线行动力');
   }
 
   // --- 无防御 → 失败核心半血 ---
@@ -1465,6 +1684,20 @@ console.log('== 英雄系统 ==');
   }
 
   // --- tickHeroes：开火事件带伤害（攻-防）、冷却期内不连发、潜行钻地不索敌 ---
+  // --- Hero injury: daytime recovery and critical deployment lock ---
+  {
+    const state = createInitialGameState();
+    state.heroes.push({ key: 'laoqiang', row: -1, col: -1 });
+    const hero = state.heroes[0] as typeof state.heroes[number] & { hp?: number; maxHp?: number; recoveryDays?: number };
+    hero.hp = 50;
+    hero.maxHp = 100;
+    heroSys.recoverForNewDay(state);
+    assert(hero.hp === 70, 'injured hero recovers 20% max HP each day');
+    hero.hp = 0;
+    hero.recoveryDays = 7;
+    assert(!heroSys.deploy(state, hero.key, 5, 5), 'critical hero cannot deploy');
+  }
+
   {
     const state = createInitialGameState();
     state.heroes.push({ key: 'laoqiang', row: 6, col: 5 });
@@ -1570,7 +1803,7 @@ console.log('== 英雄系统 ==');
     const loaded3 = storage.loadState();
     assert(loaded3 !== null && loaded3.resources.fuel === 0, 'v3 旧档 resources 无 fuel 兜底补 0');
     assert(loaded3!.base.buildings.every(b => (b as { fueledUntil?: number }).fueledUntil === undefined), 'v3 旧档建筑 fueledUntil 残留字段删除');
-    assert(getPowerInfo(loaded3!).cap === 10, 'v3 旧档风力发电站不受旧燃料字段影响');
+    assert(getPowerInfo(loaded3!).cap === 6, 'v3 旧档风力发电站不受旧燃料字段影响');
 
     // 已进入电站蓝图引导但历史奖励遗漏的旧档：加载时补发电站蓝图箱。
     const state4 = createInitialGameState();
@@ -1939,11 +2172,23 @@ assert(formatResourceGains({ medicine: 1 }) === 'Medicine+1', 'English resource 
 assert(getText('zombie.tag.7') === 'Flying', 'English night preview tag is localized');
 const baseSceneSource = require('fs').readFileSync('src/phaser/scenes/BaseScene.ts', 'utf8');
 const nightSceneSource = require('fs').readFileSync('src/phaser/scenes/NightScene.ts', 'utf8');
+const gameSceneSource = require('fs').readFileSync('src/phaser/scenes/GameScene.ts', 'utf8');
+const monsterPanelSource = require('fs').readFileSync('src/phaser/ui/MonsterPanel.ts', 'utf8');
 assert(nightSceneSource.includes("this.scene.start('BaseScene', { state: this.state, nightEndStory: { won, day: this.state.day } });"), '夜战结算把剧情交给基地场景');
 assert(!nightSceneSource.includes('const onNightEnd ='), '夜战场景不在切场景前直接播放结算剧情');
 assert(baseSceneSource.includes('private nightEndStory: { won: boolean; day: number } | null = null;'), '基地场景保存夜战剧情交接数据');
 assert(baseSceneSource.includes('this.storySystem.checkNightEnd(this.state, this.nightEndStory.won, this.nightEndStory.day);'), '基地场景在剧情弹窗就绪后触发夜战剧情');
 assert(baseSceneSource.includes('getZombieName(t.id)') && baseSceneSource.includes("getText(`zombie.tag.${t.id}`)"), 'Night preview uses localized zombie accessors');
+assert(baseSceneSource.includes('canDefendFlyingEnemies(this.state)') && baseSceneSource.includes("getText('base.noAntiAirWarning')"), 'Night preview warns when flying enemies exceed the current air defense');
+assert(baseSceneSource.includes('getRecommendedMarketItem(this.state.day)') && baseSceneSource.includes("getText('base.marketFragments'"), 'Night preview and market expose the recommended fragment pack');
+assert(getText('base.marketFragments', { count: 2 }) !== 'base.marketFragments' && getText('base.recommendedCounter') !== 'base.recommendedCounter', 'Fragment pack UI text is localized');
+assert(baseSceneSource.includes('wordWrap: { width: panelW - 150, useAdvancedWrap: true }'), 'Night preview wraps Chinese warning text without spaces');
+assert(baseSceneSource.includes('const name = this.add.text(x - 104, y - 80, getBuildingName(cfg.id)') && baseSceneSource.includes('const rowY = y + 56 + j * 44;'), 'Build cards use separated name, description, and cost rows');
+assert(baseSceneSource.includes("y - 80, getBuildingName(cfg.id)") && baseSceneSource.includes("getLanguage() === 'en' ? '18px' : '20px'"), 'Build card titles leave room for wrapped Chinese descriptions');
+assert(getAllZombieConfigs().length === 8, 'Monster codex source has all eight zombie configs');
+assert(getText('monster.ability.fly').length > 0 && getText('monster.ability.burrow').length > 0 && getText('monster.ability.explode').length > 0, 'Monster codex ability text is localized');
+assert(gameSceneSource.includes("getText('menu.monsters')") && gameSceneSource.includes('new MonsterPanel(this)'), 'Monster codex is wired into the bottom navigation');
+assert(monsterPanelSource.includes('getAllZombieConfigs()') && monsterPanelSource.includes('CARD_H = 240'), 'Monster codex renders the config list in a fixed viewport');
 const buildToastState = createInitialGameState();
 unlockAllBuildings(buildToastState);
 buildToastState.base.tiles.forEach(row => row.forEach(tile => { tile.claimed = true; }));
@@ -1960,6 +2205,7 @@ for (const language of ['zh-CN', 'en'] as const) {
   const locale = getLocaleData(language);
   for (const prop of getAllProps()) assert(!!locale.props[prop.id], `${language} 物品 ${prop.id}`);
   for (const building of getAllBuildingConfigs()) assert(!!locale.buildings[building.id], `${language} 建筑 ${building.id}`);
+  for (const building of getBuildableList()) assert(getText(`base.buildingDesc.${building.id}`) !== `base.buildingDesc.${building.id}`, `${language} 建筑 ${building.id} 功能说明`);
   for (const hero of getAllHeroConfigs()) assert(!!locale.heroes[hero.key], `${language} 英雄 ${hero.key}`);
   for (const zombie of getAllZombieConfigs()) assert(!!locale.zombies[zombie.id], `${language} 僵尸 ${zombie.id}`);
   for (const beat of STORY_BEATS) {

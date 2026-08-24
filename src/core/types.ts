@@ -116,6 +116,12 @@ export interface IHeroState {
   row: number;
   /** 部署列 */
   col: number;
+  /** 当前生命；旧存档缺失时加载或首次使用会按英雄配置补齐 */
+  hp?: number;
+  /** 最大生命；旧存档缺失时加载或首次使用会按英雄配置补齐 */
+  maxHp?: number;
+  /** 重伤剩余白天数；存在时不能部署 */
+  recoveryDays?: number;
 }
 
 /** 基地状态 */
@@ -172,6 +178,8 @@ export interface IGameState {
   blueprintStock: Record<number, number>;
   /** 已加入堡垒的英雄（剧情 beat 播完入队；row=-1 未部署） */
   heroes: IHeroState[];
+  /** 行动力上次恢复结算的时间戳；旧存档缺失时回退 timestamp。 */
+  powerRecoverAt?: number;
   timestamp: number;
 }
 

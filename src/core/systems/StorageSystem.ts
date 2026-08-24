@@ -5,6 +5,7 @@ import { RUIN_ID } from '../config/BuildingConfig';
 import { ensureUnlockedBuildings } from './UnlockSystem';
 import { backfillJoinedHeroes } from '../config/StoryConfig';
 import { backfillStorySpawnProps } from './StorySystem';
+import { getHeroConfig } from '../config/HeroConfig';
 
 const SAVE_KEY = 'merge_survival_td_state';
 export { SAVE_KEY };
@@ -34,6 +35,12 @@ export class StorageSystem {
           if (!Array.isArray(data.state.storySeen)) data.state.storySeen = [];
           if (!Array.isArray(data.state.storyRewardClaims)) data.state.storyRewardClaims = [];
           if (!Array.isArray(data.state.heroes)) data.state.heroes = [];
+          for (const hero of data.state.heroes) {
+            const maxHp = Math.max(1, hero.maxHp ?? getHeroConfig(hero.key)?.hp ?? 100);
+            hero.maxHp = maxHp;
+            hero.hp = Math.min(maxHp, Math.max(0, hero.hp ?? maxHp));
+            if (hero.recoveryDays && hero.hp > 0) delete hero.recoveryDays;
+          }
           if (data.state.language !== 'zh-CN' && data.state.language !== 'en') data.state.language = 'zh-CN';
           if (!data.state.blueprintStock || typeof data.state.blueprintStock !== 'object') data.state.blueprintStock = {};
           // joinHero 是后加的能力：旧存档按 storySeen 补发已加入的英雄

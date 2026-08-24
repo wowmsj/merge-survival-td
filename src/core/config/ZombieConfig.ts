@@ -47,7 +47,7 @@ export interface IZombieConfig {
   demolish?: number;
   /** 死亡时自爆伤害（波及 1 格范围建筑） */
   explode?: number;
-  /** 掉落池：低级材料 id 列表（合成链 1~2 级，留给玩家往上合），死亡时随机取 dropMin~dropMax 份 */
+  /** 掉落池：低级材料 id 列表（合成链 1~2 级，留给玩家往上合），死亡时随机取 dropMin~dropMax 份；重复 id = 提高权重（如普通僵尸的旧保温箱×2） */
   dropPool: number[];
   dropMin: number;
   dropMax: number;
@@ -57,6 +57,33 @@ const ZOMBIE_TABLE = zombieJson as unknown as IZombieConfig[];
 const ZOMBIE_MAP: Map<number, IZombieConfig> = new Map(ZOMBIE_TABLE.map(z => [z.id, z]));
 
 export const ZOMBIE_IDS = { normal: 1, fast: 2, tank: 3, bomber: 4, elite: 5, boss: 6, fly: 7, burrow: 8 } as const;
+
+interface IThreatStage {
+  day: number;
+  ids: number[];
+  debut?: number;
+}
+
+// ponytail: one table drives both preview and spawning; add route-specific pools only when routes need distinct enemies.
+const THREAT_STAGES: IThreatStage[] = [
+  { day: 1, ids: [ZOMBIE_IDS.normal] },
+  { day: 4, ids: [ZOMBIE_IDS.normal, ZOMBIE_IDS.fast], debut: ZOMBIE_IDS.fast },
+  { day: 8, ids: [ZOMBIE_IDS.normal, ZOMBIE_IDS.fast, ZOMBIE_IDS.fly], debut: ZOMBIE_IDS.fly },
+  { day: 12, ids: [ZOMBIE_IDS.normal, ZOMBIE_IDS.fast, ZOMBIE_IDS.fly, ZOMBIE_IDS.tank], debut: ZOMBIE_IDS.tank },
+  { day: 16, ids: [ZOMBIE_IDS.normal, ZOMBIE_IDS.fast, ZOMBIE_IDS.fly, ZOMBIE_IDS.tank, ZOMBIE_IDS.bomber], debut: ZOMBIE_IDS.bomber },
+  { day: 20, ids: [ZOMBIE_IDS.normal, ZOMBIE_IDS.fast, ZOMBIE_IDS.fly, ZOMBIE_IDS.tank, ZOMBIE_IDS.bomber, ZOMBIE_IDS.burrow], debut: ZOMBIE_IDS.burrow },
+  { day: 24, ids: [ZOMBIE_IDS.normal, ZOMBIE_IDS.fast, ZOMBIE_IDS.fly, ZOMBIE_IDS.tank, ZOMBIE_IDS.bomber, ZOMBIE_IDS.burrow, ZOMBIE_IDS.elite], debut: ZOMBIE_IDS.elite },
+  { day: 28, ids: [ZOMBIE_IDS.normal, ZOMBIE_IDS.fast, ZOMBIE_IDS.fly, ZOMBIE_IDS.tank, ZOMBIE_IDS.bomber, ZOMBIE_IDS.burrow, ZOMBIE_IDS.elite] }
+];
+
+function getThreatStage(day: number): IThreatStage {
+  const available = THREAT_STAGES.filter(stage => stage.day <= day);
+  return available[available.length - 1] ?? THREAT_STAGES[0];
+}
+
+function isBossNight(day: number): boolean {
+  return day >= 28 && (day - 28) % 7 === 0;
+}
 
 export function getZombieConfig(id: number): IZombieConfig | undefined {
   return ZOMBIE_MAP.get(id);
@@ -74,17 +101,17 @@ export function getTotalWaves(day: number): number {
 
 /** 第 N 天僵尸等级：每 2 天 +1（1~2 天 Lv1，3~4 Lv2，5~6 Lv3 ……封顶 Lv8） */
 export function getZombieLevel(day: number): number {
-  return Math.min(8, 1 + Math.floor((day - 1) / 2));
+  return Math.min(8, 1 + Math.floor((day - 1) / 4));
 }
 
 /** 僵尸血量等级系数：×(1 + 0.4×(Lv-1)) */
 export function getLevelHpScale(level: number): number {
-  return 1 + 0.4 * (level - 1);
+  return 1 + 0.25 * (level - 1);
 }
 
 /** 僵尸攻击等级系数：×(1 + 0.2×(Lv-1)) */
 export function getLevelAttackScale(level: number): number {
-  return 1 + 0.2 * (level - 1);
+  return 1 + 0.12 * (level - 1);
 }
 
 /**
@@ -92,8 +119,10 @@ export function getLevelAttackScale(level: number): number {
  * @param wave 从 1 开始
  */
 export function genWaveZombies(day: number, wave: number, totalWaves: number): number[] {
-  const count = 2 + day + wave;
-  const pool = ZOMBIE_TABLE.filter(z => z.weight > 0 && day >= z.minDay);
+  const stage = getThreatStage(day);
+  const debutNight = stage.day === day && !!stage.debut;
+  const count = Math.max(2, Math.floor((2 + Math.ceil(day * 0.6) + wave) * (debutNight ? 0.8 : 1)));
+  const pool = stage.ids.map(id => ZOMBIE_MAP.get(id)).filter((z): z is IZombieConfig => !!z);
 
   const result: number[] = [];
   for (let i = 0; i < count; i++) {
@@ -101,13 +130,8 @@ export function genWaveZombies(day: number, wave: number, totalWaves: number): n
   }
 
   // 最后一波保底一个精英（第 3 天起）；每 5 天最后一波出 Boss
-  if (wave === totalWaves) {
-    if (day % 5 === 0) {
-      result.push(ZOMBIE_IDS.boss);
-    } else if (day >= 3) {
-      result.push(ZOMBIE_IDS.elite);
-    }
-  }
+  if (stage.debut && stage.day === day) result[result.length - 1] = stage.debut;
+  if (wave === totalWaves && isBossNight(day)) result.push(ZOMBIE_IDS.boss);
   return result;
 }
 
@@ -169,14 +193,14 @@ function zombieTag(z: IZombieConfig): string {
 /** 第 N 天夜战预告：波次/总数/类型（类型为随机池，实际每波按权重抽取） */
 export function getNightPreview(day: number): INightPreview {
   const waves = getTotalWaves(day);
+  const stage = getThreatStage(day);
   let total = 0;
-  for (let w = 1; w <= waves; w++) total += 2 + day + w;
-  const bossLast = day % 5 === 0;
-  const eliteLast = !bossLast && day >= 3;
-  if (bossLast || eliteLast) total += 1;
-
-  const types: INightPreviewType[] = ZOMBIE_TABLE
-    .filter(z => z.weight > 0 && day >= z.minDay)
+  for (let w = 1; w <= waves; w++) total += genWaveZombies(day, w, waves).length;
+  const bossLast = isBossNight(day);
+  const eliteLast = false;
+  const types: INightPreviewType[] = stage.ids
+    .map(id => ZOMBIE_MAP.get(id))
+    .filter((z): z is IZombieConfig => !!z)
     .map(z => ({ id: z.id, name: z.name, color: z.color, tag: zombieTag(z) }));
   if (bossLast) {
     const boss = ZOMBIE_MAP.get(ZOMBIE_IDS.boss);

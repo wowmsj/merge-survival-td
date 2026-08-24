@@ -176,3 +176,11 @@ export function getOpenEdgeCells(base: IBaseState): IPoint[] {
 export function hasKillCorridor(base: IBaseState, extraBlocked?: IPoint): boolean {
   return getOpenEdgeCells(base).some(entry => findPathToCore(base, entry, extraBlocked));
 }
+
+/** Shortest current ground route from any open edge to the core, in grid cells. */
+export function getShortestEntryPathLength(base: IBaseState): number | null {
+  const lengths = getOpenEdgeCells(base)
+    .map(entry => findPathToCore(base, entry)?.length ?? 0)
+    .filter(Boolean);
+  return lengths.length > 0 ? Math.min(...lengths) : null;
+}

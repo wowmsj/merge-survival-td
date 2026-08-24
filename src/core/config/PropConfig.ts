@@ -100,7 +100,29 @@ export const DESIGN_CONFIG = {
   bubbleBombPropId: 203,
 } as const;
 
-const PROP_TABLE = propTableJson as unknown as IPropRow[];
+const RAW_PROP_TABLE = propTableJson as unknown as IPropRow[];
+
+// Support buildings were added after the original spreadsheet's fragment rows.
+// Keep their fragment chain beside the source data so market purchases still use normal merge behavior.
+const EXTRA_BLUEPRINT_CHAINS = [
+  { finalId: 70169, firstId: 70201, typeson: 18, name: '弹药库蓝图' },
+  { finalId: 70170, firstId: 70205, typeson: 19, name: '雷达站蓝图' },
+  { finalId: 70171, firstId: 70209, typeson: 20, name: '维修站蓝图' }
+];
+const FRAGMENT_TEMPLATE = RAW_PROP_TABLE.find(row => row.id === 70145)!;
+const EXTRA_BLUEPRINT_FRAGMENTS: IPropRow[] = EXTRA_BLUEPRINT_CHAINS.flatMap(chain =>
+  Array.from({ length: 3 }, (_, index) => ({
+    ...FRAGMENT_TEMPLATE,
+    id: chain.firstId + index,
+    typeson: chain.typeson,
+    sonname: chain.name,
+    cc: chain.name,
+    name: index === 0 ? `${chain.name}碎片` : chain.name,
+    luna: index + 1,
+    blessId: index === 2 ? chain.finalId : chain.firstId + index + 1
+  }))
+);
+const PROP_TABLE = [...RAW_PROP_TABLE, ...EXTRA_BLUEPRINT_FRAGMENTS];
 const PROP_MAP: Map<number, IPropRow> = new Map(PROP_TABLE.map(r => [r.id, r]));
 
 /** 取物品配置行 */

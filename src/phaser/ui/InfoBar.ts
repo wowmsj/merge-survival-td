@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { IGameState, IItemData, IPoint } from '../../core/types';
-import { getProp, isClickSpecialProp, isClickSpawner } from '../../core/config/PropConfig';
+import { getProp, isClickSpecialProp, isClickSpawner, isMergeChainTop } from '../../core/config/PropConfig';
 import { itemIsBubble, itemInCd } from '../../core/model/Item';
 import { getBlueprintBuilding } from '../../core/config/BuildingConfig';
 import { UI_FILL, UI_SLOT_FILL, UI_STROKE, drawUiBox } from './UiStyle';
@@ -127,6 +127,6 @@ export function buildInfoActions(
   if (getBlueprintBuilding(item.id)) actions.push({ label: getText('action.use'), onClick: () => handlers.onUse(pos) });
   const unlockedSpawner = prop.mdt === 1 && !item.unlock && (item.times ?? 0) > 0;
   if (isClickSpecialProp(item.id) && !unlockedSpawner) actions.push({ label: getText('action.use'), onClick: () => handlers.onUse(pos) });
-  if (prop.she && prop.levelGold > 0) actions.push({ label: getText('action.sell', { price: prop.levelGold }), onClick: () => handlers.onSell(pos) });
+  if ((prop.she || isMergeChainTop(item.id)) && prop.levelGold > 0) actions.push({ label: getText('action.sell', { price: prop.levelGold }), onClick: () => handlers.onSell(pos) });
   return actions;
 }

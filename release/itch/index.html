@@ -1,0 +1,47 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="screen-orientation" content="portrait"><meta name="x5-orientation" content="portrait"><title>Merge Fortress</title><style>* {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #1a1a2e;
+      touch-action: none;
+      overscroll-behavior-x: none;
+    }
+    #game-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overscroll-behavior-x: none;
+    }
+    canvas {
+      display: block;
+    }
+    /* JS bundle 下载/启动期间的占位 Loading（Phaser 接管后由 main.ts 移除） */
+    #boot-loading {
+      color: #ffd166;
+      font-family: sans-serif;
+      text-align: center;
+      user-select: none;
+    }
+    #boot-loading .title {
+      font-size: 42px;
+      font-weight: bold;
+      text-shadow: 0 2px 8px #000;
+      letter-spacing: 6px;
+    }
+    #boot-loading .tip {
+      margin-top: 16px;
+      font-size: 15px;
+      color: #8899aa;
+      animation: boot-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes boot-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }</style></head><body><div id="game-container"><div id="boot-loading"><div class="title">MERGE FORTRESS</div><div class="tip">Loading supplies...</div></div></div><script defer="defer" src="bundle.f1e76d2a.js"></script></body></html>

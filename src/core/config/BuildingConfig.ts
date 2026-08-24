@@ -17,6 +17,7 @@ export type MaterialCost = Record<number, number>;
 
 /** 基础资源产出：资源类型 -> 数量 */
 export type ResourceOutput = Partial<Record<BaseResource, number>>;
+export type SupportKind = 'ammo' | 'radar' | 'repair';
 
 /** 建筑产出结果：棋盘合成材料 + 基础资源 */
 export type ProductionResult = {
@@ -37,6 +38,8 @@ export interface IBuildingConfig {
   range?: number;
   /** 攻击速度（次/秒） */
   speed?: number;
+  /** 无视目标防御（电磁塔的高甲克制） */
+  ignoreDefense?: boolean;
   /** 减速比例（冰冻塔/减速沼泽） */
   slow?: number;
   /**
@@ -67,6 +70,10 @@ export interface IBuildingConfig {
   blueprint?: number;
   /** 放置后向周围扩张的占领半径 */
   claimRadius?: number;
+  /** 夜战支撑建筑类型。 */
+  support?: SupportKind;
+  /** 支撑建筑的切比雪夫覆盖半径。 */
+  supportRange?: number;
 }
 
 /** 建筑最高等级 */
@@ -182,6 +189,7 @@ export function getDemolishRefundCoin(cfgId: number): number {
 export function getRepairCostCoin(cfgId: number, hp: number, maxHp: number): number {
   const cfg = getBuildingConfig(cfgId);
   if (!cfg || hp >= maxHp) return 0;
+  if (cfg.kind === 'core') return maxHp - hp;
   return Math.max(1, Math.ceil(cfg.costCoin * 0.5 * (maxHp - hp) / maxHp));
 }
 

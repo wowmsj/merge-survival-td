@@ -126,9 +126,9 @@ export class HandGuide {
     };
     eventBus.on(GameEvents.BASE_CHANGED, onBaseChanged);
 
-    // 金币变化 → 待建造阶段刷新横幅（「赚金币」↔「去盖发电机」）
+    // 金币变化 → 待建造阶段刷新横幅（箭塔/发电机：「赚金币」↔「去基地盖」）
     const onResource = (data: { type: string }) => {
-      if (data.type === 'coin' && this.state.handIndex === FARM_PENDING) this.refresh();
+      if (data.type === 'coin' && (this.state.handIndex === TOWER_PENDING || this.state.handIndex === FARM_PENDING)) this.refresh();
     };
     eventBus.on(GameEvents.RESOURCE_CHANGED, onResource);
 

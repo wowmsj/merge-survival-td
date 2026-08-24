@@ -15,7 +15,9 @@
       40011,
       40027,
       20011,
-      20021
+      20021,
+      20001,
+      20001
     ],
     "dropMin": 0,
     "dropMax": 1,
@@ -25,7 +27,7 @@
     "id": 2,
     "name": "快速僵尸",
     "hp": 40,
-    "speed": 1.2,
+    "speed": 2,
     "attack": 6,
     "defense": 0,
     "attackInterval": 800,
@@ -36,7 +38,8 @@
     "dropPool": [
       20011,
       20021,
-      20012
+      20012,
+      20001
     ],
     "dropMin": 0,
     "dropMax": 1,
@@ -52,7 +55,7 @@
     "attackInterval": 1200,
     "moveType": "ground",
     "color": 6582118,
-    "minDay": 3,
+    "minDay": 6,
     "weight": 25,
     "dropPool": [
       20041,
@@ -74,7 +77,7 @@
     "attackInterval": 1000,
     "moveType": "ground",
     "color": 15746887,
-    "minDay": 4,
+    "minDay": 7,
     "weight": 20,
     "explode": 30,
     "dropPool": [
@@ -96,7 +99,7 @@
     "attackInterval": 1000,
     "moveType": "ground",
     "color": 12120005,
-    "minDay": 3,
+    "minDay": 6,
     "weight": 8,
     "dropPool": [
       10012,
@@ -142,12 +145,13 @@
     "attackInterval": 900,
     "moveType": "fly",
     "color": 10860522,
-    "minDay": 2,
+    "minDay": 5,
     "weight": 35,
     "dropPool": [
       20011,
       20021,
-      20012
+      20012,
+      20001
     ],
     "dropMin": 0,
     "dropMax": 1,
@@ -163,7 +167,7 @@
     "attackInterval": 1100,
     "moveType": "burrow",
     "color": 9850501,
-    "minDay": 3,
+    "minDay": 6,
     "weight": 20,
     "dropPool": [
       30009,

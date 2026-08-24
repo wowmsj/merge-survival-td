@@ -1,12 +1,13 @@
 import { GameEvents, eventBus } from '../events/EventBus';
 import { IBaseState, IBuilding, IGameState } from '../types';
-import { buildingAt, distFromCenter, RUIN_COLLAPSE_ORDER, ruinCellsOfSide, RuinSide } from '../model/Base';
+import { buildingAt, distFromCenter, findPathToCore, RUIN_COLLAPSE_ORDER, ruinCellsOfSide, RuinSide } from '../model/Base';
 import { getBuildingConfig, attackAtLevel, MaterialCost, RUIN_ID } from '../config/BuildingConfig';
 import { getZombieConfig, genWaveZombies, getTotalWaves, getZombieLevel, getLevelHpScale, getLevelAttackScale, rollDrops } from '../config/ZombieConfig';
 import { getHeroConfig } from '../config/HeroConfig';
 import { getPowerMax } from '../config/TableConfig';
 import { EconomySystem } from './EconomySystem';
-import { formatGains, isBuildingPowered, isTowerPoweredAtNight } from './BaseSystem';
+import { HeroSystem } from './HeroSystem';
+import { BaseSystem, formatGains, hasSupportCoverage, isBuildingPowered, isTowerPoweredAtNight } from './BaseSystem';
 import { getBuildingName, getText, getZombieName } from '../i18n';
 
 /** 夜晚战斗中的僵尸实例 */
@@ -77,6 +78,8 @@ let zombieUid = 1;
  */
 export class NightSystem {
   private economy = new EconomySystem();
+  private baseSystem = new BaseSystem(this.economy);
+  private heroes = new HeroSystem();
 
   /** 开夜：生成战斗状态，phase 置为 night；保留白天剩余行动力至夜晚结算。 */
   startBattle(state: IGameState): IBattle {
@@ -164,9 +167,11 @@ export class NightSystem {
     state.phase = 'day';
 
     if (battle.status === 'won') {
-      // 守夜胜利保留白天余量，并补充一次当前等级的行动力上限。
-      state.resources.power += getPowerMax(state);
+      // 守夜胜利保留白天余量，并固定奖励 100 行动力。
+      this.economy.addResource(state, 'power', 100);
       state.day++;
+      this.heroes.recoverForNewDay(state);
+      this.baseSystem.repairSupportBuildingsAtDay(state);
       // 战利品发到棋盘，棋盘满则进卡片列表
       for (const [idStr, count] of Object.entries(battle.pendingDrops)) {
         const id = Number(idStr);
@@ -191,6 +196,7 @@ export class NightSystem {
   /** 行动力回满（上限随等级提升），用于守夜失败后的重整。 */
   private refillPower(state: IGameState): void {
     state.resources.power = getPowerMax(state);
+    eventBus.emit(GameEvents.RESOURCE_CHANGED, { type: 'power', value: state.resources.power, delta: 0 });
   }
 
   /**
@@ -256,28 +262,50 @@ export class NightSystem {
     if (z.moveCd > 0) return;
 
     const d0 = distFromCenter(z.row, z.col);
-    // 钻地僵尸接近核心（≤2 格）钻出地面，之后按走路逻辑行动
-    if (z.burrowed && d0 <= 2) {
+    // 雷达覆盖内的钻地僵尸提前显形；无雷达时仍在核心附近钻出。
+    if (z.burrowed && (d0 <= 2 || hasSupportCoverage(state, 'radar', z.row, z.col, true))) {
       z.burrowed = false;
       eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.zombieEmerged', { zombie: getZombieName(cfg.id) }));
     }
     const burrowed = !!z.burrowed;
     const flying = cfg.moveType === 'fly';
 
-    // 八邻居中距核心更近的格子（四方向在切比雪夫距离的对角线上会卡死）
+    // Ground enemies follow the editable four-direction corridor. Flying and
+    // burrowed enemies retain their direct movement rules.
     const candidates: { row: number; col: number }[] = [];
-    for (let dr = -1; dr <= 1; dr++) {
-      for (let dc = -1; dc <= 1; dc++) {
-        if (dr === 0 && dc === 0) continue;
-        const r = z.row + dr;
-        const c = z.col + dc;
-        if (r < 0 || r >= state.base.rows || c < 0 || c >= state.base.cols) continue;
-        if (distFromCenter(r, c) < d0) candidates.push({ row: r, col: c });
+    if (!flying && !burrowed) {
+      const path = findPathToCore(state.base, z);
+      if (path && path.length > 1) candidates.push(path[1]);
+    }
+    if (candidates.length === 0) {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const r = z.row + dr;
+          const c = z.col + dc;
+          if (r < 0 || r >= state.base.rows || c < 0 || c >= state.base.cols) continue;
+          if (distFromCenter(r, c) < d0) candidates.push({ row: r, col: c });
+        }
       }
     }
 
     // 同格不重叠：已被其他僵尸占住的格子不可进入；更近的格全被占住时原地等待（排队）
     const free = candidates.filter(p => !this.zombieAt(battle, p.row, p.col));
+    const overtaken = cfg.id === 2
+      ? candidates.map(p => ({ p, zombie: this.zombieAt(battle, p.row, p.col) }))
+        .find(({ zombie }) => {
+          const blocker = zombie && getZombieConfig(zombie.cfgId);
+          return !!blocker && blocker.moveType === 'ground' && blocker.speed < cfg.speed;
+        })
+      : undefined;
+    if (overtaken?.zombie) {
+      overtaken.zombie.row = z.row;
+      overtaken.zombie.col = z.col;
+      z.row = overtaken.p.row;
+      z.col = overtaken.p.col;
+      z.moveCd = 1000 / cfg.speed;
+      return;
+    }
     if (candidates.length > 0 && free.length === 0) {
       z.moveCd = 250;
       return;
@@ -297,6 +325,36 @@ export class NightSystem {
         if (flying) return kind === 'core';
         return true;
       });
+
+    if (cfg.explode && z.attackCd <= 0) {
+      const wall = state.base.buildings.find(building =>
+        getBuildingConfig(building.cfgId)?.kind === 'wall'
+        && Math.max(Math.abs(building.row - z.row), Math.abs(building.col - z.col)) <= 1);
+      if (wall) {
+        z.hp = 0;
+        eventBus.emit(GameEvents.NIGHT_ZOMBIE_ATTACK, {
+          fromRow: z.row, fromCol: z.col, toRow: wall.row, toCol: wall.col
+        });
+        return;
+      }
+    }
+
+    const hero = state.heroes.find(h => h.row >= 0 && Math.max(Math.abs(h.row - z.row), Math.abs(h.col - z.col)) <= 1);
+    if (hero && z.attackCd <= 0) {
+      const heroRow = hero.row;
+      const heroCol = hero.col;
+      const maxHp = hero.maxHp ?? getHeroConfig(hero.key)?.hp ?? 100;
+      hero.maxHp = maxHp;
+      hero.hp = Math.max(0, (hero.hp ?? maxHp) - (z.attack ?? cfg.attack));
+      if (hero.hp === 0) {
+        hero.row = -1;
+        hero.col = -1;
+        hero.recoveryDays = 7;
+      }
+      eventBus.emit(GameEvents.NIGHT_ZOMBIE_ATTACK, { fromRow: z.row, fromCol: z.col, toRow: heroRow, toCol: heroCol });
+      z.attackCd = cfg.attackInterval ?? 1000;
+      return;
+    }
 
     if (blockers.length > 0) {
       // 拆迁等级判定：只能拆 sturdy ≤ demolish 的建筑；全拆不动时累计卡死计时，超时狂暴强拆
@@ -384,13 +442,19 @@ export class NightSystem {
       battle.towerCds[key] = (battle.towerCds[key] ?? 0) - dt;
       if (battle.towerCds[key] > 0) continue;
 
-      // 最近的射程内僵尸（钻地潜行中的僵尸不可被索敌）
+      // 雷达覆盖的箭塔优先处理飞行目标；其他塔按最近距离索敌。
       let target: IZombie | null = null;
       let best = Infinity;
+      let bestPriority = Infinity;
+      const radarArrow = b.cfgId === 101 && hasSupportCoverage(state, 'radar', b.row, b.col, true);
       for (const z of battle.zombies) {
-        if (z.burrowed) continue;
+        const zCfg = getZombieConfig(z.cfgId);
+        if (z.burrowed && !(b.cfgId === 103 && hasSupportCoverage(state, 'radar', z.row, z.col, true))) continue;
+        if (b.cfgId === 101 && (zCfg?.moveType === 'burrow' || (zCfg?.moveType === 'fly' && !radarArrow))) continue;
         const d = Math.max(Math.abs(z.row - b.row), Math.abs(z.col - b.col));
-        if (d <= cfg.range && d < best) {
+        const priority = radarArrow && zCfg?.moveType === 'fly' ? 0 : 1;
+        if (d <= cfg.range && (priority < bestPriority || (priority === bestPriority && d < best))) {
+          bestPriority = priority;
           best = d;
           target = z;
         }
@@ -401,15 +465,36 @@ export class NightSystem {
       }
 
       const zCfg = getZombieConfig(target.cfgId);
-      const dmg = Math.max(1, attackAtLevel(cfg, b.level) - (zCfg?.defense ?? 0));
+      const dmg = Math.max(1, attackAtLevel(cfg, b.level) - (cfg.ignoreDefense ? 0 : zCfg?.defense ?? 0));
       target.hp -= dmg;
+      if (b.cfgId === 102) {
+        for (const z of battle.zombies) {
+          if (z === target || z.burrowed) continue;
+          if (Math.max(Math.abs(z.row - target.row), Math.abs(z.col - target.col)) <= 1) {
+            z.hp -= Math.max(1, attackAtLevel(cfg, b.level) - (cfg.ignoreDefense ? 0 : getZombieConfig(z.cfgId)?.defense ?? 0));
+          }
+        }
+      } else if (b.cfgId === 103) {
+        const hit = new Set<IZombie>([target]);
+        let from = target;
+        for (let hop = 1; hop <= 4; hop++) {
+          const next = battle.zombies
+            .filter(z => !hit.has(z) && !z.burrowed && Math.max(Math.abs(z.row - from.row), Math.abs(z.col - from.col)) <= 2)
+            .sort((a, b) => Math.max(Math.abs(a.row - from.row), Math.abs(a.col - from.col)) - Math.max(Math.abs(b.row - from.row), Math.abs(b.col - from.col)))[0];
+          if (!next) break;
+          hit.add(next);
+          next.hp -= Math.max(1, Math.floor(dmg * Math.pow(0.75, hop)) - (cfg.ignoreDefense ? 0 : getZombieConfig(next.cfgId)?.defense ?? 0));
+          from = next;
+        }
+      }
       if (cfg.slow) {
         target.slowUntil = Math.max(target.slowUntil, battle.time + SLOW_DURATION);
       }
       eventBus.emit(GameEvents.NIGHT_TOWER_FIRE, {
         fromRow: b.row, fromCol: b.col, toRow: target.row, toCol: target.col, cfgId: b.cfgId, damage: dmg
       });
-      battle.towerCds[key] = 1000 / (cfg.speed ?? 1);
+      const speedMultiplier = hasSupportCoverage(state, 'ammo', b.row, b.col, true) ? 1.5 : 1;
+      battle.towerCds[key] = 1000 / ((cfg.speed ?? 1) * speedMultiplier);
     }
   }
 

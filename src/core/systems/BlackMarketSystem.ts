@@ -1,25 +1,46 @@
 import { getBuildingConfig } from '../config/BuildingConfig';
+import { getMergeChain } from '../config/PropConfig';
 import { IGameState } from '../types';
 import { EconomySystem } from './EconomySystem';
 
 export interface IBlackMarketItem {
   cfgId: number;
-  blueprintId: number;
+  fragmentId: number;
+  fragmentCount: 2;
   star: number;
 }
 
-// ponytail: fixed starter stock; add rotating stock only when progression needs it.
+// ponytail: fixed stock; recommendation only changes the existing card order.
 export const BLACK_MARKET_ITEMS: IBlackMarketItem[] = [
-  [102, 6], [202, 6], [301, 6], [103, 10], [104, 10], [205, 8], [206, 8], [207, 8], [302, 8], [303, 10], [402, 10], [403, 14]
-].map(([cfgId, star]) => ({ cfgId, blueprintId: getBuildingConfig(cfgId)?.blueprint ?? 0, star }));
+  [209, 3], [208, 3], [102, 3], [202, 3], [301, 2], [103, 3], [104, 3], [205, 3], [206, 3], [207, 3], [302, 3], [303, 2], [402, 3], [403, 4], [210, 4]
+].map(([cfgId, star]) => {
+  const blueprintId = getBuildingConfig(cfgId)?.blueprint ?? 0;
+  return { cfgId, fragmentId: getMergeChain(blueprintId)[0] ?? 0, fragmentCount: 2, star };
+});
+
+const MARKET_RECOMMENDATIONS: { day: number; cfgId: number }[] = [
+  { day: 4, cfgId: 303 },
+  { day: 8, cfgId: 209 },
+  { day: 12, cfgId: 103 },
+  { day: 16, cfgId: 302 },
+  { day: 20, cfgId: 209 },
+  { day: 24, cfgId: 402 },
+  { day: 28, cfgId: 403 }
+];
+
+export function getRecommendedMarketItem(day: number): IBlackMarketItem | undefined {
+  const available = MARKET_RECOMMENDATIONS.filter(entry => entry.day <= day);
+  const recommendation = available[available.length - 1];
+  return BLACK_MARKET_ITEMS.find(item => item.cfgId === recommendation?.cfgId);
+}
 
 const economy = new EconomySystem();
 export const DIAMOND_TO_COIN_RATE = 100;
 
 export function buyBlackMarketBlueprint(state: IGameState, cfgId: number): { ok: boolean; item?: IBlackMarketItem } {
   const item = BLACK_MARKET_ITEMS.find(entry => entry.cfgId === cfgId);
-  if (!item || !item.blueprintId || !economy.subResource(state, 'star', item.star)) return { ok: false };
-  economy.giveItemToBoardOrCard(state, item.blueprintId);
+  if (!item || !item.fragmentId || !economy.subResource(state, 'star', item.star)) return { ok: false };
+  for (let i = 0; i < item.fragmentCount; i++) economy.giveItemToBoardOrCard(state, item.fragmentId);
   return { ok: true, item };
 }
 

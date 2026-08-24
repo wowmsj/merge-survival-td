@@ -43,6 +43,7 @@
     "attack": 40,
     "range": 3,
     "speed": 0.8,
+    "ignoreDefense": true,
     "blueprint": 70112,
     "needPower": 2
   },
@@ -82,7 +83,7 @@
     "hp": 150,
     "blueprint": 70128,
     "needPower": 2,
-    "providePower": 10
+    "providePower": 6
   },
   {
     "id": 204,
@@ -138,6 +139,42 @@
     "outputInterval": 300,
     "blueprint": 70144,
     "needPower": 2
+  },
+  {
+    "id": 208,
+    "name": "弹药库",
+    "kind": "resource",
+    "costCoin": 550,
+    "costMaterials": {},
+    "hp": 180,
+    "blueprint": 70169,
+    "needPower": 2,
+    "support": "ammo",
+    "supportRange": 2
+  },
+  {
+    "id": 209,
+    "name": "雷达站",
+    "kind": "resource",
+    "costCoin": 650,
+    "costMaterials": {},
+    "hp": 160,
+    "blueprint": 70170,
+    "needPower": 2,
+    "support": "radar",
+    "supportRange": 3
+  },
+  {
+    "id": 210,
+    "name": "维修站",
+    "kind": "resource",
+    "costCoin": 500,
+    "costMaterials": {},
+    "hp": 180,
+    "blueprint": 70171,
+    "needPower": 2,
+    "support": "repair",
+    "supportRange": 2
   },
   {
     "id": 301,

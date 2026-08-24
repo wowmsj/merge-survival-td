@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { IGameState } from '../../core/types';
+import { GameEvents, eventBus } from '../../core/events/EventBus';
 import { getPowerMax } from '../../core/config/TableConfig';
 import { getPowerInfo } from '../../core/systems/BaseSystem';
 import { UI_FILL, UI_GOLD, UI_SLOT_FILL, UI_STROKE } from './UiStyle';
@@ -140,6 +141,16 @@ export class HUD {
     }
 
     this.refresh();
+
+    // 自订阅资源/基地变化：金币等数值在任何页面（棋盘/基地）都即时刷新；
+    // BASE_CHANGED 覆盖拆除建筑（0 返还时不发 RESOURCE_CHANGED）导致的电力胶囊变化
+    const onRefresh = () => this.refresh();
+    eventBus.on(GameEvents.RESOURCE_CHANGED, onRefresh);
+    eventBus.on(GameEvents.BASE_CHANGED, onRefresh);
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      eventBus.off(GameEvents.RESOURCE_CHANGED, onRefresh);
+      eventBus.off(GameEvents.BASE_CHANGED, onRefresh);
+    });
   }
 
   refresh(): void {

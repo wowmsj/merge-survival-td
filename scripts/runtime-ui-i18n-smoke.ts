@@ -4,7 +4,7 @@ import { resolve } from 'path';
 const RUNTIME_FILES = [
   'src/phaser/objects/GridRenderer.ts', 'src/phaser/objects/ItemSprite.ts',
   'src/phaser/scenes/BaseScene.ts', 'src/phaser/scenes/BootScene.ts', 'src/phaser/scenes/GameScene.ts', 'src/phaser/scenes/NightScene.ts',
-  'src/phaser/ui/BagPanel.ts', 'src/phaser/ui/BasePanel.ts', 'src/phaser/ui/CardBar.ts', 'src/phaser/ui/CharacterPanel.ts',
+  'src/phaser/ui/BagPanel.ts', 'src/phaser/ui/BasePanel.ts', 'src/phaser/ui/CardBar.ts', 'src/phaser/ui/CharacterPanel.ts', 'src/phaser/ui/MonsterPanel.ts',
   'src/phaser/ui/HandGuide.ts', 'src/phaser/ui/HUD.ts', 'src/phaser/ui/InfoBar.ts', 'src/phaser/ui/SpawnerProductsPanel.ts',
   'src/phaser/ui/SettingsPanel.ts', 'src/phaser/ui/StoryArchivePanel.ts', 'src/phaser/ui/StoryDialog.ts', 'src/phaser/ui/TaskBar.ts', 'src/phaser/ui/TaskChainPanel.ts', 'src/phaser/ui/UiStyle.ts', 'src/phaser/ui/UiWidgets.ts'
 ] as const;
@@ -83,7 +83,7 @@ const layoutChecks = [
   ['src/phaser/ui/InfoBar.ts', 'const DESC_W = 224;', 'InfoBar description bounds'],
   ['src/phaser/ui/InfoBar.ts', 'maxLines: 2', 'InfoBar description line limit'],
   ['src/phaser/ui/InfoBar.ts', 'this.icon.setTexture(iconKey).setDisplaySize(92, 92).setVisible(true);', 'InfoBar selected icon fixed size'],
-  ['src/phaser/ui/TaskChainPanel.ts', 'const cols = Math.min(path.length, 5);', 'Task chain five-node single-row layout'],
+  ['src/phaser/ui/TaskChainPanel.ts', 'const cols = Math.max(1, Math.min(target.path.length, 5));', 'Task chain five-node single-row layout'],
   ['src/phaser/scenes/GameScene.ts', 'this.spawnerPanel.open(this.getHighestSpawnerId(it.id));', 'Spawner panel highest board level'],
   ['src/phaser/ui/BagPanel.ts', 'maxLines: isEnglish ? 2 : undefined', 'BagPanel'],
   ['src/phaser/ui/SpawnerProductsPanel.ts', 'maxLines: isEnglish ? 2 : undefined', 'SpawnerProductsPanel'],

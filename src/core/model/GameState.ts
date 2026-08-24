@@ -40,6 +40,7 @@ export function createInitialGameState(): IGameState {
     unlockedBuildings: [],
     blueprintStock: {},
     heroes: [],
+    powerRecoverAt: Date.now(),
     timestamp: Date.now()
   };
 }

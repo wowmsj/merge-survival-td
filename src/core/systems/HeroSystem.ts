@@ -12,6 +12,19 @@ import { getText } from '../i18n';
  */
 export class HeroSystem {
 
+  /** 新的一天结算英雄恢复；重伤满 7 天后以满血归队。 */
+  recoverForNewDay(state: IGameState): void {
+    for (const hero of state.heroes) {
+      const maxHp = this.ensureHealth(hero);
+      if (hero.recoveryDays) {
+        hero.recoveryDays--;
+        if (hero.recoveryDays === 0) hero.hp = maxHp;
+      } else if ((hero.hp ?? maxHp) > 0) {
+        hero.hp = Math.min(maxHp, (hero.hp ?? maxHp) + Math.ceil(maxHp * 0.2));
+      }
+    }
+  }
+
   /** 已加入的英雄 */
   getJoined(state: IGameState): IHeroState[] {
     return state.heroes;
@@ -44,6 +57,10 @@ export class HeroSystem {
       eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.heroNotJoined'));
       return false;
     }
+    if ((hero.hp ?? this.ensureHealth(hero)) <= 0 || hero.recoveryDays) {
+      eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.heroCritical', { days: hero.recoveryDays ?? 0 }));
+      return false;
+    }
     if (hero.row >= 0) {
       eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.heroDeployed'));
       return false;
@@ -69,5 +86,12 @@ export class HeroSystem {
     hero.col = -1;
     eventBus.emit(GameEvents.BASE_CHANGED, { row, col });
     return true;
+  }
+
+  private ensureHealth(hero: IHeroState): number {
+    const maxHp = Math.max(1, hero.maxHp ?? getHeroConfig(hero.key)?.hp ?? 100);
+    hero.maxHp = maxHp;
+    hero.hp = Math.min(maxHp, Math.max(0, hero.hp ?? maxHp));
+    return maxHp;
   }
 }

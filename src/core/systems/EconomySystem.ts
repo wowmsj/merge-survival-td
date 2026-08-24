@@ -1,9 +1,10 @@
 import { GameEvents, eventBus } from '../events/EventBus';
-import { getProp, propGoesToCardList, propIdToResourceKey } from '../config/PropConfig';
+import { getProp, isMergeChainTop, propGoesToCardList, propIdToResourceKey } from '../config/PropConfig';
 import { IGameState, IPoint, IResource, ISellResult } from '../types';
 import { findEmptyCell, getItem, setItem } from '../model/Grid';
 import { createItemFromConfig, itemIsNormal } from '../model/Item';
 import { getText } from '../i18n';
+import { getPowerMax } from '../config/TableConfig';
 
 /**
  * 经济系统
@@ -20,6 +21,26 @@ const CAPPED_RESOURCES: (keyof IResource)[] = ['medicine'];
 */
 
 export class EconomySystem {
+
+  /** 每完整五分钟自然恢复一点行动力，满体时不积攒恢复时间。 */
+  recoverPower(state: IGameState, currentTime: number = Date.now()): void {
+    const last = state.powerRecoverAt ?? state.timestamp ?? currentTime;
+    if (currentTime <= last) return;
+
+    const max = getPowerMax(state);
+    if (state.resources.power >= max) {
+      state.powerRecoverAt = currentTime;
+      return;
+    }
+
+    const recovered = Math.floor((currentTime - last) / (5 * 60 * 1000));
+    if (recovered <= 0) return;
+
+    const amount = Math.min(recovered, max - state.resources.power);
+    state.resources.power += amount;
+    state.powerRecoverAt = amount < recovered ? currentTime : last + recovered * 5 * 60 * 1000;
+    eventBus.emit(GameEvents.RESOURCE_CHANGED, { type: 'power', value: state.resources.power, delta: amount });
+  }
 
   /** 增加资源（基础资源受上限限制） */
   addResource(state: IGameState, type: keyof IResource, amount: number): void {
@@ -97,7 +118,7 @@ export class EconomySystem {
 
     const prop = getProp(item.id);
     const coin = prop?.levelGold || 0;
-    if (!prop?.she || coin <= 0) {
+    if ((!prop?.she && !isMergeChainTop(item.id)) || coin <= 0) {
       eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.cannotSell'));
       return null;
     }
