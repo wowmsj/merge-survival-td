@@ -11,6 +11,7 @@ import { getZombieConfig } from '../../core/config/ZombieConfig';
 import { getHeroConfig } from '../../core/config/HeroConfig';
 import { addFullscreenBg, showSceneToast, makeUiButton } from '../ui/UiWidgets';
 import { KIND_COLORS, KIND_ICON_KEYS } from '../config/BuildingKindStyle';
+import { isBuildingPoweredAtNight } from '../../core/systems/BaseSystem';
 
 const GRID_TOP = 210;
 const GRID_LEFT = 24;
@@ -95,6 +96,9 @@ export class NightScene extends Phaser.Scene {
     this.renderGrid();
     this.renderBuildings();
 
+    // 供电状态随燃料到期变化：每秒重绘建筑层，刷新缺电角标（baseDirty 只覆盖血量/增减）
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => { if (!this.ended) this.renderBuildings(); } });
+
     const onToast = (msg: string) => this.showToast(msg);
     eventBus.on(GameEvents.TOAST_SHOW, onToast);
     const onZombieSpawn = (data: { moveType?: string }) => {
@@ -175,23 +179,40 @@ export class NightScene extends Phaser.Scene {
       const cfg = getBuildingConfig(b.cfgId);
       if (!cfg) continue;
       const { x, y } = this.cellXY(b.row, b.col);
+      // 夜战供电判定（塔优先）：缺电建筑压暗 + 红名 + 缺电角标，与基地页口径一致
+      const powered = isBuildingPoweredAtNight(this.state, b);
 
-      // 有图标纹理用建筑图标，缺失回退色块
+      // 有图标纹理用建筑图标，缺失回退色块；缺电建筑灰色压暗
       const iconKey = KIND_ICON_KEYS[cfg.kind];
-      if (this.textures.exists(iconKey)) {
+      const hasIcon = this.textures.exists(iconKey);
+      if (hasIcon) {
         const img = this.add.image(x, y, iconKey).setDisplaySize(CELL - 12, CELL - 12);
+        if (!powered) img.setTint(0x9aa0a6).setAlpha(0.55);
         this.buildingLayer.add(img);
       } else {
         const g = this.add.graphics();
-        g.fillStyle(KIND_COLORS[cfg.kind], 1);
+        g.fillStyle(powered ? KIND_COLORS[cfg.kind] : 0x555560, 1);
         g.fillRoundedRect(x - CELL / 2 + 4, y - CELL / 2 + 4, CELL - 8, CELL - 8, 10);
         this.buildingLayer.add(g);
       }
 
-      const name = this.add.text(x, this.textures.exists(iconKey) ? y - CELL / 2 + 12 : y - 4, getBuildingName(cfg.id).substring(0, 3), {
-        fontSize: '18px', color: '#ffffff', fontStyle: 'bold', stroke: '#000000', strokeThickness: 3
+      // 缺电时名字变红并移到中央（给角标让位）
+      const name = this.add.text(x, hasIcon ? (powered ? y - CELL / 2 + 12 : y) : y - 4, getBuildingName(cfg.id).substring(0, 3), {
+        fontSize: '18px', color: powered ? '#ffffff' : '#ff6b6b', fontStyle: 'bold', stroke: '#000000', strokeThickness: 3
       }).setOrigin(0.5);
       this.buildingLayer.add(name);
+
+      // 缺电角标：右上角红底「缺电」
+      if (!powered) {
+        const badge = this.add.graphics();
+        badge.fillStyle(0xc92a2a, 0.95);
+        badge.fillRoundedRect(x + CELL / 2 - 46, y - CELL / 2 + 2, 44, 22, 6);
+        this.buildingLayer.add(badge);
+        const badgeText = this.add.text(x + CELL / 2 - 24, y - CELL / 2 + 13, getText('base.noPower'), {
+          fontSize: '15px', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.buildingLayer.add(badgeText);
+      }
 
       const barW = CELL - 16;
       const ratio = Math.max(0, b.hp / b.maxHp);
