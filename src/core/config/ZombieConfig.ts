@@ -2,7 +2,7 @@
  * 僵尸配置表访问层 + 夜晚波次生成
  * 数值设计见 SURVIVAL_BUILD_DESIGN.md 6.5
  *
- * 波次规则：第 N 天 = 3 + floor((N-1)/5) 波；每波数量 2 + N + 波序；每 5 天最后一波出 Boss。
+ * 波次规则：第 N 天 = 3 + floor((N-1)/4) 波；每波数量 2 + N + 波序；每 5 天最后一波出 Boss。
  * 等级规则：僵尸等级每 2 天 +1（1~2 天 Lv1，3~4 Lv2 ……封顶 Lv8），
  * 血量 ×(1+0.4×(Lv-1))、攻击 ×(1+0.2×(Lv-1))。第一夜全是 Lv1 僵尸，一座箭塔即可守住。
  */
@@ -94,9 +94,9 @@ export function getAllZombieConfigs(): IZombieConfig[] {
   return ZOMBIE_TABLE;
 }
 
-/** 第 N 天总波次 */
+/** 第 N 天总波次：每 4 天 +1 波，压力更持续 */
 export function getTotalWaves(day: number): number {
-  return 3 + Math.floor((day - 1) / 5);
+  return 3 + Math.floor((day - 1) / 4);
 }
 
 /** 第 N 天僵尸等级：每 2 天 +1（1~2 天 Lv1，3~4 Lv2，5~6 Lv3 ……封顶 Lv8） */

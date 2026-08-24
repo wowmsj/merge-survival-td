@@ -1192,7 +1192,7 @@ console.log('== 夜晚战斗 ==');
     assert(p28.bossLast && p28.types.some(t => t.id === 6 && t.guaranteed), '第 28 天预告：首个 Boss');
     const p8 = getNightPreview(8);
     assert(p8.types.some(t => t.id === 7) && !p8.types.some(t => t.id === 3), '第 8 天起出现飞行敌，高甲敌延后出现');
-    assert(p28.total === 189, '第 28 天预告：总数含 Boss');
+    assert(p28.total === 217, '第 28 天预告：总数含 Boss');
 
     // 僵尸等级：每 4 天 +1 级，封顶 Lv8
     assert(getZombieLevel(1) === 1 && getZombieLevel(4) === 1 && getZombieLevel(5) === 2 && getZombieLevel(29) === 8, '僵尸等级：每 4 天 +1，封顶 Lv8');
@@ -1404,7 +1404,7 @@ console.log('== 夜晚战斗 ==');
     );
     night.tick(fastState, fastBattle, 100);
     const fast = fastBattle.zombies.find(z => z.uid === 813)!;
-    assert(getZombieConfig(2)?.speed === 2 && fast.row === fastNext.row && fast.col === fastNext.col, '快速僵尸以 2 格/秒越过更慢的地面僵尸');
+    assert(getZombieConfig(2)?.speed === 2.5 && fast.row === fastNext.row && fast.col === fastNext.col, '快速僵尸以 2.5 格/秒越过更慢的地面僵尸');
   }
 
   // --- 钻地僵尸：潜行不被塔索敌，距核心 ≤2 格钻出 ---
