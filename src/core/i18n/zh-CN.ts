@@ -9,7 +9,7 @@ const namesById = <T extends { id: number; name: string }>(rows: T[]): Record<nu
   Object.fromEntries(rows.map(row => [row.id, row.name]));
 
 export const zhCN: LocaleData = {
-  ui: { 'settings.title': '设置', 'settings.chinese': '中文', 'settings.english': 'English', 'dialog.restart': '重开', 'dialog.confirmRestart': '确认重开' },
+  ui: { 'settings.title': '设置', 'settings.chinese': '中文', 'settings.english': 'English', 'settings.nightTest': '夜战测试', 'dialog.restart': '重开', 'dialog.confirmRestart': '确认重开', 'dialog.cancel': '取消' },
   props: namesById(getAllProps()),
   propDescriptions: Object.fromEntries(getAllProps().map(prop => [prop.id, prop.mask])),
   buildings: namesById(getAllBuildingConfigs()),
@@ -131,5 +131,6 @@ Object.assign(zhCNRuntimeUi, {
   'base.listSeparator': '、', 'base.allSidesBlocked': '四边全被堵死——僵尸将原地强拆', 'base.attackDirection': '进攻方向',
   'base.routeLengthLabel': '最短地面路线', 'base.routeLength': '{cells} 格', 'base.routeLengthBlocked': '无可用路线',
   'base.waveScale': '{waves} 波 · 共约 {total} 只 · 僵尸 Lv.{level}', 'base.bossLast': ' · 末波有 Boss！', 'base.eliteLast': ' · 末波保底精英',
-  'base.waveScaleLabel': '波次规模', 'base.defenseWarning': '防线预警', 'base.noAntiAirWarning': '本夜有飞行敌人；当前没有可对空的防御塔。雷达覆盖箭塔，或部署其他防御塔后再迎战。', 'base.enemyType': '敌人类型', 'base.guaranteedLast': '（末波保底）', 'base.fight': '迎战', 'base.prepareMore': '再准备下'
+  'base.waveScaleLabel': '波次规模', 'base.defenseWarning': '防线预警', 'base.noAntiAirWarning': '本夜有飞行敌人；当前没有可对空的防御塔。雷达覆盖箭塔，或部署其他防御塔后再迎战。', 'base.enemyType': '敌人类型', 'base.guaranteedLast': '（末波保底）', 'base.fight': '迎战', 'base.prepareMore': '再准备下',
+  'nightTest.title': '夜战测试', 'nightTest.day': '第 {day} 天', 'nightTest.clear': '清空防线', 'nightTest.start': '开始夜战', 'nightTest.back': '返回', 'nightTest.cleared': '防线已清空', 'nightTest.cannotRemove': '核心和废墟不可拆除'
 });

@@ -47,6 +47,7 @@ export class NightScene extends Phaser.Scene {
   private storySystem!: StorySystem;
   private storyDialog!: StoryDialog;
   private battle!: IBattle;
+  private testMode = false;
 
   private gridLayer!: Phaser.GameObjects.Container;
   private buildingLayer!: Phaser.GameObjects.Container;
@@ -60,8 +61,9 @@ export class NightScene extends Phaser.Scene {
     super({ key: 'NightScene' });
   }
 
-  init(data: { state: IGameState }): void {
+  init(data: { state: IGameState; testMode?: boolean }): void {
     this.state = data.state;
+    this.testMode = !!data.testMode;
   }
 
   create(): void {
@@ -477,6 +479,10 @@ export class NightScene extends Phaser.Scene {
       depth: 801
     }, () => {
       this.nightSystem.endBattle(this.state, this.battle);
+      if (this.testMode) {
+        this.scene.start('NightTestScene', { state: this.state });
+        return;
+      }
       this.storage.saveState(this.state);
       this.scene.start('BaseScene', { state: this.state, nightEndStory: { won, day: this.state.day } });
     });

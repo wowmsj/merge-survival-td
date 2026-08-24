@@ -164,7 +164,7 @@ const STORY_TEXT: Record<number, string[]> = {
 };
 
 export const en: LocaleData = {
-  ui: { 'settings.title': 'Settings', 'settings.chinese': 'Chinese', 'settings.english': 'English', 'base.core': 'Base Core', 'action.merge': 'Merge', 'inventory.backpack': 'Backpack', 'resource.fuel': 'Fuel', 'resource.scrap': 'Scrap', 'resource.medicine': 'Medicine', 'dialog.restart': 'Restart', 'dialog.confirmRestart': 'Confirm Restart' },
+  ui: { 'settings.title': 'Settings', 'settings.chinese': 'Chinese', 'settings.english': 'English', 'settings.nightTest': 'Night Test', 'base.core': 'Base Core', 'action.merge': 'Merge', 'inventory.backpack': 'Backpack', 'resource.fuel': 'Fuel', 'resource.scrap': 'Scrap', 'resource.medicine': 'Medicine', 'dialog.restart': 'Restart', 'dialog.confirmRestart': 'Confirm Restart', 'dialog.cancel': 'Cancel' },
   props: Object.fromEntries(getAllProps().map(prop => [prop.id, propName(prop)])),
   propDescriptions: Object.fromEntries(getAllProps().map(prop => [prop.id, `A ${propName(prop)} for merging and survival.`])),
   buildings: Object.fromEntries(getAllBuildingConfigs().map(building => [building.id, BUILDINGS[building.id]])),
@@ -290,5 +290,6 @@ Object.assign(enRuntimeUi, {
   'base.listSeparator': ', ', 'base.allSidesBlocked': 'All sides are blocked. Zombies will demolish in place.', 'base.attackDirection': 'Attack Direction',
   'base.routeLengthLabel': 'Shortest Ground Route', 'base.routeLength': '{cells} cells', 'base.routeLengthBlocked': 'No open route',
   'base.waveScale': '{waves} waves · about {total} zombies · Zombie Lv.{level}', 'base.bossLast': ' · Boss in the last wave!', 'base.eliteLast': ' · Elite guaranteed in the last wave',
-  'base.waveScaleLabel': 'Wave Scale', 'base.defenseWarning': 'Defense Warning', 'base.noAntiAirWarning': 'Flying enemies are expected tonight. You have no anti-air tower. Cover Arrow Towers with Radar or deploy another tower before fighting.', 'base.enemyType': 'Enemy Types', 'base.guaranteedLast': ' (last-wave guaranteed)', 'base.fight': 'Fight', 'base.prepareMore': 'Prepare More'
+  'base.waveScaleLabel': 'Wave Scale', 'base.defenseWarning': 'Defense Warning', 'base.noAntiAirWarning': 'Flying enemies are expected tonight. You have no anti-air tower. Cover Arrow Towers with Radar or deploy another tower before fighting.', 'base.enemyType': 'Enemy Types', 'base.guaranteedLast': ' (last-wave guaranteed)', 'base.fight': 'Fight', 'base.prepareMore': 'Prepare More',
+  'nightTest.title': 'Night Test', 'nightTest.day': 'Day {day}', 'nightTest.clear': 'Clear Defense', 'nightTest.start': 'Start Night', 'nightTest.back': 'Back', 'nightTest.cleared': 'Defense cleared', 'nightTest.cannotRemove': 'Core and ruins cannot be removed'
 });
