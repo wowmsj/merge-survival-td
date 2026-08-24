@@ -16,7 +16,7 @@
     "hp": 400,
     "attack": 14,
     "range": 3,
-    "speed": 1,
+    "speed": 1.2,
     "blueprint": 70104,
     "needPower": 2
   },
@@ -29,7 +29,7 @@
     "hp": 300,
     "attack": 30,
     "range": 2,
-    "speed": 0.5,
+    "speed": 0.4,
     "blueprint": 70108,
     "needPower": 2
   },
@@ -42,7 +42,7 @@
     "hp": 200,
     "attack": 40,
     "range": 3,
-    "speed": 0.8,
+    "speed": 0.6,
     "ignoreDefense": true,
     "blueprint": 70112,
     "needPower": 2
@@ -56,7 +56,7 @@
     "hp": 200,
     "attack": 5,
     "range": 2,
-    "speed": 0.5,
+    "speed": 0.4,
     "slow": 0.5,
     "blueprint": 70116,
     "needPower": 2

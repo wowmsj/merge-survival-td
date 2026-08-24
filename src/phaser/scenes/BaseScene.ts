@@ -986,6 +986,7 @@ export class BaseScene extends Phaser.Scene {
       { label: getText('base.health'), value: `${building.hp} / ${building.maxHp}` }
     ];
     if (cfg.attack) rows.push({ label: getText('base.attackRange'), value: getText('base.buildingRangeValue', { attack: attackAtLevel(cfg, building.level), range: cfg.range ?? '-' }) });
+    if (cfg.attack && cfg.speed) rows.push({ label: getText('base.attackSpeed'), value: getText('base.heroSpeedValue', { speed: cfg.speed }) });
     if (cfg.slow) rows.push({ label: getText('base.slow'), value: `${Math.round(cfg.slow * 100)}%` });
     if (cfg.outputResource && cfg.outputAmount && cfg.outputInterval) {
       const resName = RESOURCE_NAME[cfg.outputResource] ?? cfg.outputResource;

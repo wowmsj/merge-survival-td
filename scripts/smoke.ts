@@ -1103,7 +1103,7 @@ console.log('== 阵地组合 ==');
     battle.wave = 1;
     battle.zombies.push({ uid: 9977, cfgId: 1, hp: 100, maxHp: 100, row: 2, col: 6, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 });
     night.tick(state, battle, 100);
-    assert(Math.abs((battle.towerCds['2,4'] ?? 0) - 1000 / 1.5) < 0.01, '弹药库令覆盖内箭塔攻速提升 50%');
+    assert(Math.abs((battle.towerCds['2,4'] ?? 0) - 1000 / (1.2 * 1.5)) < 0.01, '弹药库令覆盖内箭塔攻速提升 50%');
   }
 
   // 箭塔必须在雷达覆盖内才能对空；雷达也让钻地敌提前显形。
