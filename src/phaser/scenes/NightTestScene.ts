@@ -49,34 +49,30 @@ export class NightTestScene extends Phaser.Scene {
     this.paletteContainer = this.add.container(0, 0).setDepth(20);
     this.selectionHint = this.add.graphics().setDepth(10);
 
-    this.add.text(DESIGN_WIDTH / 2, 50, getText('nightTest.title'), {
+    // 标题 + 返回（第一行）
+    this.add.text(DESIGN_WIDTH / 2, 56, getText('nightTest.title'), {
       fontSize: '38px', color: '#ffe066', fontStyle: 'bold'
     }).setOrigin(0.5);
-
-    // 返回
-    makeUiButton(this, null, 110, 120, 160, 64, getText('nightTest.back'), {
+    makeUiButton(this, null, 96, 56, 140, 56, getText('nightTest.back'), {
       box: { radius: 12 }
     }, () => this.scene.start('GameScene', { state: this.state }));
 
-    // 天数调节
-    this.add.text(DESIGN_WIDTH / 2 - 120, 120, getText('nightTest.day'), {
-      fontSize: '26px', color: '#ffffff'
+    // 天数调节（第二行，居中）
+    this.dayText = this.add.text(DESIGN_WIDTH / 2, 132, getText('nightTest.day', { day: this.state.day }), {
+      fontSize: '32px', color: '#ffd43b', fontStyle: 'bold'
     }).setOrigin(0.5);
-    this.dayText = this.add.text(DESIGN_WIDTH / 2, 120, getText('nightTest.day', { day: this.state.day }), {
-      fontSize: '30px', color: '#ffd43b', fontStyle: 'bold'
-    }).setOrigin(0.5);
-    makeUiButton(this, null, DESIGN_WIDTH / 2 - 90, 120, 56, 56, '<', {
+    makeUiButton(this, null, DESIGN_WIDTH / 2 - 150, 132, 64, 64, '<', {
       box: { radius: 10, fill: 0x2a2f3e, stroke: UI_GOLD, strokeAlpha: 0.6 }
     }, () => this.changeDay(-1));
-    makeUiButton(this, null, DESIGN_WIDTH / 2 + 90, 120, 56, 56, '>', {
+    makeUiButton(this, null, DESIGN_WIDTH / 2 + 150, 132, 64, 64, '>', {
       box: { radius: 10, fill: 0x2a2f3e, stroke: UI_GOLD, strokeAlpha: 0.6 }
     }, () => this.changeDay(1));
 
-    // 清空 / 开始
-    makeUiButton(this, null, DESIGN_WIDTH - 210, 120, 180, 64, getText('nightTest.clear'), {
+    // 清空 / 开始（第二行右侧）
+    makeUiButton(this, null, DESIGN_WIDTH - 200, 132, 170, 64, getText('nightTest.clear'), {
       box: { stroke: UI_ORANGE, strokeAlpha: 0.8, radius: 12 }
     }, () => this.clearDefense());
-    makeUiButton(this, null, DESIGN_WIDTH - 410, 120, 180, 64, getText('nightTest.start'), {
+    makeUiButton(this, null, DESIGN_WIDTH - 390, 132, 170, 64, getText('nightTest.start'), {
       box: { fill: 0x2b4a2b, stroke: 0x51cf66, strokeAlpha: 0.9, radius: 12 }
     }, () => this.startNight());
 
