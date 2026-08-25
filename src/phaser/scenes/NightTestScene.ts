@@ -24,6 +24,8 @@ const GAP = 6;
  */
 export class NightTestScene extends Phaser.Scene {
   private state!: IGameState;
+  /** 进入测试模式前的原始存档状态，返回主场景时传回，避免测试资源泄漏 */
+  private originalState: IGameState | null = null;
   private selectedId = 101; // 默认选中箭塔
   private dayText!: Phaser.GameObjects.Text;
   private gridLayer!: Phaser.GameObjects.Container;
@@ -37,6 +39,7 @@ export class NightTestScene extends Phaser.Scene {
   }
 
   init(data: { state?: IGameState }): void {
+    this.originalState = data?.state ? JSON.parse(JSON.stringify(data.state)) as IGameState : null;
     this.state = data?.state ? this.cloneTestState(data.state) : this.makeTestState(7);
   }
 
@@ -55,7 +58,7 @@ export class NightTestScene extends Phaser.Scene {
     }).setOrigin(0.5);
     makeUiButton(this, null, 96, 56, 140, 56, getText('nightTest.back'), {
       box: { radius: 12 }
-    }, () => this.scene.start('GameScene', { state: this.state }));
+    }, () => this.scene.start('GameScene', this.originalState ? { state: this.originalState } : undefined));
 
     // 天数调节（第二行，居中）
     this.dayText = this.add.text(DESIGN_WIDTH / 2, 132, getText('nightTest.day', { day: this.state.day }), {
