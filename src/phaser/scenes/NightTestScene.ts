@@ -19,7 +19,7 @@ const GAP = 6;
  * 夜战测试场景：
  * - 从设置进入，可自由选择第 N 天。
  * - 在基地网格上随意摆放/拆除建筑（忽略金币、蓝图、摆放规则）。
- * - 摆好后点击「开始夜战」直接进入 NightScene。
+ * - 摆好后点击「开始夜战」按渲染模式进入 NightScene / Night3DScene。
  * - 战斗结束后返回本场景，可反复调试。
  */
 export class NightTestScene extends Phaser.Scene {
@@ -150,7 +150,8 @@ export class NightTestScene extends Phaser.Scene {
   }
 
   private startNight(): void {
-    this.scene.start('NightScene', { state: this.state, testMode: true });
+    const renderMode = localStorage.getItem('merge_survival_td_render_mode');
+    this.scene.start(renderMode === '3d' ? 'Night3DScene' : 'NightScene', { state: this.state, testMode: true });
   }
 
   private cellXY(row: number, col: number): { x: number; y: number } {
