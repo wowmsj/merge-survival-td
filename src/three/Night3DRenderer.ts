@@ -60,18 +60,39 @@ function createBuildingModel(cfgId: number): THREE.Group {
       break;
     }
     case 'tower': {
-      const base = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 0.6), getMaterial(0x8a8a99));
-      base.position.y = 0.15;
-      group.add(base);
-      if (cfgId === 101) { // 箭塔
-        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 0.8, 6), getMaterial(0xa5a5b5));
-        pillar.position.y = 0.65;
-        group.add(pillar);
-        const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.5, 4), getMaterial(0xffe066));
-        arrow.position.y = 1.15;
-        arrow.rotation.x = Math.PI / 2;
-        group.add(arrow);
-      } else if (cfgId === 102) { // 炮塔
+      if (cfgId === 101) {
+        // 箭塔：卡通瞭望塔——石墩底座 + 四腿木架 + 平台 + 木屋 + 尖顶 + 小旗
+        const stone = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.2, 0.7), getMaterial(0x868e96));
+        stone.position.y = 0.1;
+        group.add(stone);
+        const legGeo = new THREE.BoxGeometry(0.09, 0.7, 0.09);
+        for (const [lx, lz] of [[-0.24, -0.24], [0.24, -0.24], [-0.24, 0.24], [0.24, 0.24]]) {
+          const leg = new THREE.Mesh(legGeo, getMaterial(0x8b5a2b));
+          leg.position.set(lx, 0.5, lz);
+          group.add(leg);
+        }
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.1, 0.62), getMaterial(0xa0784a));
+        deck.position.y = 0.88;
+        group.add(deck);
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.32, 0.4), getMaterial(0xbf8a5a));
+        cabin.position.y = 1.09;
+        group.add(cabin);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.35, 4), getMaterial(0xe8590c));
+        roof.position.y = 1.43;
+        roof.rotation.y = Math.PI / 4;
+        group.add(roof);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 5), getMaterial(0x8b5a2b));
+        pole.position.y = 1.72;
+        group.add(pole);
+        const flag = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.02), getMaterial(0xff6b6b, 0x661111));
+        flag.position.set(0.11, 1.8, 0);
+        group.add(flag);
+      } else {
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 0.6), getMaterial(0x8a8a99));
+        base.position.y = 0.15;
+        group.add(base);
+      }
+      if (cfgId === 102) { // 炮塔
         const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 0.9, 6), getMaterial(0x495057));
         barrel.position.y = 0.75;
         barrel.rotation.x = Math.PI / 2;
