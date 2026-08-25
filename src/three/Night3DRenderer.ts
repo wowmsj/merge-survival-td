@@ -196,6 +196,7 @@ export class Night3DRenderer {
   private gridHelper!: THREE.GridHelper;
 
   private buildingMeshes = new Map<string, THREE.Group>();
+  private zombieSegs = new Map<number, { fx: number; fz: number; tx: number; tz: number; t0: number; dur: number }>();
   private zombieMeshes = new Map<number, THREE.Group>();
   private damagedKeys = new Set<string>();
   private effects: IEffect[] = [];
@@ -378,24 +379,42 @@ export class Night3DRenderer {
     const now = Date.now();
     for (const z of battle.zombies) {
       currentUids.add(z.uid);
+      const { x, z: wz } = cellToWorld(z.row, z.col);
+      // 堆叠时按 uid 错开一点，避免完全重叠
+      const jx = ((z.uid % 3) - 1) * 0.14;
+      const jz = ((Math.floor(z.uid / 3) % 3) - 1) * 0.14;
+      const tx = x + jx;
+      const tz = wz + jz;
+
       if (!this.zombieMeshes.has(z.uid)) {
         const model = createZombieModel(z.cfgId);
         model.traverse(obj => { obj.castShadow = true; });
         // 直接在出生点出现，避免从地图中心飞过去
-        const spawn = cellToWorld(z.row, z.col);
-        model.position.set(spawn.x, 0, spawn.z);
+        model.position.set(tx, 0, tz);
         this.scene.add(model);
         this.zombieMeshes.set(z.uid, model);
+        this.zombieSegs.set(z.uid, { fx: tx, fz: tz, tx, tz, t0: battle.time, dur: 1 });
       }
       const mesh = this.zombieMeshes.get(z.uid)!;
-      const { x, z: wz } = cellToWorld(z.row, z.col);
-      // 平滑插值移动 + 行走颠簸；堆叠时按 uid 错开一点，避免完全重叠
-      const jx = ((z.uid % 3) - 1) * 0.14;
-      const jz = ((Math.floor(z.uid / 3) % 3) - 1) * 0.14;
-      mesh.position.x += (x + jx - mesh.position.x) * 0.2;
-      mesh.position.z += (wz + jz - mesh.position.z) * 0.2;
-      mesh.position.y = Math.abs(Math.sin(now * 0.008 + z.uid)) * 0.07;
-      mesh.rotation.y = Math.sin(now * 0.004 + z.uid) * 0.12;
+      let seg = this.zombieSegs.get(z.uid)!;
+      // 目标格变化 → 从当前位置开始新的匀速段，时长 = 走一格的时间（与逻辑同步）
+      if (seg.tx !== tx || seg.tz !== tz) {
+        const cfg = getZombieConfig(z.cfgId);
+        const slowed = z.slowUntil > battle.time;
+        const dur = cfg ? (1000 / cfg.speed) * (slowed ? 2 : 1) : 1000;
+        seg = { fx: mesh.position.x, fz: mesh.position.z, tx, tz, t0: battle.time, dur };
+        this.zombieSegs.set(z.uid, seg);
+      }
+      const p = seg.dur > 0 ? Math.min(1, (battle.time - seg.t0) / seg.dur) : 1;
+      mesh.position.x = seg.fx + (seg.tx - seg.fx) * p;
+      mesh.position.z = seg.fz + (seg.tz - seg.fz) * p;
+      // 行走颠簸 + 朝向移动方向
+      if (p < 1 && (seg.tx !== seg.fx || seg.tz !== seg.fz)) {
+        mesh.rotation.y = Math.atan2(seg.tx - seg.fx, seg.tz - seg.fz);
+        mesh.position.y = Math.abs(Math.sin(now * 0.012 + z.uid)) * 0.07;
+      } else {
+        mesh.position.y = 0;
+      }
       // 潜行时只显示土堆
       mesh.visible = !z.burrowed;
     }
@@ -403,6 +422,7 @@ export class Night3DRenderer {
       if (!currentUids.has(uid)) {
         this.scene.remove(mesh);
         this.zombieMeshes.delete(uid);
+        this.zombieSegs.delete(uid);
       }
     }
   }
