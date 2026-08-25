@@ -381,14 +381,19 @@ export class Night3DRenderer {
       if (!this.zombieMeshes.has(z.uid)) {
         const model = createZombieModel(z.cfgId);
         model.traverse(obj => { obj.castShadow = true; });
+        // 直接在出生点出现，避免从地图中心飞过去
+        const spawn = cellToWorld(z.row, z.col);
+        model.position.set(spawn.x, 0, spawn.z);
         this.scene.add(model);
         this.zombieMeshes.set(z.uid, model);
       }
       const mesh = this.zombieMeshes.get(z.uid)!;
       const { x, z: wz } = cellToWorld(z.row, z.col);
-      // 平滑插值移动 + 行走颠簸
-      mesh.position.x += (x - mesh.position.x) * 0.2;
-      mesh.position.z += (wz - mesh.position.z) * 0.2;
+      // 平滑插值移动 + 行走颠簸；堆叠时按 uid 错开一点，避免完全重叠
+      const jx = ((z.uid % 3) - 1) * 0.14;
+      const jz = ((Math.floor(z.uid / 3) % 3) - 1) * 0.14;
+      mesh.position.x += (x + jx - mesh.position.x) * 0.2;
+      mesh.position.z += (wz + jz - mesh.position.z) * 0.2;
       mesh.position.y = Math.abs(Math.sin(now * 0.008 + z.uid)) * 0.07;
       mesh.rotation.y = Math.sin(now * 0.004 + z.uid) * 0.12;
       // 潜行时只显示土堆

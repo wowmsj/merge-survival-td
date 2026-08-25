@@ -1377,7 +1377,7 @@ console.log('== 夜晚战斗 ==');
     night.tick(state, battle, 100);
     assert(battle.zombies.length === open.length && battle.spawnQueue.length === 1, '腾出空格后恢复生成');
 
-    // 移动避让：路线的下一格有僵尸 → 原地等待
+    // 无体积碰撞：路线的下一格有僵尸也可进入（同格堆叠，不排队）
     const state2 = createInitialGameState();
     const battle2 = night.startBattle(state2);
     battle2.status = 'fighting';
@@ -1389,7 +1389,7 @@ console.log('== 夜晚战斗 ==');
     battle2.zombies.push({ uid: 811, cfgId: 1, hp: 30, maxHp: 30, row: start.row, col: start.col, moveCd: 0, attackCd: 1e9, slowUntil: 0 });
     night.tick(state2, battle2, 100);
     const back = battle2.zombies.find(z => z.uid === 811)!;
-    assert(back.row === start.row && back.col === start.col, '前方占位时僵尸原地等待，不重叠');
+    assert(back.row === next.row && back.col === next.col, '前方占位时僵尸仍可前进，同格堆叠');
 
     const fastState = createInitialGameState();
     const fastBattle = night.startBattle(fastState);

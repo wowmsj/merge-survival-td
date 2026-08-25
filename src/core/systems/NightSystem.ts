@@ -249,7 +249,7 @@ export class NightSystem {
     return true;
   }
 
-  /** 某格上的僵尸（同格不重叠：生成与移动都要避开） */
+  /** 某格上的僵尸（仅生成时错开格子用；移动已允许同格堆叠） */
   private zombieAt(battle: IBattle, row: number, col: number): IZombie | undefined {
     return battle.zombies.find(zz => zz.row === row && zz.col === col);
   }
@@ -289,27 +289,8 @@ export class NightSystem {
       }
     }
 
-    // 同格不重叠：已被其他僵尸占住的格子不可进入；更近的格全被占住时原地等待（排队）
-    const free = candidates.filter(p => !this.zombieAt(battle, p.row, p.col));
-    const overtaken = cfg.id === 2
-      ? candidates.map(p => ({ p, zombie: this.zombieAt(battle, p.row, p.col) }))
-        .find(({ zombie }) => {
-          const blocker = zombie && getZombieConfig(zombie.cfgId);
-          return !!blocker && blocker.moveType === 'ground' && blocker.speed < cfg.speed;
-        })
-      : undefined;
-    if (overtaken?.zombie) {
-      overtaken.zombie.row = z.row;
-      overtaken.zombie.col = z.col;
-      z.row = overtaken.p.row;
-      z.col = overtaken.p.col;
-      z.moveCd = 1000 / cfg.speed;
-      return;
-    }
-    if (candidates.length > 0 && free.length === 0) {
-      z.moveCd = 250;
-      return;
-    }
+    // 僵尸之间无体积碰撞：允许同格堆叠，避免在狭窄走廊里排成长队卡住
+    const free = candidates;
 
     // 被建筑挡住 → 拆建筑
     //   走路：被一切非陷阱建筑阻挡
