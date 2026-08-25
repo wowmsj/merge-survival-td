@@ -21,7 +21,7 @@ export function createDefaultResources(): IResource {
   };
 }
 
-export function createInitialGameState(): IGameState {
+export function createInitialGameState(playMode: 'merge' | 'build' = 'merge'): IGameState {
   return {
     language: 'zh-CN',
     grid: createGrid(DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS) as IGrid,
@@ -40,6 +40,7 @@ export function createInitialGameState(): IGameState {
     unlockedBuildings: [],
     blueprintStock: {},
     heroes: [],
+    playMode,
     powerRecoverAt: Date.now(),
     timestamp: Date.now()
   };

@@ -99,7 +99,12 @@ export class GameScene extends Phaser.Scene {
 
       // 从基地场景返回用已有状态；否则读档或新开局
       const saved = this.passedState ? null : this.storage.loadState();
-      this.state = this.passedState ?? ((saved && this.gridHasItem(saved)) ? saved : GameInitializer.initNewGame(this.taskSystem));
+      const pendingMode = localStorage.getItem('merge_survival_td_pending_mode');
+      if (pendingMode === 'merge' || pendingMode === 'build') {
+        localStorage.removeItem('merge_survival_td_pending_mode');
+      }
+      const newGameMode = pendingMode === 'build' ? 'build' : 'merge';
+      this.state = this.passedState ?? ((saved && this.gridHasItem(saved)) ? saved : GameInitializer.initNewGame(this.taskSystem, newGameMode));
       this.economySystem.recoverPower(this.state);
       const isNewGame = !this.passedState && !(saved && this.gridHasItem(saved));
       const browserLanguage = typeof navigator === 'undefined' ? undefined : navigator.language;
@@ -184,7 +189,13 @@ export class GameScene extends Phaser.Scene {
           this.scene.start('BaseScene', { state: this.state, openBlackMarket: true });
         } },
         { x: 940, label: getText('menu.settings'), onTap: () => {
-          this.settingsPanel = new SettingsPanel(this, (language: Language) => this.changeLanguage(language), () => this.resetGame());
+          this.settingsPanel = new SettingsPanel(
+            this,
+            (language: Language) => this.changeLanguage(language),
+            () => this.resetGame(),
+            this.state.playMode ?? 'merge',
+            (mode) => this.changePlayMode(mode)
+          );
           this.settingsPanel.open();
         } }
       ];
@@ -540,6 +551,16 @@ export class GameScene extends Phaser.Scene {
   private resetGame(): void {
     this.saveDisabled = true;
     this.storage.clearState();
+    location.reload();
+  }
+
+  /** 切换玩法模式：清空存档并按新模式重开 */
+  private changePlayMode(mode: 'merge' | 'build'): void {
+    if ((this.state.playMode ?? 'merge') === mode) return;
+    this.saveDisabled = true;
+    this.storage.clearState();
+    // 新开局时 createInitialGameState 会带上目标模式
+    localStorage.setItem('merge_survival_td_pending_mode', mode);
     location.reload();
   }
 

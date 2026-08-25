@@ -43,6 +43,7 @@ export class StorageSystem {
           }
           if (data.state.language !== 'zh-CN' && data.state.language !== 'en') data.state.language = 'zh-CN';
           if (!data.state.blueprintStock || typeof data.state.blueprintStock !== 'object') data.state.blueprintStock = {};
+          if (data.state.playMode !== 'merge' && data.state.playMode !== 'build') data.state.playMode = 'merge';
           // joinHero 是后加的能力：旧存档按 storySeen 补发已加入的英雄
           backfillJoinedHeroes(data.state);
           backfillStorySpawnProps(data.state);

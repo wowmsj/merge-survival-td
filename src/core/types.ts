@@ -147,6 +147,9 @@ export interface ITask {
   rewardPropArr?: { id: number; num: number }[];
 }
 
+/** 玩法模式：merge=物资合成，build=建筑合成 */
+export type PlayMode = 'merge' | 'build';
+
 /** 全局游戏状态 */
 export interface IGameState {
   language: Language;
@@ -178,6 +181,8 @@ export interface IGameState {
   blueprintStock: Record<number, number>;
   /** 已加入堡垒的英雄（剧情 beat 播完入队；row=-1 未部署） */
   heroes: IHeroState[];
+  /** 玩法模式；旧存档缺失时按 merge 处理 */
+  playMode?: PlayMode;
   /** 行动力上次恢复结算的时间戳；旧存档缺失时回退 timestamp。 */
   powerRecoverAt?: number;
   timestamp: number;

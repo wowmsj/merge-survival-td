@@ -164,7 +164,8 @@ const STORY_TEXT: Record<number, string[]> = {
 };
 
 export const en: LocaleData = {
-  ui: { 'settings.title': 'Settings', 'settings.chinese': 'Chinese', 'settings.english': 'English', 'settings.nightTest': 'Night Test', 'base.core': 'Base Core', 'action.merge': 'Merge', 'inventory.backpack': 'Backpack', 'resource.fuel': 'Fuel', 'resource.scrap': 'Scrap', 'resource.medicine': 'Medicine', 'dialog.restart': 'Restart', 'dialog.confirmRestart': 'Confirm Restart', 'dialog.cancel': 'Cancel' },
+  ui: { 'settings.title': 'Settings', 'settings.chinese': 'Chinese', 'settings.english': 'English', 'settings.nightTest': 'Night Test', 'base.core': 'Base Core', 'action.merge': 'Merge', 'inventory.backpack': 'Backpack', 'resource.fuel': 'Fuel', 'resource.scrap': 'Scrap', 'resource.medicine': 'Medicine', 'dialog.restart': 'Restart', 'dialog.confirmRestart': 'Confirm Restart', 'dialog.cancel': 'Cancel',
+    'settings.playMode': 'Game Mode', 'settings.playMode.merge': 'Item Merge', 'settings.playMode.build': 'Building Merge', 'settings.playMode.confirm': 'Switching modes will reset your progress. Continue?', 'settings.playMode.current': 'Current: {mode}' },
   props: Object.fromEntries(getAllProps().map(prop => [prop.id, propName(prop)])),
   propDescriptions: Object.fromEntries(getAllProps().map(prop => [prop.id, `A ${propName(prop)} for merging and survival.`])),
   buildings: Object.fromEntries(getAllBuildingConfigs().map(building => [building.id, BUILDINGS[building.id]])),

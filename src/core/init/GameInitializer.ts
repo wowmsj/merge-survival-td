@@ -1,9 +1,10 @@
-import { IGameState, ItemStatus } from '../types';
+import { IGameState, ItemStatus, PlayMode } from '../types';
 import { createInitialGameState, DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS } from '../model/GameState';
 import { createGrid, setItem } from '../model/Grid';
 import { createItemFromConfig } from '../model/Item';
 import { BOARD_INIT } from '../config/TableConfig';
 import { TaskSystem } from '../systems/TaskSystem';
+import { isItemAllowedInBuildMode } from '../config/BuildingMergeConfig';
 
 /**
  * 游戏初始化器
@@ -11,12 +12,16 @@ import { TaskSystem } from '../systems/TaskSystem';
  */
 export class GameInitializer {
   /** 用初始棋盘配置创建新游戏状态 */
-  static initNewGame(taskSystem?: TaskSystem): IGameState {
-    const state = createInitialGameState();
+  static initNewGame(taskSystem?: TaskSystem, playMode: PlayMode = 'merge'): IGameState {
+    const state = createInitialGameState(playMode);
     state.grid = createGrid(DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS);
 
     // 初始物品
     for (const row of BOARD_INIT) {
+      // 建筑模式下过滤掉非建筑链物品
+      if (playMode === 'build' && !isItemAllowedInBuildMode(row.propId)) {
+        continue;
+      }
       const st = row.status > 0 ? (row.status as ItemStatus) : undefined;
       const clickPropId = row.clickPropId ? (row.clickPropId as number[]) : undefined;
       const item = createItemFromConfig(row.propId, st, clickPropId, state);
