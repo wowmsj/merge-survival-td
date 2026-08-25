@@ -66,7 +66,8 @@ async function main() {
     },
     render: {
       pixelArt: false,
-      antialias: true
+      antialias: true,
+      transparent: true
     }
   };
 

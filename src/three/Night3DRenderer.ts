@@ -185,7 +185,18 @@ export class Night3DRenderer {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.container.appendChild(this.renderer.domElement);
+    // 覆盖在 Phaser canvas 上方，但不可交互（输入仍走 Phaser）
+    const el = this.renderer.domElement;
+    el.style.position = 'absolute';
+    el.style.left = '50%';
+    el.style.top = '50%';
+    el.style.transform = 'translate(-50%, -50%)';
+    el.style.width = '100%';
+    el.style.height = '100%';
+    el.style.pointerEvents = 'none';
+    el.style.zIndex = '10';
+    this.container.style.position = 'relative';
+    this.container.appendChild(el);
 
     // 光照
     const ambient = new THREE.AmbientLight(0x404060, 1.2);
