@@ -34,6 +34,44 @@ function getMaterial(color: number, emissive = 0x000000): THREE.MeshStandardMate
   return materialCache.get(key) as THREE.MeshStandardMaterial;
 }
 
+/** 程序化木纹贴图（Canvas 生成，所有木件共享） */
+let woodTexCache: { light: THREE.Texture; dark: THREE.Texture } | null = null;
+function woodTextures(): { light: THREE.Texture; dark: THREE.Texture } {
+  if (woodTexCache) return woodTexCache;
+  const make = (base: string, dark: string, light: string): THREE.Texture => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d')!;
+    g.fillStyle = base;
+    g.fillRect(0, 0, 64, 64);
+    for (let i = 0; i < 22; i++) {
+      g.strokeStyle = Math.random() < 0.5 ? dark : light;
+      g.globalAlpha = 0.12 + Math.random() * 0.15;
+      g.lineWidth = 1 + Math.random() * 1.5;
+      const y = Math.random() * 64;
+      g.beginPath();
+      g.moveTo(0, y);
+      g.bezierCurveTo(20, y + (Math.random() * 6 - 3), 44, y + (Math.random() * 6 - 3), 64, y);
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    return tex;
+  };
+  woodTexCache = { light: make('#9c6b3f', '#5f3d1e', '#c89a68'), dark: make('#7a4f2a', '#4a2d14', '#9c6b3f') };
+  return woodTexCache;
+}
+
+/** 木纹材质（低多边形 + 贴图） */
+function woodMaterial(dark = false): THREE.MeshStandardMaterial {
+  const tex = woodTextures();
+  return new THREE.MeshStandardMaterial({
+    map: dark ? tex.dark : tex.light,
+    roughness: 0.9, metalness: 0.05, flatShading: true
+  });
+}
+
 /** 把组内共享的缓存材质克隆成独立材质，后续单体压暗/闪烁互不影响 */
 function cloneMaterials(group: THREE.Group): void {
   group.traverse(obj => {
@@ -61,31 +99,70 @@ function createBuildingModel(cfgId: number): THREE.Group {
     }
     case 'tower': {
       if (cfgId === 101) {
-        // 箭塔：卡通瞭望塔——石墩底座 + 四腿木架 + 平台 + 木屋 + 尖顶 + 小旗
-        const stone = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.2, 0.7), getMaterial(0x868e96));
-        stone.position.y = 0.1;
-        group.add(stone);
-        const legGeo = new THREE.BoxGeometry(0.09, 0.7, 0.09);
-        for (const [lx, lz] of [[-0.24, -0.24], [0.24, -0.24], [-0.24, 0.24], [0.24, 0.24]]) {
-          const leg = new THREE.Mesh(legGeo, getMaterial(0x8b5a2b));
-          leg.position.set(lx, 0.5, lz);
+        // 箭塔：CoC 风格瞭望塔——石墩脚 + 外八斜腿 + 横撑绳结 + 木板平台 + 梯子 + 小旗
+        for (const [lx, lz] of [[-0.26, -0.26], [0.26, -0.26], [-0.26, 0.26], [0.26, 0.26]]) {
+          const foot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.1, 0.14), getMaterial(0x9aa0a8));
+          foot.position.set(lx, 0.05, lz);
+          group.add(foot);
+        }
+        const legGeo = new THREE.BoxGeometry(0.085, 0.85, 0.085);
+        for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+          const leg = new THREE.Mesh(legGeo, woodMaterial(true));
+          leg.position.set(sx * 0.23, 0.5, sz * 0.23);
+          leg.rotation.z = -sx * 0.09;
+          leg.rotation.x = sz * 0.09;
           group.add(leg);
         }
-        const deck = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.1, 0.62), getMaterial(0xa0784a));
-        deck.position.y = 0.88;
-        group.add(deck);
-        const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.32, 0.4), getMaterial(0xbf8a5a));
-        cabin.position.y = 1.09;
-        group.add(cabin);
-        const roof = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.35, 4), getMaterial(0xe8590c));
-        roof.position.y = 1.43;
-        roof.rotation.y = Math.PI / 4;
-        group.add(roof);
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 5), getMaterial(0x8b5a2b));
-        pole.position.y = 1.72;
+        const braceGeo = new THREE.BoxGeometry(0.56, 0.06, 0.06);
+        for (const s of [-1, 1]) {
+          const bx = new THREE.Mesh(braceGeo, woodMaterial());
+          bx.position.set(0, 0.42, s * 0.235);
+          group.add(bx);
+          const bz = new THREE.Mesh(braceGeo, woodMaterial());
+          bz.position.set(s * 0.235, 0.42, 0);
+          bz.rotation.y = Math.PI / 2;
+          group.add(bz);
+        }
+        const ropeGeo = new THREE.CylinderGeometry(0.065, 0.065, 0.07, 6);
+        for (const [lx, lz] of [[-0.23, -0.23], [0.23, -0.23], [-0.23, 0.23], [0.23, 0.23]]) {
+          const rope = new THREE.Mesh(ropeGeo, getMaterial(0xd8b98a));
+          rope.position.set(lx, 0.42, lz);
+          group.add(rope);
+        }
+        const slatCount = 5;
+        const slatW = 0.66 / slatCount;
+        for (let i = 0; i < slatCount; i++) {
+          const slat = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.07, slatW - 0.015), woodMaterial(i % 2 === 1));
+          slat.position.set(0, 0.9, -0.33 + slatW / 2 + i * slatW);
+          group.add(slat);
+        }
+        const postGeo = new THREE.BoxGeometry(0.05, 0.16, 0.05);
+        for (const [lx, lz] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) {
+          const post = new THREE.Mesh(postGeo, woodMaterial(true));
+          post.position.set(lx, 1.0, lz);
+          group.add(post);
+        }
+        const ladder = new THREE.Group();
+        const railGeo = new THREE.BoxGeometry(0.05, 0.95, 0.03);
+        for (const s of [-1, 1]) {
+          const rail = new THREE.Mesh(railGeo, woodMaterial(true));
+          rail.position.set(s * 0.09, 0, 0);
+          ladder.add(rail);
+        }
+        const rungGeo = new THREE.BoxGeometry(0.18, 0.035, 0.035);
+        for (let i = 0; i < 5; i++) {
+          const rung = new THREE.Mesh(rungGeo, woodMaterial());
+          rung.position.set(0, -0.36 + i * 0.18, 0.01);
+          ladder.add(rung);
+        }
+        ladder.position.set(0.12, 0.47, 0.42);
+        ladder.rotation.x = -0.28;
+        group.add(ladder);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.34, 5), woodMaterial(true));
+        pole.position.set(0.3, 1.12, 0.3);
         group.add(pole);
-        const flag = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.02), getMaterial(0xff6b6b, 0x661111));
-        flag.position.set(0.11, 1.8, 0);
+        const flag = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.1, 0.02), getMaterial(0xff6b6b, 0x661111));
+        flag.position.set(0.4, 1.24, 0.3);
         group.add(flag);
       } else {
         const base = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 0.6), getMaterial(0x8a8a99));
