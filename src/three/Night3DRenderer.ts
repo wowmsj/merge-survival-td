@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { IGameState } from '../core/types';
 import { IBattle } from '../core/systems/NightSystem';
+import { GameEvents, eventBus } from '../core/events/EventBus';
 import { getBuildingConfig } from '../core/config/BuildingConfig';
 import { getZombieConfig } from '../core/config/ZombieConfig';
 import { BASE_COLS, BASE_ROWS } from '../core/model/Base';
@@ -17,7 +18,7 @@ function cellToWorld(row: number, col: number): { x: number; z: number } {
   };
 }
 
-/** 低多边形材质缓存 */
+/** 低多边形材质缓存（仅作模板，模型创建时会 clone，避免共享材质被逐帧修改） */
 const materialCache = new Map<string, THREE.Material>();
 function getMaterial(color: number, emissive = 0x000000): THREE.MeshStandardMaterial {
   const key = `${color}-${emissive}`;
@@ -31,6 +32,15 @@ function getMaterial(color: number, emissive = 0x000000): THREE.MeshStandardMate
     }));
   }
   return materialCache.get(key) as THREE.MeshStandardMaterial;
+}
+
+/** 把组内共享的缓存材质克隆成独立材质，后续单体压暗/闪烁互不影响 */
+function cloneMaterials(group: THREE.Group): void {
+  group.traverse(obj => {
+    if (obj instanceof THREE.Mesh) {
+      obj.material = (obj.material as THREE.Material).clone();
+    }
+  });
 }
 
 /** 创建建筑模型（低多边形） */
@@ -120,6 +130,7 @@ function createBuildingModel(cfgId: number): THREE.Group {
       break;
     }
   }
+  cloneMaterials(group);
   return group;
 }
 
@@ -150,12 +161,31 @@ function createZombieModel(cfgId: number): THREE.Group {
     group.add(wingR);
   }
 
+  cloneMaterials(group);
   return group;
+}
+
+/** 塔/英雄弹道颜色 */
+function tracerColor(cfgId?: number): number {
+  switch (cfgId) {
+    case 101: return 0xffe066; // 箭塔
+    case 102: return 0xff922b; // 炮塔
+    case 103: return 0x66d9ff; // 电磁塔
+    case 104: return 0x74c0fc; // 冰冻塔
+    default: return 0x51cf66;  // 英雄/其他
+  }
+}
+
+interface IEffect {
+  obj: THREE.Object3D;
+  start: number;
+  duration: number;
+  kind: 'tracer' | 'ring';
 }
 
 /**
  * 夜战 3D 渲染器
- * 负责把 NightSystem 的战斗状态渲染成低多边形 3D 场景
+ * 顶视角（轻微倾斜）低多边形渲染，画布尺寸与 Phaser 游戏画布一致
  */
 export class Night3DRenderer {
   private container: HTMLElement;
@@ -167,52 +197,63 @@ export class Night3DRenderer {
 
   private buildingMeshes = new Map<string, THREE.Group>();
   private zombieMeshes = new Map<number, THREE.Group>();
+  private damagedKeys = new Set<string>();
+  private effects: IEffect[] = [];
   private coreLight!: THREE.PointLight;
+
+  private onTowerFire = (d: { fromRow: number; fromCol: number; toRow: number; toCol: number; cfgId?: number }) => {
+    this.spawnTracer(d.fromRow, d.fromCol, d.toRow, d.toCol, tracerColor(d.cfgId));
+  };
+  private onHeroFire = (d: { fromRow: number; fromCol: number; toRow: number; toCol: number }) => {
+    this.spawnTracer(d.fromRow, d.fromCol, d.toRow, d.toCol, 0x51cf66);
+  };
+  private onZombieDie = (d: { row: number; col: number }) => {
+    this.spawnRing(d.row, d.col, 0xff6b6b);
+  };
+  private onZombieAttack = (d: { toRow: number; toCol: number }) => {
+    this.spawnRing(d.toRow, d.toCol, 0xffd43b, 0.25);
+  };
 
   constructor(container: HTMLElement, width: number, height: number) {
     this.container = container;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0d0d1a);
-    this.scene.fog = new THREE.Fog(0x0d0d1a, 15, 35);
+    this.scene.fog = new THREE.Fog(0x0d0d1a, 30, 60);
 
     this.camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-    this.camera.position.set(0, 14, 14);
-    this.camera.lookAt(0, 0, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    // 覆盖在 Phaser canvas 上方，但不可交互（输入仍走 Phaser）
+    // 覆盖在 Phaser canvas 上方同尺寸居中，但不可交互（输入仍走 Phaser）
     const el = this.renderer.domElement;
     el.style.position = 'absolute';
     el.style.left = '50%';
     el.style.top = '50%';
     el.style.transform = 'translate(-50%, -50%)';
-    el.style.width = '100%';
-    el.style.height = '100%';
     el.style.pointerEvents = 'none';
     el.style.zIndex = '10';
     this.container.style.position = 'relative';
     this.container.appendChild(el);
+    this.resize(width, height);
 
     // 光照
-    const ambient = new THREE.AmbientLight(0x404060, 1.2);
+    const ambient = new THREE.AmbientLight(0x505070, 1.3);
     this.scene.add(ambient);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    dirLight.position.set(10, 20, 10);
+    dirLight.position.set(8, 20, 6);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 1024;
     dirLight.shadow.mapSize.height = 1024;
     dirLight.shadow.camera.near = 0.5;
     dirLight.shadow.camera.far = 50;
-    dirLight.shadow.camera.left = -15;
-    dirLight.shadow.camera.right = 15;
-    dirLight.shadow.camera.top = 15;
-    dirLight.shadow.camera.bottom = -15;
+    dirLight.shadow.camera.left = -10;
+    dirLight.shadow.camera.right = 10;
+    dirLight.shadow.camera.top = 10;
+    dirLight.shadow.camera.bottom = -10;
     this.scene.add(dirLight);
 
     // 核心发光
@@ -221,7 +262,7 @@ export class Night3DRenderer {
     this.scene.add(this.coreLight);
 
     // 地面
-    const groundGeo = new THREE.PlaneGeometry(30, 30);
+    const groundGeo = new THREE.PlaneGeometry(24, 24);
     const groundMat = new THREE.MeshStandardMaterial({ color: 0x2d5016, roughness: 0.9, flatShading: true });
     this.ground = new THREE.Mesh(groundGeo, groundMat);
     this.ground.rotation.x = -Math.PI / 2;
@@ -239,6 +280,60 @@ export class Night3DRenderer {
     const border = new THREE.Mesh(borderGeo, getMaterial(0x8a6d1a));
     border.position.y = 0.05;
     this.scene.add(border);
+
+    // 战斗事件 → 特效
+    eventBus.on(GameEvents.NIGHT_TOWER_FIRE, this.onTowerFire);
+    eventBus.on(GameEvents.NIGHT_HERO_FIRE, this.onHeroFire);
+    eventBus.on(GameEvents.NIGHT_ZOMBIE_DIE, this.onZombieDie);
+    eventBus.on(GameEvents.NIGHT_ZOMBIE_ATTACK, this.onZombieAttack);
+  }
+
+  /** 顶视角（轻微倾斜展示立体感），按画布宽高比自动取景让棋盘铺满 */
+  private fitCamera(width: number, height: number): void {
+    const aspect = width / height;
+    this.camera.aspect = aspect;
+    const gridW = BASE_COLS * CELL_SIZE + 1.2;
+    const gridH = BASE_ROWS * CELL_SIZE + 1.2;
+    const halfFov = THREE.MathUtils.degToRad(this.camera.fov / 2);
+    const distH = (gridH / 2) / Math.tan(halfFov);
+    const distW = (gridW / 2) / (Math.tan(halfFov) * aspect);
+    const dist = Math.max(distH, distW) * 1.05;
+    // 约 12 度前倾，保持顶视角的同时能看到建筑侧面
+    this.camera.position.set(0, dist, dist * 0.22);
+    this.camera.lookAt(0, 0, 0.3);
+    this.camera.updateProjectionMatrix();
+  }
+
+  /** 塔/英雄开火弹道：一道短促的亮线 */
+  private spawnTracer(fromRow: number, fromCol: number, toRow: number, toCol: number, color: number): void {
+    const a = cellToWorld(fromRow, fromCol);
+    const b = cellToWorld(toRow, toCol);
+    const geo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(a.x, 1.0, a.z),
+      new THREE.Vector3(b.x, 0.45, b.z)
+    ]);
+    const mat = new THREE.LineBasicMaterial({
+      color, transparent: true, opacity: 0.95,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const line = new THREE.Line(geo, mat);
+    this.scene.add(line);
+    this.effects.push({ obj: line, start: performance.now(), duration: 140, kind: 'tracer' });
+  }
+
+  /** 地面扩散环：僵尸死亡/建筑被击 */
+  private spawnRing(row: number, col: number, color: number, duration = 0.35): void {
+    const { x, z } = cellToWorld(row, col);
+    const geo = new THREE.RingGeometry(0.15, 0.4, 16);
+    const mat = new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity: 0.8, side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const ring = new THREE.Mesh(geo, mat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.06, z);
+    this.scene.add(ring);
+    this.effects.push({ obj: ring, start: performance.now(), duration: duration * 1000, kind: 'ring' });
   }
 
   /** 同步建筑状态到 3D 场景 */
@@ -255,13 +350,14 @@ export class Night3DRenderer {
         this.scene.add(model);
         this.buildingMeshes.set(key, model);
       }
-      // 血量低时压暗
+      // 血量低时压暗一次（材质已按模型克隆，不会影响其他建筑）
       const mesh = this.buildingMeshes.get(key)!;
       const cfg = getBuildingConfig(b.cfgId);
-      if (cfg && b.hp < b.maxHp * 0.3) {
+      if (cfg && b.hp < b.maxHp * 0.3 && !this.damagedKeys.has(key)) {
+        this.damagedKeys.add(key);
         mesh.traverse(obj => {
           if (obj instanceof THREE.Mesh) {
-            (obj.material as THREE.MeshStandardMaterial).color.multiplyScalar(0.7);
+            (obj.material as THREE.MeshStandardMaterial).color.multiplyScalar(0.55);
           }
         });
       }
@@ -271,6 +367,7 @@ export class Night3DRenderer {
       if (!currentIds.has(key)) {
         this.scene.remove(mesh);
         this.buildingMeshes.delete(key);
+        this.damagedKeys.delete(key);
       }
     }
   }
@@ -278,6 +375,7 @@ export class Night3DRenderer {
   /** 同步僵尸状态到 3D 场景 */
   syncZombies(battle: IBattle): void {
     const currentUids = new Set<number>();
+    const now = Date.now();
     for (const z of battle.zombies) {
       currentUids.add(z.uid);
       if (!this.zombieMeshes.has(z.uid)) {
@@ -288,9 +386,11 @@ export class Night3DRenderer {
       }
       const mesh = this.zombieMeshes.get(z.uid)!;
       const { x, z: wz } = cellToWorld(z.row, z.col);
-      // 平滑插值移动
+      // 平滑插值移动 + 行走颠簸
       mesh.position.x += (x - mesh.position.x) * 0.2;
       mesh.position.z += (wz - mesh.position.z) * 0.2;
+      mesh.position.y = Math.abs(Math.sin(now * 0.008 + z.uid)) * 0.07;
+      mesh.rotation.y = Math.sin(now * 0.004 + z.uid) * 0.12;
       // 潜行时只显示土堆
       mesh.visible = !z.burrowed;
     }
@@ -305,21 +405,55 @@ export class Night3DRenderer {
   /** 渲染一帧 */
   render(): void {
     this.coreLight.intensity = 1.5 + Math.sin(Date.now() * 0.003) * 0.5;
+
+    // 推进特效生命周期
+    const now = performance.now();
+    for (let i = this.effects.length - 1; i >= 0; i--) {
+      const fx = this.effects[i];
+      const p = (now - fx.start) / fx.duration;
+      if (p >= 1) {
+        this.scene.remove(fx.obj);
+        if (fx.obj instanceof THREE.Line || fx.obj instanceof THREE.Mesh) {
+          fx.obj.geometry.dispose();
+          (fx.obj.material as THREE.Material).dispose();
+        }
+        this.effects.splice(i, 1);
+        continue;
+      }
+      const mat = fx.obj instanceof THREE.Line || fx.obj instanceof THREE.Mesh
+        ? fx.obj.material as THREE.Material & { opacity: number } : null;
+      if (fx.kind === 'tracer' && mat) {
+        mat.opacity = 0.95 * (1 - p);
+      } else if (fx.kind === 'ring' && mat) {
+        const s = 1 + p * 2.2;
+        fx.obj.scale.set(s, s, s);
+        mat.opacity = 0.8 * (1 - p);
+      }
+    }
+
     this.renderer.render(this.scene, this.camera);
   }
 
-  /** 窗口尺寸变化 */
+  /** 画布尺寸变化：同时更新渲染尺寸、CSS 尺寸与取景 */
   resize(width: number, height: number): void {
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
+    const el = this.renderer.domElement;
+    el.style.width = `${width}px`;
+    el.style.height = `${height}px`;
+    this.fitCamera(width, height);
   }
 
   /** 销毁释放资源 */
   dispose(): void {
+    eventBus.off(GameEvents.NIGHT_TOWER_FIRE, this.onTowerFire);
+    eventBus.off(GameEvents.NIGHT_HERO_FIRE, this.onHeroFire);
+    eventBus.off(GameEvents.NIGHT_ZOMBIE_DIE, this.onZombieDie);
+    eventBus.off(GameEvents.NIGHT_ZOMBIE_ATTACK, this.onZombieAttack);
     this.renderer.dispose();
     this.container.removeChild(this.renderer.domElement);
     this.buildingMeshes.clear();
     this.zombieMeshes.clear();
+    this.damagedKeys.clear();
+    this.effects.length = 0;
   }
 }
