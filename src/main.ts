@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { GameScene } from './phaser/scenes/GameScene';
 import { BaseScene } from './phaser/scenes/BaseScene';
 import { NightScene } from './phaser/scenes/NightScene';
+import { Night3DScene } from './phaser/scenes/Night3DScene';
 import { NightTestScene } from './phaser/scenes/NightTestScene';
 import { BootScene } from './phaser/scenes/BootScene';
 import { getPlatform } from './platform/common/Platform';
@@ -52,7 +53,7 @@ async function main() {
       width: DESIGN_WIDTH,
       height: DESIGN_HEIGHT
     },
-    scene: [BootScene, GameScene, BaseScene, NightScene, NightTestScene],
+    scene: [BootScene, GameScene, BaseScene, NightScene, Night3DScene, NightTestScene],
     physics: {
       default: 'arcade',
       arcade: {

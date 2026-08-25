@@ -8,28 +8,35 @@ import { BASE_CENTER } from '../../core/model/Base';
 import { getAllBuildingConfigs } from '../../core/config/BuildingConfig';
 import { PlayMode } from '../../core/types';
 
+export type RenderMode = '2d' | '3d';
+const RENDER_MODE_KEY = 'merge_survival_td_render_mode';
+
 export class SettingsPanel extends BasePanel {
   private restartTimer: Phaser.Time.TimerEvent | null = null;
   private restartButton: IUiButton | null = null;
   private nightTestOverlay: Phaser.GameObjects.Container | null = null;
   private playModeOverlay: Phaser.GameObjects.Container | null = null;
   private testDay = 7;
+  private renderMode: RenderMode;
 
   constructor(
     scene: Phaser.Scene,
     private readonly onLanguage: (language: Language) => void,
     private readonly onRestart: () => void,
     private readonly playMode: PlayMode = 'merge',
-    private readonly onPlayModeChange?: (mode: PlayMode) => void
+    private readonly onPlayModeChange?: (mode: PlayMode) => void,
+    private readonly onRenderModeChange?: (mode: RenderMode) => void
   ) {
     super(scene);
+    const saved = localStorage.getItem(RENDER_MODE_KEY);
+    this.renderMode = saved === '3d' ? '3d' : '2d';
   }
 
   open(): void {
     super.open();
     if (!this.container) return;
     this.addMask(() => this.close());
-    const { px, py } = this.addPanelChrome(getText('settings.title'), 620, 640, { dividerY: 88 });
+    const { px, py } = this.addPanelChrome(getText('settings.title'), 620, 780, { dividerY: 88 });
     makeUiButton(this.scene, this.container, px + 175, py + 140, 230, 68, getText('settings.chinese'), {}, () => this.onLanguage('zh-CN'));
     makeUiButton(this.scene, this.container, px + 445, py + 140, 230, 68, getText('settings.english'), {}, () => this.onLanguage('en'));
 
@@ -45,12 +52,32 @@ export class SettingsPanel extends BasePanel {
       box: { fill: this.playMode === 'build' ? 0x2b4a2b : undefined, stroke: this.playMode === 'build' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
     }, () => this.confirmPlayModeChange('build'));
 
-    makeUiButton(this.scene, this.container, px + 310, py + 400, 300, 72, getText('settings.nightTest'), {
+    // 夜战渲染模式切换
+    const renderLabel = getText('settings.renderMode.current', { mode: getText(`settings.renderMode.${this.renderMode}`) });
+    this.container.add(this.scene.add.text(px + 310, py + 390, renderLabel, {
+      fontSize: '26px', color: '#ccccdd'
+    }).setOrigin(0.5));
+    makeUiButton(this.scene, this.container, px + 175, py + 450, 230, 68, getText('settings.renderMode.2d'), {
+      box: { fill: this.renderMode === '2d' ? 0x2b4a2b : undefined, stroke: this.renderMode === '2d' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
+    }, () => this.setRenderMode('2d'));
+    makeUiButton(this.scene, this.container, px + 445, py + 450, 230, 68, getText('settings.renderMode.3d'), {
+      box: { fill: this.renderMode === '3d' ? 0x2b4a2b : undefined, stroke: this.renderMode === '3d' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
+    }, () => this.setRenderMode('3d'));
+
+    makeUiButton(this.scene, this.container, px + 310, py + 550, 300, 72, getText('settings.nightTest'), {
       box: { stroke: UI_GOLD, strokeAlpha: 0.8, radius: 14 }
     }, () => this.openNightTestDialog());
-    this.restartButton = makeUiButton(this.scene, this.container, px + 310, py + 510, 300, 72, getText('dialog.restart'), {
+    this.restartButton = makeUiButton(this.scene, this.container, px + 310, py + 660, 300, 72, getText('dialog.restart'), {
       box: { stroke: UI_ORANGE, strokeAlpha: 0.7, radius: 14 }
     }, () => this.confirmRestart());
+  }
+
+  private setRenderMode(mode: RenderMode): void {
+    this.renderMode = mode;
+    localStorage.setItem(RENDER_MODE_KEY, mode);
+    this.onRenderModeChange?.(mode);
+    this.close();
+    this.open();
   }
 
   close(): void {

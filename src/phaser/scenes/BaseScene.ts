@@ -1374,7 +1374,8 @@ export class BaseScene extends Phaser.Scene {
 
     this.addDialogButton(width / 2 - 150, py + panelH - 66, getText('base.fight'), true, () => {
       this.save();
-      this.scene.start('NightScene', { state: this.state });
+      const renderMode = localStorage.getItem('merge_survival_td_render_mode');
+      this.scene.start(renderMode === '3d' ? 'Night3DScene' : 'NightScene', { state: this.state });
     });
     this.addDialogButton(width / 2 + 150, py + panelH - 66, getText('base.prepareMore'), true, () => this.closeDialog());
   }

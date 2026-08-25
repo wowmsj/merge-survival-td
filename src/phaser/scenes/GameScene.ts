@@ -194,7 +194,8 @@ export class GameScene extends Phaser.Scene {
             (language: Language) => this.changeLanguage(language),
             () => this.resetGame(),
             this.state.playMode ?? 'merge',
-            (mode) => this.changePlayMode(mode)
+            (mode) => this.changePlayMode(mode),
+            () => this.save()
           );
           this.settingsPanel.open();
         } }

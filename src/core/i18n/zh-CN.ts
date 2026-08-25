@@ -10,7 +10,8 @@ const namesById = <T extends { id: number; name: string }>(rows: T[]): Record<nu
 
 export const zhCN: LocaleData = {
   ui: { 'settings.title': '设置', 'settings.chinese': '中文', 'settings.english': 'English', 'settings.nightTest': '夜战测试', 'dialog.restart': '重开', 'dialog.confirmRestart': '确认重开', 'dialog.cancel': '取消',
-    'settings.playMode': '玩法模式', 'settings.playMode.merge': '物资合成', 'settings.playMode.build': '建筑合成', 'settings.playMode.confirm': '切换玩法将清空当前进度，是否继续？', 'settings.playMode.current': '当前：{mode}' },
+    'settings.playMode': '玩法模式', 'settings.playMode.merge': '物资合成', 'settings.playMode.build': '建筑合成', 'settings.playMode.confirm': '切换玩法将清空当前进度，是否继续？', 'settings.playMode.current': '当前：{mode}',
+    'settings.renderMode': '夜战渲染', 'settings.renderMode.2d': '2D 经典', 'settings.renderMode.3d': '3D 低多边形', 'settings.renderMode.current': '当前：{mode}' },
   props: namesById(getAllProps()),
   propDescriptions: Object.fromEntries(getAllProps().map(prop => [prop.id, prop.mask])),
   buildings: namesById(getAllBuildingConfigs()),
