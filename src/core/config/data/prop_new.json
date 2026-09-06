@@ -13,7 +13,7 @@
     "row": 1,
     "col": 2,
     "status": 2,
-    "propId": 50003,
+    "propId": 20011,
     "mask": "",
     "clickPropId": 0
   },
@@ -71,7 +71,7 @@
     "row": 2,
     "col": 2,
     "status": 2,
-    "propId": 20031,
+    "propId": 20012,
     "mask": "",
     "clickPropId": 0
   },
@@ -89,7 +89,7 @@
     "row": 2,
     "col": 4,
     "status": 2,
-    "propId": 20031,
+    "propId": 10013,
     "mask": "",
     "clickPropId": 0
   },
@@ -98,7 +98,7 @@
     "row": 2,
     "col": 6,
     "status": 2,
-    "propId": 50003,
+    "propId": 10012,
     "mask": "",
     "clickPropId": 0
   },
@@ -125,7 +125,7 @@
     "row": 3,
     "col": 2,
     "status": 2,
-    "propId": 20060,
+    "propId": 20021,
     "mask": "",
     "clickPropId": 0
   },
@@ -152,7 +152,7 @@
     "row": 3,
     "col": 6,
     "status": 2,
-    "propId": 50004,
+    "propId": 40001,
     "mask": "",
     "clickPropId": 0
   },
@@ -170,7 +170,7 @@
     "row": 4,
     "col": 1,
     "status": 2,
-    "propId": 50001,
+    "propId": 30001,
     "mask": "",
     "clickPropId": 0
   },
@@ -206,7 +206,7 @@
     "row": 4,
     "col": 7,
     "status": 2,
-    "propId": 50004,
+    "propId": 40011,
     "mask": "",
     "clickPropId": 0
   },
@@ -251,7 +251,7 @@
     "row": 6,
     "col": 1,
     "status": 2,
-    "propId": 50001,
+    "propId": 40001,
     "mask": "",
     "clickPropId": 0
   },
@@ -323,7 +323,7 @@
     "row": 7,
     "col": 3,
     "status": 2,
-    "propId": 20031,
+    "propId": 30002,
     "mask": "",
     "clickPropId": 0
   },
@@ -427,24 +427,6 @@
     "clickPropId": 0
   },
   {
-    "id": 48,
-    "row": 5,
-    "col": 3,
-    "status": 0,
-    "propId": 10001,
-    "mask": "",
-    "clickPropId": 0
-  },
-  {
-    "id": 49,
-    "row": 5,
-    "col": 4,
-    "status": 0,
-    "propId": 10001,
-    "mask": "",
-    "clickPropId": 0
-  },
-  {
     "id": 50,
     "row": 4,
     "col": 5,
@@ -470,5 +452,17 @@
     "propId": 70001,
     "mask": "",
     "clickPropId": 0
+  },
+  {
+    "id": 53,
+    "row": 8,
+    "col": 7,
+    "status": 0,
+    "propId": 60026,
+    "mask": "",
+    "clickPropId": [
+      10001,
+      10001
+    ]
   }
 ]

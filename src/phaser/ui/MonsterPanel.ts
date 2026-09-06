@@ -41,12 +41,20 @@ export class MonsterPanel extends BasePanel {
     drawUiBox(box, cx, cy, CARD_W, CARD_H, { fill: UI_CARD_FILL, fillAlpha: 1, stroke: UI_STROKE, strokeAlpha: 0.85, radius: 12 });
     this.container.add(box);
 
-    const badge = this.scene.add.graphics();
-    badge.fillStyle(monster.color, 1);
-    badge.fillCircle(cx - CARD_W / 2 + 42, cy - CARD_H / 2 + 42, 25);
-    badge.lineStyle(2, UI_GOLD, 0.65);
-    badge.strokeCircle(cx - CARD_W / 2 + 42, cy - CARD_H / 2 + 42, 25);
-    this.container.add(badge);
+    // 怪物头像：优先用生成贴图，缺失时回退色块徽章
+    const badgeX = cx - CARD_W / 2 + 42;
+    const badgeY = cy - CARD_H / 2 + 42;
+    const texKey = `zombie-${monster.id}`;
+    if (this.scene.textures.exists(texKey)) {
+      this.container.add(this.scene.add.image(badgeX, badgeY, texKey).setDisplaySize(64, 64));
+    } else {
+      const badge = this.scene.add.graphics();
+      badge.fillStyle(monster.color, 1);
+      badge.fillCircle(badgeX, badgeY, 25);
+      badge.lineStyle(2, UI_GOLD, 0.65);
+      badge.strokeCircle(badgeX, badgeY, 25);
+      this.container.add(badge);
+    }
 
     this.container.add(this.scene.add.text(cx - CARD_W / 2 + 78, cy - CARD_H / 2 + 30, getZombieName(monster.id), {
       fontSize: '25px', color: '#ffd75e', fontStyle: 'bold', wordWrap: { width: 240 }

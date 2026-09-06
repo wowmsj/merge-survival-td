@@ -5,6 +5,7 @@ import { findEmptyCell, forEachCell, getItem, getNineEmptyCells, getNineNeighbor
 import { createItemFromConfig, itemInCd, itemIsBubble, itemIsNormal } from '../model/Item';
 import { propCanSpeedUp } from '../config/PropConfig';
 import { getRandomByWeight, now } from '../utils/Common';
+import { applyCoreAura } from '../config/MergeCoreConfig';
 import { getText } from '../i18n';
 
 /**
@@ -60,7 +61,15 @@ export class SpawnSystem {
       return { success: false };
     }
 
-    const productId = this.getClickProduct(item, prop.id);
+    // 合成核心光环：棋盘上有核心装置时，产出概率升一级
+    // 指定产出队列（新手引导前两次点击）不吃光环，保证引导链产物确定
+    const designated = !!(item.clickPropId && item.clickPropId.length > 0);
+    const rawId = this.getClickProduct(item, prop.id);
+    const aura = designated ? { id: rawId, upgraded: false } : applyCoreAura(state, rawId);
+    if (aura.upgraded) {
+      eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.coreResonance'));
+    }
+    const productId = aura.id;
     if (productId <= 0) return { success: false };
     const trackBlueprintOutput = prop.type === 7 && prop.wsb === 1;
     // 兼容旧存档：首次数从剩余次数推算，之后只按真实落盘数累计。

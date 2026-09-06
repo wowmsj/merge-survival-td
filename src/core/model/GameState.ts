@@ -23,7 +23,7 @@ export function createDefaultResources(): IResource {
 
 export function createInitialGameState(playMode: 'merge' | 'build' = 'merge'): IGameState {
   return {
-    language: 'zh-CN',
+    language: 'en',
     grid: createGrid(DEFAULT_GRID_ROWS, DEFAULT_GRID_COLS) as IGrid,
     resources: createDefaultResources(),
     tasks: [] as ITask[],

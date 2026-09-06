@@ -27,9 +27,9 @@
     "costCoin": 600,
     "costMaterials": {},
     "hp": 300,
-    "attack": 30,
-    "range": 2,
-    "speed": 0.4,
+    "attack": 50,
+    "range": 3,
+    "speed": 0.7,
     "blueprint": 70108,
     "needPower": 2
   },

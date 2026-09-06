@@ -86,6 +86,9 @@ export type BaseResource = 'medicine' | 'scrap';
 /** 建筑大类 */
 export type BuildingKind = 'core' | 'tower' | 'resource' | 'trap' | 'wall' | 'ruin';
 
+/** 地形类型：rubble 瓦砾堆 / grass 杂草丛 / shack 破旧建筑 / woods 树林 / pond 水池 */
+export type TerrainKind = 'rubble' | 'grass' | 'shack' | 'woods' | 'pond';
+
 /** 基地建筑实例 */
 export interface IBuilding {
   /** building.json 配置 id */
@@ -103,6 +106,8 @@ export interface IBuilding {
 /** 基地单格状态；claimed=false 的区域只可探索，不能直接建造。 */
 export interface IBaseTile {
   claimed: boolean;
+  /** 地形；缺省 = 平地。旧存档无此字段，天然兼容 */
+  terrain?: TerrainKind;
 }
 
 /**
@@ -183,6 +188,8 @@ export interface IGameState {
   heroes: IHeroState[];
   /** 玩法模式；旧存档缺失时按 merge 处理 */
   playMode?: PlayMode;
+  /** 最近一次完成订单的游戏天数（卡单救济计时用）；旧存档缺失时按当前天处理 */
+  lastTaskCompleteDay?: number;
   /** 行动力上次恢复结算的时间戳；旧存档缺失时回退 timestamp。 */
   powerRecoverAt?: number;
   timestamp: number;

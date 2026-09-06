@@ -6,8 +6,8 @@ SERVER="ubuntu@154.8.151.82"
 SSH="ssh -i $KEY -o StrictHostKeyChecking=no -o BatchMode=yes"
 SCP="scp -i $KEY -o StrictHostKeyChecking=no -o BatchMode=yes"
 
-echo "==> 构建生产包"
-npm run build
+echo "==> 构建生产包（自有服务器保留夜战测试等开发功能）"
+npm run build:test
 
 echo "==> 上传 dist（先清远端旧文件）"
 $SSH $SERVER "rm -rf ~/merge-survival/dist && mkdir -p ~/merge-survival/dist"

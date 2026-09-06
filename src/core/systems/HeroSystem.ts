@@ -1,6 +1,7 @@
 import { GameEvents, eventBus } from '../events/EventBus';
 import { IGameState, IHeroState } from '../types';
 import { buildingAt, zoneOf, BaseZone } from '../model/Base';
+import { terrainAt } from '../config/TerrainConfig';
 import { getHeroConfig } from '../config/HeroConfig';
 import { getText } from '../i18n';
 
@@ -46,6 +47,7 @@ export class HeroSystem {
     if (row < 0 || row >= base.rows || col < 0 || col >= base.cols) return { ok: false, reason: getText('hero.outOfBounds') };
     if (zoneOf(row, col) !== BaseZone.Inner) return { ok: false, reason: getText('hero.innerOnly') };
     if (buildingAt(base, row, col)) return { ok: false, reason: getText('hero.cellHasBuilding') };
+    if (terrainAt(base, row, col)) return { ok: false, reason: getText('toast.terrainBlocked', { terrain: getText(`terrain.${terrainAt(base, row, col)}`) }) };
     if (this.getHeroAt(state, row, col)) return { ok: false, reason: getText('hero.cellHasHero') };
     return { ok: true };
   }

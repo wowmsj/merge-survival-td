@@ -1,14 +1,17 @@
 import { GameEvents, eventBus } from '../events/EventBus';
 import { IBaseState, IBuilding, IGameState } from '../types';
 import { buildingAt, distFromCenter, findPathToCore, RUIN_COLLAPSE_ORDER, ruinCellsOfSide, RuinSide } from '../model/Base';
+import { terrainAt, isTerrainSpawnable, isTerrainWalkableForGround, isTerrainPassableForBurrow } from '../config/TerrainConfig';
 import { getBuildingConfig, attackAtLevel, MaterialCost, RUIN_ID } from '../config/BuildingConfig';
 import { getZombieConfig, genWaveZombies, getTotalWaves, getZombieLevel, getLevelHpScale, getLevelAttackScale, rollDrops } from '../config/ZombieConfig';
 import { getHeroConfig } from '../config/HeroConfig';
 import { getPowerMax } from '../config/TableConfig';
 import { EconomySystem } from './EconomySystem';
 import { HeroSystem } from './HeroSystem';
+import { BagSystem } from './BagSystem';
+import { TaskSystem } from './TaskSystem';
 import { BaseSystem, formatGains, hasSupportCoverage, isBuildingPowered, isTowerPoweredAtNight } from './BaseSystem';
-import { getBuildingName, getText, getZombieName } from '../i18n';
+import { getBuildingName, getPropName, getText, getZombieName } from '../i18n';
 
 /** 夜晚战斗中的僵尸实例 */
 export interface IZombie {
@@ -56,6 +59,8 @@ export interface IBattle {
   heroCds: Record<string, number>;
   /** 战利品（低级材料 id -> 数量），胜利结算时发到棋盘，棋盘满进卡片 */
   pendingDrops: MaterialCost;
+  /** 今晚掉落池已出货件数（不含精英/Boss 保底），达到 NIGHT_POOL_DROP_CAP 后普通僵尸不再掉 */
+  dropCount?: number;
   status: BattleStatus;
   /** 建筑有增删/血量变化，UI 需要重绘 */
   baseDirty: boolean;
@@ -64,10 +69,20 @@ export interface IBattle {
 }
 
 const SPAWN_INTERVAL = 700;
+/** 第 5 天起尸潮提速：出兵间隔缩到 250ms，同屏密度明显上升 */
+const SPAWN_INTERVAL_HORDE = 250;
+/** 每次出兵只数：数量翻倍后按批入场，保住「一波压过来」的密度而不是细水长流 */
+const SPAWN_BATCH = 5;
+/** 第 5 天起每批 10 只 */
+const SPAWN_BATCH_HORDE = 10;
 const BETWEEN_WAVES = 3000;
 const SLOW_DURATION = 2000;
 /** 僵尸被拆不动的建筑卡住多久后狂暴（无视坚固等级，防夜战死锁） */
 const ENRAGE_MS = 15000;
+/** 每晚掉落池出货上限：尸潮翻倍后不能每只僵尸都掉，控制道具产出节奏 */
+const NIGHT_POOL_DROP_CAP = 10;
+/** 每晚核心材料（60024 神秘零件）掉落上限：精英/Boss 保底掉，但第 24 天起精英进随机池后会多只掉落，需封顶 */
+const NIGHT_CORE_PART_CAP = 2;
 
 let zombieUid = 1;
 
@@ -80,6 +95,7 @@ export class NightSystem {
   private economy = new EconomySystem();
   private baseSystem = new BaseSystem(this.economy);
   private heroes = new HeroSystem();
+  private tasks = new TaskSystem(new BagSystem(), this.economy);
 
   /** 开夜：生成战斗状态，phase 置为 night；保留白天剩余行动力至夜晚结算。 */
   startBattle(state: IGameState): IBattle {
@@ -122,16 +138,23 @@ export class NightSystem {
       return;
     }
 
-    // 出兵（出生格全被僵尸占住时不生成，稍候重试，队列不消耗）
+    // 出兵：按批入场（出生格全被占住时不生成，稍候重试，队列不消耗）
     if (battle.spawnQueue.length > 0) {
       battle.spawnCd -= dt;
       if (battle.spawnCd <= 0) {
-        if (this.spawnZombie(state, battle, battle.spawnQueue[0])) {
-          battle.spawnQueue.shift();
-          battle.spawnCd = SPAWN_INTERVAL;
-        } else {
-          battle.spawnCd = 200;
+        const batch = battle.day >= 5 ? SPAWN_BATCH_HORDE : SPAWN_BATCH;
+        let spawned = 0;
+        while (battle.spawnQueue.length > 0 && spawned < batch) {
+          if (this.spawnZombie(state, battle, battle.spawnQueue[0])) {
+            battle.spawnQueue.shift();
+            spawned++;
+          } else {
+            break;
+          }
         }
+        battle.spawnCd = spawned > 0
+          ? (battle.day >= 5 ? SPAWN_INTERVAL_HORDE : SPAWN_INTERVAL)
+          : 200;
       }
     }
 
@@ -180,6 +203,14 @@ export class NightSystem {
         }
       }
       eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.daybreakLoot', { loot: formatGains(battle.pendingDrops) }));
+      // 卡单救济：连续 2 天没完成订单且存在死单，天亮额外掉落低 2 级材料 ×2
+      const relief = this.tasks.rollStuckOrderRelief(state);
+      if (relief) {
+        for (let i = 0; i < relief.num; i++) {
+          this.economy.giveItemToBoardOrCard(state, relief.id);
+        }
+        eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.taskRelief', { item: getPropName(relief.id), num: relief.num }));
+      }
       this.collapseRuins(state, battle.day);
     } else {
       // 失败时间回溯，行动力按当前上限重整。
@@ -223,11 +254,19 @@ export class NightSystem {
     // 只在没有建筑的边缘格刷出：被废墟/建筑封死的方向不会来怪
     // （新开局北/西/南三边整排废墟 + 东边部分废墟 → 第一夜只从东边 3 格缺口进攻）
     // 同格不重叠：已被僵尸占住的格子不刷；全被占住时返回 false（调用方稍候重试）
+    // 边缘格被瓦砾/破旧建筑/水池地形堵住时不刷（杂草/树林可以，从林中爬出）
     const open = getOpenEdgeCells(state.base);
     const pool = (open.length > 0 ? open : allEdgeCells(state.base))
-      .filter(c => !this.zombieAt(battle, c.row, c.col));
-    if (pool.length === 0) return false;
-    const cell = pool[Math.floor(Math.random() * pool.length)];
+      .filter(c => {
+        const terrain = terrainAt(state.base, c.row, c.col);
+        return (!terrain || isTerrainSpawnable(terrain)) && !this.zombieAt(battle, c.row, c.col);
+      });
+    // 只从能走到核心的格子刷怪：被瓦砾/破楼地形围死的口袋格（如西北角）刷出来
+    // 会永远卡住——兜底直线移动不能进地形格，而地形又不是建筑、拆不了
+    const reachable = pool.filter(c => findPathToCore(state.base, c));
+    const spawnPool = reachable.length > 0 ? reachable : pool;
+    if (spawnPool.length === 0) return false;
+    const cell = spawnPool[Math.floor(Math.random() * spawnPool.length)];
 
     const level = getZombieLevel(battle.day);
     const hp = Math.round(cfg.hp * getLevelHpScale(level));
@@ -289,8 +328,17 @@ export class NightSystem {
       }
     }
 
+    // 地形通行判定：飞行无视地形；钻地不能穿水池；地面不能进瓦砾/破旧建筑/水池
+    const passable = (r: number, c: number): boolean => {
+      if (flying) return true;
+      const terrain = terrainAt(state.base, r, c);
+      if (!terrain) return true;
+      return burrowed ? isTerrainPassableForBurrow(terrain) : isTerrainWalkableForGround(terrain);
+    };
+
     // 僵尸之间无体积碰撞：允许同格堆叠，避免在狭窄走廊里排成长队卡住
-    const free = candidates;
+    // 地形不可通行的格子剔除（兜底直线移动也受地形约束，否则会穿水池）
+    const free = candidates.filter(p => passable(p.row, p.col));
 
     // 被建筑挡住 → 拆建筑
     //   走路：被一切非陷阱建筑阻挡
@@ -395,6 +443,13 @@ export class NightSystem {
     }
     if (cfg.slow) {
       z.slowUntil = Math.max(z.slowUntil, battle.time + SLOW_DURATION);
+      // 减速沼泽磨损：每减速一只僵尸扣 1 点耐久，耗尽即损毁（白天可用金币修复）
+      trap.hp -= 1;
+      battle.baseDirty = true;
+      if (trap.hp <= 0) {
+        state.base.buildings = state.base.buildings.filter(b => b !== trap);
+        eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.buildingDestroyed', { building: getBuildingName(cfg.id) }));
+      }
     }
     // 地雷（低血量一次性陷阱）触发后消耗
     if (trap.maxHp <= 10) {
@@ -542,10 +597,20 @@ export class NightSystem {
       const cfg = getZombieConfig(z.cfgId);
       if (!cfg) continue;
       eventBus.emit(GameEvents.NIGHT_ZOMBIE_DIE, { row: z.row, col: z.col, cfgId: z.cfgId });
-      const drops = rollDrops(cfg);
+      const budget = Math.max(0, NIGHT_POOL_DROP_CAP - (battle.dropCount ?? 0));
+      const drops = rollDrops(cfg, budget);
       for (const [id, n] of Object.entries(drops)) {
         const k = Number(id);
-        battle.pendingDrops[k] = (battle.pendingDrops[k] || 0) + (n || 0);
+        let count = n || 0;
+        // 核心材料（60024）每晚封顶 NIGHT_CORE_PART_CAP：保底掉落也会被截断
+        if (k === 60024) {
+          const already = battle.pendingDrops[60024] ?? 0;
+          count = Math.min(count, Math.max(0, NIGHT_CORE_PART_CAP - already));
+          if (count <= 0) continue;
+        }
+        battle.pendingDrops[k] = (battle.pendingDrops[k] || 0) + count;
+        // 精英 1003 / Boss 1005 手提包、60024 核心材料是保底掉落，不占掉落池额度
+        if (k !== 1003 && k !== 1005 && k !== 60024) battle.dropCount = (battle.dropCount ?? 0) + count;
       }
       // 自爆僵尸：波及 1 格范围建筑
       if (cfg.explode) {

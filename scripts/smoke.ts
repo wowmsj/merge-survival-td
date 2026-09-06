@@ -12,7 +12,7 @@ import { EconomySystem } from '../src/core/systems/EconomySystem';
 import { SpecialItemSystem } from '../src/core/systems/SpecialItemSystem';
 import { MergeSystem } from '../src/core/systems/MergeSystem';
 import { SpawnSystem } from '../src/core/systems/SpawnSystem';
-import { TaskSystem, calcRandomTaskStars, calcTaskGold, calcTaskMergeEffort } from '../src/core/systems/TaskSystem';
+import { TaskSystem, calcRandomTaskStars, calcTaskDiamondCost, calcTaskGold, calcTaskMergeEffort } from '../src/core/systems/TaskSystem';
 import { LevelSystem } from '../src/core/systems/LevelSystem';
 import { BaseSystem, PRODUCE_ACCUM_CAP, canDefendFlyingEnemies, formatGains, formatResourceGains, getPowerInfo, isBuildingPowered, isTowerPoweredAtNight } from '../src/core/systems/BaseSystem';
 import { NightSystem, IBattle, getAttackSides, getOpenEdgeCells } from '../src/core/systems/NightSystem';
@@ -25,13 +25,15 @@ import { StorySystem } from '../src/core/systems/StorySystem';
 import { GameEvents, eventBus } from '../src/core/events/EventBus';
 import { IStoryBeat, STORY_BEATS, getMainStoryBeats, getUnlockCondition, hasTaskStoryBeat, getMetCharacters } from '../src/core/config/StoryConfig';
 import { genWaveZombies, getTotalWaves, getZombieConfig, getNightPreview, getZombieLevel, rollDrops } from '../src/core/config/ZombieConfig';
-import { getAllProps, getMergeChain, getMergeChainSpawner, getSpawnerProductView, isMergeChainTop, isMaxBadgeItem } from '../src/core/config/PropConfig';
+import { getAllProps, getMergeChain, getMergeChainSpawner, getSpawnerProductView, isMergeChainTop, isMaxBadgeItem, isClickSpawner, getClickProducts, getProp, isToolSeriesItem } from '../src/core/config/PropConfig';
 import { getAllBuildingConfigs, getBuildingConfig, outputIntervalAtLevel, getBuildableList, RUIN_ID, getRepairCostCoin } from '../src/core/config/BuildingConfig';
 import { getAllZombieConfigs } from '../src/core/config/ZombieConfig';
 import { getPowerMax } from '../src/core/config/TableConfig';
-import { BASE_CENTER, createDefaultBase, findPathToCore, getShortestEntryPathLength, isClaimed, claimAround, hasKillCorridor } from '../src/core/model/Base';
+import { BASE_CENTER, createDefaultBase, findPathToCore, getShortestEntryPathLength, isClaimed, claimAround, hasKillCorridor, RUIN_COLLAPSE_ORDER, ruinCellsOfSide } from '../src/core/model/Base';
+import { TERRAIN_CLEAR_COST, TERRAIN_TABLE, terrainAt, isTerrainSpawnable } from '../src/core/config/TerrainConfig';
+import { applyCoreAura, getCoreAuraChance, getCoreTier, getItemTier } from '../src/core/config/MergeCoreConfig';
 import { useBlueprint, ensureUnlockedBuildings } from '../src/core/systems/UnlockSystem';
-import { BLACK_MARKET_ITEMS, buyBlackMarketBlueprint, exchangeDiamondForCoins, getRecommendedMarketItem } from '../src/core/systems/BlackMarketSystem';
+import { BLACK_MARKET_ITEMS, buyBlackMarketBlueprint, buyNeededMaterial, exchangeDiamondForCoins, getNeededMaterials, getRecommendedMarketItem } from '../src/core/systems/BlackMarketSystem';
 
 /** 解锁全部需蓝图的建筑（测试建造/产出逻辑时跳过蓝图前置） */
 function unlockAllBuildings(state: { unlockedBuildings: number[] }) {
@@ -105,8 +107,8 @@ console.log('== 初始化 ==');
       else normal++;
     }
   }
-  assert(total === 52, `初始 52 个物品（实际 ${total}）`);
-  assert(carton === 41 && spider === 6 && normal === 5, `封印分布 41纸箱/6蜘蛛网/5正常（实际 ${carton}/${spider}/${normal}）`);
+  assert(total === 51, `初始 51 个物品（实际 ${total}）`);
+  assert(carton === 41 && spider === 6 && normal === 4, `封印分布 41纸箱/6蜘蛛网/4正常（实际 ${carton}/${spider}/${normal}）`);
   // (9,1) 是箭塔蓝图发射器（开局即可产出箭塔蓝图，首夜防守不断层）
   assert(getItem(state.grid, 8, 0)?.id === 70001, '(9,1) 初始摆放箭塔蓝图发射器');
   // 蛛网内容全部来自工具箱链（螺丝刀链 10012~10015 / 手套链 10026~10028），点发射器可产出同款解锁
@@ -119,6 +121,27 @@ console.log('== 初始化 ==');
   }
   assert(websAllTools, '蛛网内容全部来自工具箱链');
   assert(state.resources.coin === 0 && state.resources.diamond === 100 && state.resources.power === 100, '初始资源 basicGold/basicGem/energyMax');
+  // 新开局不再散放工具箱把手：棋盘上唯一的 10001 封在纸箱里；核心 (8,7) 前两次点击指定产出 10001
+  const handles = state.grid.cells.flat().filter(c => c.item?.id === 10001);
+  assert(handles.length === 1 && handles[0].item?.st === ItemStatus.Carton, '棋盘仅余一个纸箱封印的工具箱把手');
+  const coreCell = getItem(state.grid, 7, 6);
+  assert(coreCell?.id === 60026 && JSON.stringify(coreCell.clickPropId) === '[10001,10001]', '核心基座初始指定产出队列=[10001,10001]');
+  // 前两次点击核心必出工具箱把手（引导第一阶段）；第三次起走随机池
+  {
+    const { spawn } = makeSystems();
+    const r1 = spawn.clickSpawn(state, { row: 7, col: 6 });
+    const r2 = spawn.clickSpawn(state, { row: 7, col: 6 });
+    assert(r1.success && r1.productId === 10001, '核心第 1 次点击产出工具箱把手');
+    assert(r2.success && r2.productId === 10001, '核心第 2 次点击产出工具箱把手');
+    assert(!(getItem(state.grid, 7, 6)?.clickPropId?.length), '两次点击后指定队列耗尽');
+    const r3 = spawn.clickSpawn(state, { row: 7, col: 6 });
+    assert(r3.success && r3.productId !== undefined, '第三次点击走随机产出池');
+  }
+  // 引导第一阶段指向核心（源码断言）
+  const handGuideSrc = require('fs').readFileSync('src/phaser/ui/HandGuide.ts', 'utf8');
+  assert(handGuideSrc.includes('guide.coreSpawn') && handGuideSrc.includes('isCoreChainItem'), '新手引导第一阶段指向合成核心');
+  // 第一阶段只能由核心发射推进：setHandIndex(6) 只允许出现在核心产出回调里，合成不能跳步
+  assert(handGuideSrc.split('setHandIndex(6)').length - 1 === 1, '引导第一阶段不被合成跳步（一直提示点核心）');
   assert(state.tasks.length === 5 && state.tasks[0].hand === 1 && state.tasks[0].propArr[0].id === 10028, '开局 5 个并发任务，首个为新手任务 prop=10028');
 
   // 背包在 (0,0)，初始被纸箱包住（prop_new status=2），无 roomArr
@@ -138,6 +161,8 @@ console.log('== 初始化 ==');
 console.log('== 合成 ==');
 {
   assert(getMergeChainSpawner(50016) === 50005, '任务合成链可找到首级材料对应发射器');
+  // 遗失物链首 30049 由储物柜链自动产出（fair），核心发射器 atom 虽也挂了 30049 但只作兜底
+  assert(getMergeChainSpawner(30054) === 30013, '遗失物链来源为双层储物柜而非核心基座');
   const { merge } = makeSystems();
   const state = createInitialGameState();
   setItem(state.grid, 0, 0, createItemFromConfig(10001));
@@ -439,6 +464,8 @@ console.log('== 特殊道具 ==');
   }
 
   // 链式特殊道具自身 A+A 合成：同 id 可合成优先于特殊拖拽
+  // （60008~60015 属科技档，棋盘上放一个核心二型解锁合成权限）
+  setItem(state.grid, 8, 6, createItemFromConfig(60029));
   setItem(state.grid, 6, 0, createItemFromConfig(60008));
   setItem(state.grid, 6, 1, createItemFromConfig(60008));
   const rSplitMerge = merge.moveOrMerge(state, { row: 6, col: 0 }, { row: 6, col: 1 });
@@ -529,12 +556,46 @@ console.log('== 任务 ==');
   const randomTasks = task.createRandomTasks(3, state);
   assert(randomTasks.length >= 1, `随机任务生成（${randomTasks.length} 个）`);
 
+  // 工具系列单独成单：含工具箱产出（螺丝刀/手套等）的任务不得混入其他发射器的产出，反之亦然
+  const mixState = createInitialGameState();
+  mixState.roleLv = 20;
+  setItem(mixState.grid, 0, 0, createItemFromConfig(10006)); // 拾荒工具箱
+  setItem(mixState.grid, 0, 1, createItemFromConfig(30008)); // 储物篮
+  setItem(mixState.grid, 1, 0, createItemFromConfig(10012)); // 螺丝刀（工具系列）
+  setItem(mixState.grid, 1, 1, createItemFromConfig(10026)); // 单只手套（工具系列）
+  setItem(mixState.grid, 1, 2, createItemFromConfig(30019)); // 钥匙（非工具系列）
+  let mixChecked = 0;
+  for (let round = 0; round < 40; round++) {
+    mixState.tasks = [];
+    for (const gen of task.createRandomTasks(2, mixState)) {
+      mixChecked++;
+      const toolFlags = gen.propArr.map(p => isToolSeriesItem(p.id));
+      assert(toolFlags.every(f => f === toolFlags[0]), `任务不混工具系列与其他发射器产出（${gen.propArr.map(p => p.id).join(',')}）`);
+      assert(toolFlags[0] ? gen.starNum === 0 : gen.starNum > 0, `工具链任务不给星星，其他任务照常（${gen.propArr.map(p => p.id).join(',')} → ${gen.starNum} 星）`);
+      assert(gen.goldNum !== undefined && gen.goldNum > 0, '任务必有金币奖励');
+    }
+  }
+  assert(mixChecked > 0, '混合候选下成功生成任务');
+
   const spawnerTargetState = createInitialGameState();
   setItem(spawnerTargetState.grid, 0, 0, createItemFromConfig(50022)); // 猫窝：可点击发射器
-  setItem(spawnerTargetState.grid, 0, 1, createItemFromConfig(10012));
+  setItem(spawnerTargetState.grid, 0, 1, createItemFromConfig(10012)); // 螺丝刀（工具链）
+  setItem(spawnerTargetState.grid, 0, 2, createItemFromConfig(10006)); // 拾荒工具箱（工具链发射器）
   const taskCandidates = (task as unknown as { collectCandidateIds(res1: number, quality: number, state: typeof spawnerTargetState): number[] })
     .collectCandidateIds(2, Number.MAX_SAFE_INTEGER, spawnerTargetState);
   assert(!taskCandidates.includes(50022) && taskCandidates.includes(10012), '任务候选排除发射器，保留普通材料');
+  // 夜战掉落的食物/水（链上无发射器在棋盘）不进订单候选：保温箱 4 级才产出，Lv.2 还不能产水
+  const dropOnlyState = createInitialGameState();
+  setItem(dropOnlyState.grid, 0, 0, createItemFromConfig(20002)); // 手提保温箱 Lv.2（尚不能产出）
+  setItem(dropOnlyState.grid, 0, 1, createItemFromConfig(20021)); // 夜战掉落的食物
+  setItem(dropOnlyState.grid, 0, 2, createItemFromConfig(20011)); // 夜战掉落的水
+  const dropOnlyCandidates = (task as unknown as { collectCandidateIds(res1: number, quality: number, state: typeof dropOnlyState): number[] })
+    .collectCandidateIds(2, Number.MAX_SAFE_INTEGER, dropOnlyState);
+  assert(!dropOnlyCandidates.includes(20021) && !dropOnlyCandidates.includes(20011), '无发射器链的掉落物品不进订单候选');
+  setItem(dropOnlyState.grid, 1, 0, createItemFromConfig(20004)); // 翻修冷藏箱 Lv.4 开始产出水/食物
+  const withSpawnerCandidates = (task as unknown as { collectCandidateIds(res1: number, quality: number, state: typeof dropOnlyState): number[] })
+    .collectCandidateIds(2, Number.MAX_SAFE_INTEGER, dropOnlyState);
+  assert(withSpawnerCandidates.includes(20011) && withSpawnerCandidates.includes(20021), '冷藏箱可产出后食物/水链进订单候选');
 
   // 任务按棋盘发射器链分流：有空闲链时优先使用，只有一条链时允许复用。
   const routeState = createInitialGameState();
@@ -559,9 +620,12 @@ console.log('== 任务 ==');
   // 旧存档任务（无 goldNum）也按 calcTaskGold 兜底发金币
   const expectGold = calcTaskGold(t1.propArr, t1.starNum);
   assert(expectGold > 0 && state.resources.coin === coinBefore + expectGold, '任务完成得金币');
-  // 新任务生成时即带 goldNum
+  // 新任务生成时即带 goldNum；工具链任务（如新手任务 1 的手套）星星清零、金币按原星星折算
   const handTaskGold = task.createHandTask(1);
-  assert(handTaskGold !== null && handTaskGold.goldNum === calcTaskGold(handTaskGold.propArr, handTaskGold.starNum), '新任务生成带金币奖励');
+  assert(handTaskGold !== null && handTaskGold.starNum === 0 && handTaskGold.goldNum > 0, '工具链新手任务只奖金币不给星星');
+  const handTaskNonTool = task.createHandTask(10); // 目标 40012，非工具系列
+  assert(handTaskNonTool !== null && handTaskNonTool.starNum > 0
+    && handTaskNonTool.goldNum === calcTaskGold(handTaskNonTool.propArr, handTaskNonTool.starNum), '非工具链新手任务照常奖星星');
   assert(randomTasks.every(t => t.goldNum !== undefined && t.goldNum > 0), '随机任务带金币奖励');
   const shallowProps = [{ id: 30001, num: 1 }];
   const deepProps = [{ id: 30015, num: 1 }];
@@ -575,10 +639,40 @@ console.log('== 任务 ==');
   state.tasks = [oldRewardTask];
   task.refreshTaskRewards(state);
   assert(oldRewardTask.starNum === calcRandomTaskStars(oldRewardTask.propArr) && oldRewardTask.goldNum === calcTaskGold(oldRewardTask.propArr, oldRewardTask.starNum), '读档任务按新奖励算法重算星星和金币');
+  // 读档的工具链旧任务：星星清零，金币按重算星星折算
+  const oldToolTask = { id: 999998, propArr: [{ id: 10012, num: 1 }], starNum: 3, goldNum: 5 };
+  state.tasks = [oldToolTask];
+  task.refreshTaskRewards(state);
+  const toolBaseStar = calcRandomTaskStars(oldToolTask.propArr);
+  assert(oldToolTask.starNum === 0 && oldToolTask.goldNum === calcTaskGold(oldToolTask.propArr, toolBaseStar), '读档工具链任务星星清零、金币保留');
   state.tasks = previousTasks;
   assert(getItem(state.grid, 0, 0) === null || getItem(state.grid, 0, 1) === null, '任务扣物品');
   assert(!state.tasks.includes(t1), '任务移除');
   assert(state.tasks.length === 5, '完成 1 个后补满 5 个并发任务');
+
+  // 钻石直接完成任务：按金币奖励折算（1 钻 = 100 金币），向上取整，保底 1 钻
+  const dState = createInitialGameState();
+  setItem(dState.grid, 0, 0, createItemFromConfig(10001));
+  const dTask = { id: 888, propArr: [{ id: 10001, num: 1 }], starNum: 5, goldNum: 250 };
+  dState.tasks = [dTask];
+  dState.resources.diamond = 3;
+  assert(calcTaskDiamondCost(dTask) === 3, '钻石消耗按金币向上取整（250 金币 → 3 钻）');
+  assert(calcTaskDiamondCost({ id: 1, propArr: [{ id: 10001, num: 1 }], starNum: 1, goldNum: 28 }) === 1, '钻石消耗保底 1（28 金币 → 1 钻）');
+  assert(calcTaskDiamondCost({ id: 1, propArr: [{ id: 10001, num: 1 }], starNum: 1, goldNum: 200 }) === 2, '钻石消耗整除不加一（200 金币 → 2 钻）');
+  assert(calcTaskDiamondCost({ id: 1, propArr: [{ id: 10001, num: 1 }], starNum: 1, goldNum: 201 }) === 3, '钻石消耗向上取整（201 金币 → 3 钻）');
+  const dStarBefore = dState.resources.star;
+  const dCoinBefore = dState.resources.coin;
+  const dDone = task.completeTaskWithDiamond(dState, dTask);
+  assert(dDone && dState.resources.diamond === 0, '钻石完成扣钻石');
+  assert(getItem(dState.grid, 0, 0)?.id === 10001, '钻石完成不扣物品');
+  assert(dState.resources.star === dStarBefore + 5 && dState.resources.coin === dCoinBefore + 250, '钻石完成发星星金币');
+  assert(!dState.tasks.includes(dTask) && dState.tasks.length === 5, '钻石完成移除任务并补满并发');
+
+  // 钻石不足：失败且不扣钻、任务保留
+  const dTask2 = { id: 889, propArr: [{ id: 10001, num: 1 }], starNum: 1, goldNum: 300 };
+  dState.tasks = [dTask2];
+  dState.resources.diamond = 1;
+  assert(!task.completeTaskWithDiamond(dState, dTask2) && dState.resources.diamond === 1 && dState.tasks.includes(dTask2), '钻石不足完成失败');
 
   // 新手任务链式（链式推进后同样补满 5 个）
   const t2 = { id: 1, propArr: [{ id: 10002, num: 1 }], starNum: 1, hand: 1 };
@@ -596,6 +690,45 @@ console.log('== 任务 ==');
   ];
   assert(task.isTaskNeedWithId(state, 10012) && task.isTaskNeedWithId(state, 10026) && task.isTaskNeedWithId(state, 20031), '任一进行中任务需要即标记');
   assert(!task.isTaskNeedWithId(state, 10015), '不被任何任务需要则不标记');
+
+  // 卡单救济：连续 2 个游戏天没完成订单 + 死单（目标链一件都没有）→ 救济低 2 级材料 ×2
+  const reliefState = createInitialGameState();
+  reliefState.day = 5;
+  reliefState.lastTaskCompleteDay = 3;
+  reliefState.tasks = [{ id: 777, propArr: [{ id: 30052, num: 1 }], starNum: 1 }];
+  const relief = task.rollStuckOrderRelief(reliefState);
+  assert(relief !== undefined && relief.id === 30050 && relief.num === 2, '死单救济掉低 2 级材料 ×2');
+  assert(reliefState.lastTaskCompleteDay === 5, '救济后重置卡单计时');
+
+  // 未跨 2 天 → 无救济
+  const recentState = createInitialGameState();
+  recentState.day = 5;
+  recentState.lastTaskCompleteDay = 4;
+  recentState.tasks = [{ id: 778, propArr: [{ id: 30052, num: 1 }], starNum: 1 }];
+  assert(task.rollStuckOrderRelief(recentState) === undefined, '未连续 2 天卡单不救济');
+
+  // 目标链在棋盘上有物品（可推进）→ 无救济
+  const ownedState = createInitialGameState();
+  ownedState.day = 5;
+  ownedState.lastTaskCompleteDay = 1;
+  setItem(ownedState.grid, 0, 0, createItemFromConfig(30049));
+  ownedState.tasks = [{ id: 779, propArr: [{ id: 30052, num: 1 }], starNum: 1 }];
+  assert(task.rollStuckOrderRelief(ownedState) === undefined, '链上有物品可推进不救济');
+
+  // 旧存档无计数字段 → 初始化为当前天且不触发
+  const legacyState = createInitialGameState();
+  legacyState.day = 9;
+  legacyState.tasks = [{ id: 780, propArr: [{ id: 30052, num: 1 }], starNum: 1 }];
+  assert(task.rollStuckOrderRelief(legacyState) === undefined && legacyState.lastTaskCompleteDay === 9, '旧存档卡单计时从当前天起算');
+
+  // 完成订单重置卡单计时
+  const resetState = createInitialGameState();
+  resetState.day = 4;
+  setItem(resetState.grid, 0, 0, createItemFromConfig(10001));
+  const resetTask = { id: 781, propArr: [{ id: 10001, num: 1 }], starNum: 1 };
+  resetState.tasks = [resetTask];
+  task.completeTask(resetState, resetTask);
+  assert(resetState.lastTaskCompleteDay === 4, '完成订单重置卡单计时');
 
   // 可达链限高：低级发射器够不到链尾高等级物品（自动感应钥匙）
   const state3 = createInitialGameState();
@@ -765,22 +898,44 @@ console.log('== 玩家等级 ==');
 console.log('== 黑市蓝图 ==');
 {
   const state = createInitialGameState();
-  state.resources.star = 20;
+  state.resources.star = 50;
   assert(!BLACK_MARKET_ITEMS.some(item => [101, 203, 401].includes(item.cfgId)), '箭塔、风电站、木墙不在黑市出售');
   assert(BLACK_MARKET_ITEMS.slice(0, 2).map(item => item.cfgId).join(',') === '209,208'
-    && BLACK_MARKET_ITEMS.find(item => item.cfgId === 209)?.star === 3
-    && BLACK_MARKET_ITEMS.find(item => item.cfgId === 208)?.star === 3,
-  '雷达站与弹药库改为每包 3 星的碎片商品');
+    && BLACK_MARKET_ITEMS.find(item => item.cfgId === 209)?.star === 24
+    && BLACK_MARKET_ITEMS.find(item => item.cfgId === 208)?.star === 24,
+  '雷达站与弹药库完整蓝图各 24 星（1 星 = 1 枚碎片）');
   const item = BLACK_MARKET_ITEMS.find(entry => entry.cfgId === 102)!;
   const bought = buyBlackMarketBlueprint(state, item.cfgId);
-  assert(item.fragmentCount === 2 && bought.ok && state.resources.star === 20 - item.star && getItem(state.grid, 0, 0)?.id === item.fragmentId, '黑市扣星星并发放两枚一级蓝图碎片');
+  assert(item.blueprintId === (getBuildingConfig(102)?.blueprint ?? 0) && bought.ok
+    && state.resources.star === 50 - item.star && getItem(state.grid, 0, 0)?.id === item.blueprintId,
+  '黑市扣星星并直接发放完整蓝图');
+  assert(BLACK_MARKET_ITEMS.find(entry => entry.cfgId === 301)?.star === 16
+    && BLACK_MARKET_ITEMS.find(entry => entry.cfgId === 403)?.star === 32
+    && BLACK_MARKET_ITEMS.every(entry => entry.blueprintId === (getBuildingConfig(entry.cfgId)?.blueprint ?? 0)),
+  '黑市完整蓝图按 1 星 = 1 枚碎片定价（原 2 星 → 16 星，原 4 星 → 32 星）');
   assert(getRecommendedMarketItem(4)?.cfgId === 303 && getRecommendedMarketItem(8)?.cfgId === 209, '快速和飞行僵尸分别推荐减速沼泽与雷达站');
+  assert(BLACK_MARKET_ITEMS.find(entry => entry.cfgId === 303)?.star === 5, '减速沼泽特价 5 星（一次性陷阱例外定价）');
   assert(getMergeChain(getBuildingConfig(208)?.blueprint ?? 0).join(',') === '70201,70202,70203,70169', '弹药库碎片可正常合成为完整蓝图');
   assert(getMergeChain(getBuildingConfig(209)?.blueprint ?? 0).join(',') === '70205,70206,70207,70170', '雷达站碎片可正常合成为完整蓝图');
   assert(getMergeChain(getBuildingConfig(210)?.blueprint ?? 0).join(',') === '70209,70210,70211,70171', '维修站碎片可正常合成为完整蓝图');
   state.resources.diamond = 1;
   state.resources.coin = 0;
   assert(exchangeDiamondForCoins(state) && state.resources.diamond === 0 && state.resources.coin === 100, '黑市 1 钻石兑换 100 金币');
+
+  // 急缺材料星星直购：进行中订单的目标按「1 星 = 1 个一级材料的合成工作量」定价
+  const matState = createInitialGameState();
+  matState.tasks = [
+    { id: 601, propArr: [{ id: 30052, num: 1 }], starNum: 1 },  // 失物篮（链位 3 → 8 星）
+    { id: 602, propArr: [{ id: 10001, num: 2 }], starNum: 1 }   // 一级材料 ×2（1 星/件）
+  ];
+  const needed = getNeededMaterials(matState);
+  assert(needed.length === 2 && needed[0].id === 30052 && needed[0].star === 8 && needed[0].need === 1
+    && needed[1].id === 10001 && needed[1].star === 1 && needed[1].need === 2, '急缺材料按订单汇总并定价（贵在前）');
+  matState.resources.star = 10;
+  assert(buyNeededMaterial(matState, 30052) && matState.resources.star === 2
+    && (getItem(matState.grid, 0, 0)?.id === 30052 || matState.cardArr.includes(30052)), '星星直购扣星并发放材料');
+  assert(!buyNeededMaterial(matState, 30052) && matState.resources.star === 2, '星星不足购买失败不扣星');
+  assert(!buyNeededMaterial(matState, 10002), '非订单目标不可直购');
 }
 
 // ============ 11. 掉落/产出进棋盘（材料库已移除） ============
@@ -792,6 +947,7 @@ console.log('== 掉落进棋盘 ==');
   const eliteDrops = rollDrops(getZombieConfig(5)!);
   const bossDrops = rollDrops(getZombieConfig(6)!);
   assert(eliteDrops[1003] === 1 && bossDrops[1005] === 1, '精英与 Boss 战斗掉落蓝色和黑色手提包');
+  assert(eliteDrops[60024] === 1 && bossDrops[60024] === 2, '精英与 Boss 保底掉核心材料神秘零件');
 
   // 合成出满级物品留在棋盘上（10027 + 10027 = 10028）
   setItem(state.grid, 0, 0, createItemFromConfig(10027));
@@ -1056,7 +1212,7 @@ console.log('== 电力系统 ==');
   battle.zombies.push({ uid: 997, cfgId: 1, hp: 60, maxHp: 60, row: 0, col: 5, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 });
   night.tick(state2, battle, 100);
   assert(battle.zombies[0]?.hp === 60, '缺电塔夜晚不攻击');
-  assert(powerToasts.some(message => message.includes('缺电')), '缺电箭塔提示原因');
+  assert(powerToasts.some(message => message === getText('toast.towerNoPower')), '缺电箭塔提示原因');
   addFueledGenerator(state2);
   night.tick(state2, battle, 100);
   assert(battle.zombies[0] !== undefined && battle.zombies[0].hp < 60, '通电后塔恢复攻击');
@@ -1173,26 +1329,31 @@ console.log('== 夜晚战斗 ==');
   assert(getNightPreview(3).types.every(type => type.id === 1), '第 3 夜前只有普通僵尸');
   assert(getNightPreview(4).types.some(type => type.id === 2), '第 4 夜首次出现快速僵尸');
   assert(getNightPreview(8).types.some(type => type.id === 7), '第 8 夜首次出现飞行僵尸');
-  assert(!getNightPreview(20).bossLast && getNightPreview(28).bossLast && !getNightPreview(29).bossLast && getNightPreview(35).bossLast, '首个 Boss 延后到第 28 夜，之后每 7 夜一次');
+  assert(getNightPreview(5).bossLast && getNightPreview(10).bossLast && !getNightPreview(8).bossLast && getNightPreview(35).bossLast, 'Boss 夜：第 5 天起每 5 天一次');
   const night = new NightSystem();
 
   // 波次配置
   assert(getTotalWaves(1) === 3 && getTotalWaves(6) === 4, '波次随天数递增');
-  assert(genWaveZombies(28, getTotalWaves(28), getTotalWaves(28)).includes(6), '第 28 天最后一波出 Boss');
+  assert(genWaveZombies(10, getTotalWaves(10), getTotalWaves(10)).includes(6), '第 10 天最后一波出 Boss');
+  assert(genWaveZombies(6, getTotalWaves(6), getTotalWaves(6)).includes(5), '第 6 天起最后一波保底精英');
 
   // --- 夜战预告：波次/总数/类型/方向 ---
   {
     const p1 = getNightPreview(1);
-    assert(p1.waves === 3 && p1.total === 4 + 5 + 6, '第 1 天预告：3 波共 15 只');
+    assert(p1.waves === 3 && p1.total === 8 + 10 + 12, '第 1 天预告：3 波共 30 只（数量×2 割草手感）');
     assert(p1.level === 1, '第 1 天预告：僵尸 Lv1');
     assert(p1.types.length === 1 && p1.types[0].id === 1 && !p1.eliteLast && !p1.bossLast, '第 1 天预告：只有普通僵尸');
     const p4 = getNightPreview(4);
     assert(!p4.eliteLast && !p4.bossLast && p4.types.some(t => t.id === 2), '第 4 天预告：快速僵尸首次出现');
     const p28 = getNightPreview(28);
-    assert(p28.bossLast && p28.types.some(t => t.id === 6 && t.guaranteed), '第 28 天预告：首个 Boss');
+    const p10 = getNightPreview(10);
+    assert(p10.bossLast && p10.types.some(t => t.id === 6 && t.guaranteed), '第 10 天预告：Boss 夜');
     const p8 = getNightPreview(8);
     assert(p8.types.some(t => t.id === 7) && !p8.types.some(t => t.id === 3), '第 8 天起出现飞行敌，高甲敌延后出现');
-    assert(p28.total === 433, '第 28 天预告：总数含 Boss');
+    assert(p8.eliteLast && p8.types.some(t => t.id === 5 && t.guaranteed), '第 8 天预告：末波保底精英');
+    assert(p28.total === 1729, '第 28 天预告：总数含保底精英（数量×2）');
+    // 血量统一降 1/3（数量翻倍的手感平衡）
+    assert(getZombieConfig(1)!.hp === 20 && getZombieConfig(6)!.hp === 800 && getZombieConfig(3)!.hp === 147, '僵尸血量降 1/3');
 
     // 僵尸等级：每 4 天 +1 级，封顶 Lv8
     assert(getZombieLevel(1) === 1 && getZombieLevel(4) === 1 && getZombieLevel(5) === 2 && getZombieLevel(29) === 8, '僵尸等级：每 4 天 +1，封顶 Lv8');
@@ -1206,6 +1367,103 @@ console.log('== 夜晚战斗 ==');
     fresh.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row: 5, col: 12 });
     fresh.base.buildings.push({ cfgId: 401, level: 1, hp: 150, maxHp: 150, row: 6, col: 12 });
     assert(getAttackSides(fresh.base).length === 0, '堵死缺口后无开放进攻方向');
+  }
+
+  // --- 地形系统（P1）：初始铺设 / 寻路 / 刷怪 / 金币清理 ---
+  {
+    const baseSys = new BaseSystem(new EconomySystem());
+    const tbase = createDefaultBase();
+    // 数量与表一致；核心周围 2 格（d≤2）保持平地，保住新手建造区
+    let terrainCount = 0;
+    for (let r = 0; r < tbase.rows; r++) {
+      for (let c = 0; c < tbase.cols; c++) {
+        if (tbase.tiles[r][c].terrain) {
+          terrainCount++;
+          assert(r < 4 || r > 8 || c < 4 || c > 8, '核心周围 2 格保持平地');
+        }
+      }
+    }
+    assert(terrainCount === TERRAIN_TABLE.length, '初始地形数量与 terrain.json 一致');
+    // 边缘格无地形：不影响现有进攻方向收口
+    assert(TERRAIN_TABLE.every(t => t.row > 0 && t.row < 12 && t.col > 0 && t.col < 12), '地形不铺在边缘格');
+    // 默认地图 + 地形下杀怪走廊仍在（东边缺口可达核心）
+    assert(hasKillCorridor(tbase), '初始地形下仍存在杀怪走廊');
+    // 废墟全塌后：每个边缘格都有到核心的路（否则僵尸刷出即卡死）
+    const collapsed = createDefaultBase();
+    collapsed.buildings = collapsed.buildings.filter(b => b.cfgId !== RUIN_ID);
+    const edgeCells: { row: number; col: number }[] = [];
+    for (let c = 0; c < 13; c++) edgeCells.push({ row: 0, col: c }, { row: 12, col: c });
+    for (let r = 1; r < 12; r++) edgeCells.push({ row: r, col: 0 }, { row: r, col: 12 });
+    assert(edgeCells.every(p => !!findPathToCore(collapsed, p)), '全开后所有边缘格可达核心（无死胡同）');
+    // 逐天模拟废墟塌陷：每天夜里，可刷怪的边缘格（无建筑+地形可刷）中至少有一个能走到核心。
+    // 刷怪按此过滤——被瓦砾/破楼围死的口袋格（如第 2 天西北角）刷出来会永远卡住
+    for (let wonDay = 0; wonDay <= 4; wonDay++) {
+      const dayBase = createDefaultBase();
+      for (let d = 0; d < wonDay; d++) {
+        const cells = new Set(ruinCellsOfSide(RUIN_COLLAPSE_ORDER[d]).map(p => `${p.row},${p.col}`));
+        dayBase.buildings = dayBase.buildings.filter(b => !(b.cfgId === RUIN_ID && cells.has(`${b.row},${b.col}`)));
+      }
+      const spawnable = edgeCells.filter(p => {
+        if (dayBase.buildings.some(b => b.row === p.row && b.col === p.col)) return false;
+        const t = terrainAt(dayBase, p.row, p.col);
+        return !t || isTerrainSpawnable(t);
+      });
+      assert(spawnable.length > 0, `第 ${wonDay + 1} 夜有可刷怪的边缘格`);
+      assert(spawnable.every(p => !!findPathToCore(dayBase, p)), `第 ${wonDay + 1} 夜所有可刷怪边缘格可达核心`);
+    }
+
+    // 地形格不可摆放建筑
+    const ts = createInitialGameState();
+    unlockAllBuildings(ts);
+    ts.resources.coin = 100000;
+    assert(!baseSys.canPlace(ts, 401, 2, 5).ok, '破旧建筑地形格不可摆放');
+    // 金币清理：扣款、地形移除；之后认领 + 走廊满足即可摆放
+    assert(baseSys.clearTerrain(ts, 2, 5), '金币清理破旧建筑成功');
+    assert(ts.resources.coin === 100000 - TERRAIN_CLEAR_COST.shack, '清理破旧建筑扣 300 金币');
+    assert(!terrainAt(ts.base, 2, 5), '清理后地形移除');
+    claimAround(ts.base, 2, 5, 1);
+    assert(baseSys.canPlace(ts, 401, 2, 5).ok, '清理并认领后可摆放');
+    // 金币不足清理失败，地形保留
+    ts.resources.coin = 10;
+    assert(!baseSys.clearTerrain(ts, 1, 2) && terrainAt(ts.base, 1, 2) === 'shack', '金币不足清理失败且地形保留');
+    // 平地格清理返回 false
+    assert(!baseSys.clearTerrain(ts, 6, 6), '平地格无地形可清理');
+
+    // 水池阻挡地面寻路：从 (12,6) 出发的路径不经过任何水池格（先移除边缘废墟，模拟坍塌后）
+    ts.base.buildings = ts.base.buildings.filter(b => b.cfgId !== RUIN_ID);
+    const path = findPathToCore(ts.base, { row: 12, col: 6 });
+    assert(!!path && path.every(p => terrainAt(ts.base, p.row, p.col) !== 'pond'), '地面寻路绕开水池');
+    // 水池封死东侧缺口 → 无杀怪走廊
+    const pondBase = createDefaultBase();
+    pondBase.tiles[4][12].terrain = 'pond';
+    pondBase.tiles[5][12].terrain = 'pond';
+    pondBase.tiles[6][12].terrain = 'pond';
+    assert(!hasKillCorridor(pondBase), '地形封死缺口后无杀怪走廊');
+
+    // 夜战移动：地面僵尸在水池南侧横移绕行，不踏进水池（先移除边缘废墟，模拟坍塌后）
+    const night = new NightSystem();
+    const mv = createInitialGameState();
+    mv.base.buildings = mv.base.buildings.filter(b => b.cfgId !== RUIN_ID);
+    const mb = night.startBattle(mv);
+    mb.status = 'fighting';
+    mb.wave = 1;
+    mb.zombies.push({ uid: 9981, cfgId: 1, hp: 60, maxHp: 60, level: 1, attack: 3, row: 12, col: 6, moveCd: 0, attackCd: 1e9, slowUntil: 0 });
+    night.tick(mv, mb, 100);
+    const mz = mb.zombies[0];
+    assert(mz.row === 12 && (mz.col === 5 || mz.col === 7), '地面僵尸绕开水池横移');
+    // 钻地僵尸不能穿水池：在 (12,6) 潜行时三个近核心方向全是水池 → 原地不动
+    const bstate = createInitialGameState();
+    const bbattle = night.startBattle(bstate);
+    bbattle.status = 'fighting';
+    bbattle.wave = 1;
+    bbattle.zombies.push({ uid: 9983, cfgId: 8, hp: 90, maxHp: 90, level: 1, attack: 12, row: 12, col: 6, moveCd: 0, attackCd: 1e9, slowUntil: 0, burrowed: true });
+    night.tick(bstate, bbattle, 100);
+    assert(bbattle.zombies[0].row === 12 && bbattle.zombies[0].col === 6, '钻地僵尸不能穿水池，原地待命');
+
+    // 旧存档兼容：tiles 无 terrain 字段时按平地处理，走廊正常
+    const legacy = createDefaultBase();
+    legacy.tiles.forEach(rowArr => rowArr.forEach(t => delete t.terrain));
+    assert(hasKillCorridor(legacy) && terrainAt(legacy, 1, 2) === null, '旧存档无地形字段按平地处理');
   }
 
   // --- 地面路线：绕开建筑时使用四方向最短路 ---
@@ -1235,7 +1493,7 @@ console.log('== 夜晚战斗 ==');
       { uid: 9973, cfgId: 1, hp: 100, maxHp: 100, row: 7, col: 8, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 }
     );
     night.tick(cannonState, cannonBattle, 100);
-    assert(cannonBattle.zombies.every(z => z.hp === 70), '炮塔命中点 1 格范围同时受伤');
+    assert(cannonBattle.zombies.every(z => z.hp === 50), '炮塔命中点 1 格范围同时受伤（攻 50 溅射）');
 
     const arcState = createInitialGameState();
     addFueledGenerator(arcState);
@@ -1270,6 +1528,187 @@ console.log('== 夜晚战斗 ==');
     assert(Object.keys(rollDrops(getZombieConfig(3)!)).length === 1, '坦克僵尸必掉 1 份低级材料');
   }
 
+  // --- 减速沼泽磨损：每减速一只僵尸扣 1 耐久，耗尽即损毁 ---
+  {
+    const state = createInitialGameState();
+    // 僵尸从 (6,8) 向核心走一步，落点必是 (5,7)/(6,7)/(7,7) 之一，全铺沼泽
+    for (const r of [5, 6, 7]) {
+      state.base.buildings.push({ cfgId: 303, level: 1, hp: 50, maxHp: 50, row: r, col: 7 });
+    }
+    const battle: IBattle = night.startBattle(state);
+    battle.status = 'fighting';
+    battle.wave = 1;
+    battle.zombies.push({ uid: 998, cfgId: 1, hp: 60, maxHp: 60, row: 6, col: 8, moveCd: 0, attackCd: 0, slowUntil: 0 });
+    night.tick(state, battle, 100);
+    const hpTotal = state.base.buildings.filter(b => b.cfgId === 303).reduce((sum, b) => sum + b.hp, 0);
+    assert(battle.zombies[0]?.slowUntil > 0 && hpTotal === 149, '沼泽减速僵尸并磨损 1 点耐久');
+    assert(state.base.buildings.filter(b => b.cfgId === 303).length === 3, '沼泽磨损不殃及未踩的格子');
+
+    // 耐久耗尽可能被踩毁
+    const state2 = createInitialGameState();
+    for (const r of [5, 6, 7]) {
+      state2.base.buildings.push({ cfgId: 303, level: 1, hp: 1, maxHp: 50, row: r, col: 7 });
+    }
+    const battle2: IBattle = night.startBattle(state2);
+    battle2.status = 'fighting';
+    battle2.wave = 1;
+    battle2.zombies.push({ uid: 997, cfgId: 1, hp: 60, maxHp: 60, row: 6, col: 8, moveCd: 0, attackCd: 0, slowUntil: 0 });
+    night.tick(state2, battle2, 100);
+    assert(state2.base.buildings.filter(b => b.cfgId === 303).length === 2 && battle2.zombies[0]?.slowUntil > 0, '沼泽耐久耗尽即损毁，最后一只仍被减速');
+
+    // 损毁前可用金币修复（造价 250，损坏 49/50 → 修复费 123）
+    const repairState = createInitialGameState();
+    repairState.base.buildings.push({ cfgId: 303, level: 1, hp: 1, maxHp: 50, row: 6, col: 7 });
+    repairState.resources.coin = 200;
+    const baseSys = new BaseSystem(new EconomySystem());
+    const repaired = baseSys.repair(repairState, 6, 7);
+    assert(repaired && repairState.base.buildings.find(b => b.cfgId === 303)?.hp === 50 && repairState.resources.coin === 200 - 123, '沼泽可用金币修复回满耐久');
+  }
+
+  // --- 夜战掉落池上限：一晚普通掉落最多 10 件，精英/Boss 保底不占额度 ---
+  {
+    const state = createInitialGameState();
+    const battle = night.startBattle(state);
+    battle.status = 'fighting';
+    battle.wave = 1;
+    // 15 只坦克（每只必掉 1 份）+ 1 只精英（保底 1003 + 池子 1~2 份）同夜死亡
+    for (let i = 0; i < 15; i++) {
+      battle.zombies.push({ uid: 2000 + i, cfgId: 3, hp: 0, maxHp: 100, row: 0, col: 6, moveCd: 0, attackCd: 0, slowUntil: 0 });
+    }
+    battle.zombies.push({ uid: 2999, cfgId: 5, hp: 0, maxHp: 100, row: 0, col: 6, moveCd: 0, attackCd: 0, slowUntil: 0 });
+    night.tick(state, battle, 100);
+    const poolTotal = Object.entries(battle.pendingDrops)
+      .filter(([id]) => Number(id) !== 1003 && Number(id) !== 1005 && Number(id) !== 60024)
+      .reduce((s, [, n]) => s + (n || 0), 0);
+    assert(poolTotal <= 10, '一晚普通掉落池出货不超过 10 件');
+    assert(battle.pendingDrops[1003] === 1, '精英保底掉落不受上限影响');
+    assert(battle.pendingDrops[60024] === 1, '精英核心材料保底不受上限影响');
+  }
+
+  // --- 合成核心光环：棋盘核心装置让发射器产出概率升一级 ---
+  {
+    const { economy } = makeSystems();
+    const state = createInitialGameState();
+    // 无核心：概率 0，产出不升级
+    assert(getCoreAuraChance(state) === 0, '无核心时光环概率 0');
+    assert(applyCoreAura(state, 20001, () => 0).upgraded === false, '无核心时产出不升级');
+    // 多个核心取最高级（60026=5%，60030=25%）
+    setItem(state.grid, 0, 0, createItemFromConfig(60026));
+    setItem(state.grid, 0, 1, createItemFromConfig(60030));
+    assert(getCoreAuraChance(state) === 0.25, '多核心取最高级概率');
+    // 命中且可再合成：20001 旧保温箱升一级；链顶 60031 不越级
+    const hit = applyCoreAura(state, 20001, () => 0);
+    assert(hit.upgraded && hit.id === 20002, '光环命中产出升一级');
+    assert(applyCoreAura(state, 20001, () => 0.999).upgraded === false, '光环未命中不升级');
+    assert(applyCoreAura(state, 60031, () => 0).upgraded === false, '链顶命中也不越级');
+    // 核心装置不可出售（养成道具防误卖）
+    assert(economy.sellItem(state, { row: 0, col: 1 }) === null, '核心三型不可出售');
+    assert(economy.sellItem(state, { row: 0, col: 0 }) === null, '核心基座不可出售');
+  }
+
+  // --- 合成权限门槛：钢铁/科技档物品需要核心达到对应等级 ---
+  {
+    const { merge } = makeSystems();
+    // 分档映射：钢铁档/科技档/豁免
+    assert(getItemTier(20041) === 1 && getItemTier(20030) === 1 && getItemTier(50001) === 1 && getItemTier(60007) === 1, '钢铁档分档');
+    assert(getItemTier(20059) === 2 && getItemTier(20061) === 2 && getItemTier(60016) === 2, '科技档分档');
+    assert(getItemTier(10001) === 0 && getItemTier(20011) === 0 && getItemTier(30048) === 0 && getItemTier(40011) === 0
+      && getItemTier(50023) === 0 && getItemTier(60021) === 0 && getItemTier(60031) === 0 && getItemTier(70104) === 0
+      && getItemTier(30055) === 0 && getItemTier(30066) === 0, '普通档与豁免分档（U盘终端链放开为普通档）');
+    // 核心权限等级
+    const gstate = createInitialGameState();
+    assert(getCoreTier(gstate) === 0, '无核心权限档 0');
+    setItem(gstate.grid, 5, 0, createItemFromConfig(60027));
+    assert(getCoreTier(gstate) === 1, '原型权限档 1');
+    // 门槛：原型在场可合钢铁、不可合科技；核心链自身不受限
+    setItem(gstate.grid, 0, 0, createItemFromConfig(20041));
+    setItem(gstate.grid, 0, 1, createItemFromConfig(20041));
+    setItem(gstate.grid, 1, 0, createItemFromConfig(20059));
+    setItem(gstate.grid, 1, 1, createItemFromConfig(20059));
+    setItem(gstate.grid, 2, 0, createItemFromConfig(60024));
+    setItem(gstate.grid, 2, 1, createItemFromConfig(60024));
+    assert(merge.moveOrMerge(gstate, { row: 0, col: 0 }, { row: 0, col: 1 }).kind === 'merge', '原型在场解锁钢铁档合成');
+    assert(merge.moveOrMerge(gstate, { row: 1, col: 0 }, { row: 1, col: 1 }).kind === 'bounce', '科技档需要二型才能合成');
+    assert(merge.moveOrMerge(gstate, { row: 2, col: 0 }, { row: 2, col: 1 }).kind === 'merge', '核心链自身合成不受门槛限制');
+    // 放上二型后科技档解锁
+    setItem(gstate.grid, 5, 1, createItemFromConfig(60029));
+    assert(getCoreTier(gstate) === 2, '二型权限档 2');
+    assert(merge.moveOrMerge(gstate, { row: 1, col: 0 }, { row: 1, col: 1 }).kind === 'merge', '二型在场解锁科技档合成');
+    // 纯基座（档 0）：钢铁档弹回
+    const g0 = createInitialGameState();
+    setItem(g0.grid, 0, 0, createItemFromConfig(20041));
+    setItem(g0.grid, 0, 1, createItemFromConfig(20041));
+    setItem(g0.grid, 0, 2, createItemFromConfig(60026));
+    assert(merge.moveOrMerge(g0, { row: 0, col: 0 }, { row: 0, col: 1 }).kind === 'bounce', '基座档合成废铁被门槛弹回');
+    // 订单候选过滤源码断言 + 简介面板接线断言
+    const taskSystemSource = require('fs').readFileSync('src/core/systems/TaskSystem.ts', 'utf8');
+    assert(taskSystemSource.includes('getItemTier(id) <= coreTier'), '订单候选按核心权限档过滤');
+    const gameSceneSrc2 = require('fs').readFileSync('src/phaser/scenes/GameScene.ts', 'utf8');
+    assert(gameSceneSrc2.includes('CoreIntroPanel') && gameSceneSrc2.includes('onViewIntro'), '核心简介弹窗已接入 GameScene');
+    // 新开局棋盘不再有钢铁/科技档物品（防开局卡手）
+    const fresh2 = GameInitializer.initNewGame();
+    assert(fresh2.grid.cells.flat().every(cell => !cell.item || getItemTier(cell.item.id) === 0), '初始棋盘全为普通档');
+  }
+
+  // --- 核心发射器：60026 起可点击发射链首材料，夜战不再掉落链首材料 ---
+  {
+    const { spawn } = makeSystems();
+    // 零件/残片不发射，基座起才是发射器
+    assert(!isClickSpawner(60024) && !isClickSpawner(60025), '核心零件/残片不可发射');
+    const CORE_EMIT: Record<number, { times: number; milo: number }> = {
+      60026: { times: 6, milo: 600 }, 60027: { times: 8, milo: 540 }, 60028: { times: 10, milo: 480 },
+      60029: { times: 12, milo: 420 }, 60030: { times: 14, milo: 360 }, 60031: { times: 16, milo: 300 },
+    };
+    for (const [idStr, cfg] of Object.entries(CORE_EMIT)) {
+      const id = Number(idStr);
+      const prop = getProp(id)!;
+      assert(isClickSpawner(id), `核心 ${id} 是点击发射器`);
+      assert(prop.times === cfg.times && prop.milo === cfg.milo, `核心 ${id} 库存/CD 符合设计`);
+      assert(prop.noPower === 0, `核心 ${id} 发射耗体力`);
+    }
+    // 产出池逐级解锁：基座 4 种（第一排链首），原型/TG-I/二型每级 +2，三型解锁钢铁档链首，完整核心解锁科技档链首 + L2 材料
+    const L1_STEEL = [20030, 20065, 50001, 50011, 50017];
+    const L2_IDS = [10002, 20002, 30002, 40002, 40012, 40028];
+    const poolIds = (id: number) => getClickProducts(id).map(p => p.id);
+    assert(poolIds(60026).join(',') === '10001,20001,40011,40027', '基座池=4 种普通档链首（第一排）');
+    assert(poolIds(60026).every(i => getItemTier(i) === 0), '基座池全为普通档');
+    assert(poolIds(60027).join(',') === '10001,20001,40011,40027,40001,30001', '原型池 +2（破花盆/旧车轮）');
+    assert(poolIds(60028).join(',') === '10001,20001,40011,40027,40001,30001,30008,40039', 'TG-I 池 +2（储物篮/藤蔓绳）');
+    assert(poolIds(60029).join(',') === '10001,20001,40011,40027,40001,30001,30008,40039,30019,30049', '二型池 +2（钥匙/遗失的眼镜）');
+    assert(poolIds(60030).length === 15 && L1_STEEL.every(i => poolIds(60030).includes(i)) && !poolIds(60030).includes(20059), '三型池解锁钢铁档链首，不含科技档');
+    assert(poolIds(60031).length === 22 && poolIds(60031).includes(20059) && L2_IDS.every(i => poolIds(60031).includes(i)), '完整核心池含科技档链首与 L2 材料');
+    assert(!L2_IDS.some(i => poolIds(60030).includes(i)), '三型及以前不出 L2 材料');
+    // 功能：点击 60026 耗 1 体力、次数 -1、产出池内物品（核心自身光环 5% 可能把产物升一级，属正常行为）
+    const st = createInitialGameState();
+    st.resources.power = 10;
+    setItem(st.grid, 4, 3, createItemFromConfig(60026));
+    const r = spawn.clickSpawn(st, { row: 4, col: 3 });
+    const basePool = poolIds(60026);
+    const poolOrUpgraded = new Set([...basePool, ...basePool.map(i => getProp(i)!.blessId)]);
+    assert(r.success && r.productId !== undefined && poolOrUpgraded.has(r.productId), '核心基座点击发射成功且产物在池内');
+    assert(st.resources.power === 9, '核心发射耗 1 体力');
+    assert(getItem(st.grid, 4, 3)!.times === 5, '核心发射次数 -1');
+    // 夜战掉落池不再含链首材料（发射器材料统一由核心产出）
+    const HEADS = new Set([20001, 30001, 40011, 40027, 30019]);
+    for (const z of getAllZombieConfigs()) {
+      assert(!z.dropPool.some(i => HEADS.has(i)), `僵尸 ${z.name} 掉落池不含链首材料`);
+    }
+    // 订单候选：核心发射器不作种子——只有棋盘上真有对应发射器，该链物品才进订单
+    {
+      const { task } = makeSystems();
+      const onlyCore = createInitialGameState();
+      setItem(onlyCore.grid, 4, 3, createItemFromConfig(60026));
+      const reachableCore = task.collectReachableIds(onlyCore);
+      assert(!reachableCore.includes(20011) && !reachableCore.includes(10012) && !reachableCore.includes(40012),
+        '仅核心在场时订单候选不含任何链产物');
+      // 放上真正的冷藏箱发射器后，其产出链才可达
+      setItem(onlyCore.grid, 2, 2, createItemFromConfig(20004));
+      const reachableWithSpawner = task.collectReachableIds(onlyCore);
+      assert(reachableWithSpawner.includes(20011), '冷藏箱发射器在场后净水链进订单候选');
+      assert(!reachableWithSpawner.includes(10012), '无工具箱发射器时维修工具链仍不可达');
+    }
+  }
+
   // --- 城墙阻挡：僵尸停下拆墙（坦克 demolish 1 可拆木墙 sturdy 1） ---
   {
     const state = createInitialGameState();
@@ -1281,6 +1720,42 @@ console.log('== 夜晚战斗 ==');
     night.tick(state, battle, 100);
     assert(state.base.buildings.some(b => b.cfgId === 401 && b.hp < 150), '僵尸攻击挡路城墙');
     assert(battle.zombies[0]?.row === 6 && battle.zombies[0]?.col === 8, '僵尸被墙挡在原地');
+  }
+
+  // --- 核心材料每晚封顶 2 个：多只精英 + Boss 同夜死亡也只掉 2 个 60024 ---
+  {
+    const state = createInitialGameState();
+    const battle = night.startBattle(state);
+    battle.status = 'fighting';
+    battle.wave = 1;
+    for (let i = 0; i < 3; i++) {
+      battle.zombies.push({ uid: 960 + i, cfgId: 5, hp: 0, maxHp: 1, row: 0, col: 8, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 }); // 精英×3
+    }
+    battle.zombies.push({ uid: 970, cfgId: 6, hp: 0, maxHp: 1, row: 1, col: 8, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 }); // Boss（保底 ×2）
+    night.tick(state, battle, 100);
+    assert((battle.pendingDrops[60024] ?? 0) === 2, `核心材料每晚最多掉 2 个（实际 ${battle.pendingDrops[60024]}）`);
+    assert((battle.pendingDrops[1003] ?? 0) === 3 && (battle.pendingDrops[1005] ?? 0) === 1, '手提包保底不受核心材料上限影响');
+  }
+
+  // --- 出兵按批：第 1~4 天每批 5 只（700ms），第 5 天起每批 10 只（250ms） ---
+  {
+    // 清掉废墟张开全部边缘格，排除开口数对批次的影响
+    const state = createInitialGameState();
+    state.day = 1;
+    state.base.buildings = state.base.buildings.filter(b => b.cfgId !== RUIN_ID);
+    const battle = night.startBattle(state);
+    battle.status = 'fighting';
+    battle.spawnQueue = genWaveZombies(1, 1, 3);
+    night.tick(state, battle, 800);
+    assert(battle.zombies.length === 5, `第 1 天每批出兵 5 只（实际 ${battle.zombies.length}）`);
+    const state5 = createInitialGameState();
+    state5.day = 5;
+    state5.base.buildings = state5.base.buildings.filter(b => b.cfgId !== RUIN_ID);
+    const battle5 = night.startBattle(state5);
+    battle5.status = 'fighting';
+    battle5.spawnQueue = genWaveZombies(5, 1, 3);
+    night.tick(state5, battle5, 300);
+    assert(battle5.zombies.length === 10, `第 5 天起每批出兵 10 只（实际 ${battle5.zombies.length}）`);
   }
 
   // --- 飞行僵尸：无视城墙（只被核心阻挡），可被塔攻击 ---
@@ -1468,6 +1943,24 @@ console.log('== 夜晚战斗 ==');
     assert(state.resources.power === 130, '胜利天亮后保留余量并固定奖励 100 行动力');
     const lootAfter = state.grid.cells.flat().filter(c => c.item).length + state.cardArr.length;
     assert(lootAfter === lootBefore + totalDrops, '战利品发到棋盘（满则进卡片）');
+  }
+
+  // --- 卡单救济接入天亮结算：死单 + 连续 2 天未完成 → 天亮额外掉低 2 级材料 ×2 ---
+  {
+    const state = createInitialGameState();
+    addFueledGenerator(state);
+    state.base.buildings.push({ cfgId: 103, level: 3, hp: 450, maxHp: 450, row: 5, col: 5 });
+    state.day = 5;
+    state.lastTaskCompleteDay = 3;
+    state.tasks = [{ id: 776, propArr: [{ id: 30052, num: 1 }], starNum: 1 }];
+    const battle = night.startBattle(state);
+    battle.status = 'won';
+    const before = state.grid.cells.flat().filter(c => c.item).length + state.cardArr.length;
+    night.endBattle(state, battle);
+    const gained = state.grid.cells.flat().filter(c => c.item).length + state.cardArr.length - before;
+    assert(gained === 2 && state.lastTaskCompleteDay === 6, '卡单救济天亮额外掉 2 件材料并重置计时');
+    const hasReliefItem = state.grid.cells.flat().some(c => c.item?.id === 30050) || state.cardArr.includes(30050);
+    assert(hasReliefItem, '卡单救济物品为死单目标的低 2 级材料（30050 遮阳帽）');
   }
 
   // --- 拆迁等级：低级僵尸拆不动废墟/墙，高级逐级可拆；卡死 15 秒狂暴强拆 ---
@@ -1758,13 +2251,13 @@ console.log('== 英雄系统 ==');
     const storage = new StorageSystem();
     assert(resolveLanguage(undefined) === 'zh-CN', 'language resolver is safe without navigator');
     const gameSceneSource = require('fs').readFileSync('src/phaser/scenes/GameScene.ts', 'utf8');
-    assert(gameSceneSource.includes("browserLanguage?.toLowerCase().startsWith('zh') ? 'zh-CN' : browserLanguage ? 'en' : resolveLanguage()"), 'new game maps fr-FR to English and guards navigator');
+    assert(gameSceneSource.includes("if (isNewGame) this.state.language = 'en';"), 'itch 发布版新开局默认英文，不看浏览器语言');
     assert(gameSceneSource.includes('(this.bagPanel?.isVisible() ?? false)') && gameSceneSource.includes('(this.spawnerPanel?.isVisible() ?? false)'), 'open panels block grid input');
     const nightSceneSource = require('fs').readFileSync('src/phaser/scenes/NightScene.ts', 'utf8');
     assert(nightSceneSource.includes('create(): void {\n    this.ended = false;'), 'NightScene restarts reset the prior battle end flag');
     assert(gameSceneSource.includes('this.storage.clearState();'), 'restart clears saves through StorageSystem');
     const state = createInitialGameState();
-    assert(state.language === 'zh-CN', 'new game defaults to Chinese');
+    assert(state.language === 'en', '新开局默认英文');
     delete (state as Partial<typeof state>).heroes; // 模拟旧存档
     storage.saveState(state);
     const loaded = storage.loadState();
@@ -1773,10 +2266,10 @@ console.log('== 英雄系统 ==');
     const oldLanguageState = createInitialGameState();
     delete (oldLanguageState as Partial<typeof oldLanguageState>).language;
     store.set(SAVE_KEY, JSON.stringify({ version: '3', state: oldLanguageState }));
-    assert(storage.loadState()?.language === 'zh-CN', '旧档缺 language 时默认中文');
+    assert(storage.loadState()?.language === 'en', '旧档缺 language 时默认英文');
     (oldLanguageState as { language?: string }).language = 'fr';
     store.set(SAVE_KEY, JSON.stringify({ version: '3', state: oldLanguageState }));
-    assert(storage.loadState()?.language === 'zh-CN', '旧档 language 无效时默认中文');
+    assert(storage.loadState()?.language === 'en', '旧档 language 无效时默认英文');
     oldLanguageState.language = 'en';
     storage.saveState(oldLanguageState);
     assert(storage.loadState()?.language === 'en', '保存后恢复语言设置');
@@ -1833,6 +2326,21 @@ console.log('== 英雄系统 ==');
     storage.saveState(catOldState);
     const loadedCatOldState = storage.loadState()!;
     assert(loadedCatOldState.grid.cells.flat().some(cell => cell.item?.id === 50022) || loadedCatOldState.cardArr.includes(50022), '旧档补发所有已看剧情的配置道具奖励');
+
+    // 合成核心：新开局棋盘自带核心基座；旧档无核心链道具时 loadState 补发一个，已有的不重复
+    const freshGame = GameInitializer.initNewGame();
+    assert(freshGame.grid.cells.flat().filter(cell => cell.item?.id === 60026).length === 1, '新开局棋盘自带一个核心基座');
+    const coreOldState = createInitialGameState();
+    storage.saveState(coreOldState);
+    const loadedCoreOld = storage.loadState()!;
+    const coreCount = loadedCoreOld.grid.cells.flat().filter(cell => cell.item?.id && cell.item.id >= 60024 && cell.item.id <= 60031).length
+      + loadedCoreOld.cardArr.filter(id => id >= 60024 && id <= 60031).length;
+    assert(coreCount === 1, '旧档无核心链道具补发一个核心基座');
+    storage.saveState(loadedCoreOld);
+    const loadedCoreOldAgain = storage.loadState()!;
+    const coreCountAgain = loadedCoreOldAgain.grid.cells.flat().filter(cell => cell.item?.id && cell.item.id >= 60024 && cell.item.id <= 60031).length
+      + loadedCoreOldAgain.cardArr.filter(id => id >= 60024 && id <= 60031).length;
+    assert(coreCountAgain === 1, '核心基座补发不重复');
   }
 
   // --- 整局回归：第 2 晚 1 箭塔 + 老枪部署核心旁内圈格，核心掉血少于无英雄对照组 ---
@@ -2180,8 +2688,11 @@ assert(baseSceneSource.includes('private nightEndStory: { won: boolean; day: num
 assert(baseSceneSource.includes('this.storySystem.checkNightEnd(this.state, this.nightEndStory.won, this.nightEndStory.day);'), '基地场景在剧情弹窗就绪后触发夜战剧情');
 assert(baseSceneSource.includes('getZombieName(t.id)') && baseSceneSource.includes("getText(`zombie.tag.${t.id}`)"), 'Night preview uses localized zombie accessors');
 assert(baseSceneSource.includes('canDefendFlyingEnemies(this.state)') && baseSceneSource.includes("getText('base.noAntiAirWarning')"), 'Night preview warns when flying enemies exceed the current air defense');
-assert(baseSceneSource.includes('getRecommendedMarketItem(this.state.day)') && baseSceneSource.includes("getText('base.marketFragments'"), 'Night preview and market expose the recommended fragment pack');
-assert(getText('base.marketFragments', { count: 2 }) !== 'base.marketFragments' && getText('base.recommendedCounter') !== 'base.recommendedCounter', 'Fragment pack UI text is localized');
+assert(baseSceneSource.includes("building.cfgId === 101 && staffed && hasSupportCoverage(this.state, 'radar'"), '基地页雷达覆盖内箭塔显示对空角标');
+assert(nightSceneSource.includes("b.cfgId === 101 && powered && hasSupportCoverage(this.state, 'radar'"), '夜战页雷达覆盖内箭塔显示对空角标');
+assert(getText('base.antiAir') !== 'base.antiAir', '对空角标文案已本地化');
+assert(baseSceneSource.includes('getRecommendedMarketItem(this.state.day)') && baseSceneSource.includes("getText('base.marketComplete'"), 'Night preview and market expose the recommended complete blueprint');
+assert(getText('base.marketComplete') !== 'base.marketComplete' && getText('base.recommendedCounter') !== 'base.recommendedCounter', 'Complete blueprint UI text is localized');
 assert(baseSceneSource.includes('wordWrap: { width: panelW - 150, useAdvancedWrap: true }'), 'Night preview wraps Chinese warning text without spaces');
 assert(baseSceneSource.includes('const name = this.add.text(x - 104, y - 80, getBuildingName(cfg.id)') && baseSceneSource.includes('const rowY = y + 56 + j * 44;'), 'Build cards use separated name, description, and cost rows');
 assert(baseSceneSource.includes("y - 80, getBuildingName(cfg.id)") && baseSceneSource.includes("getLanguage() === 'en' ? '18px' : '20px'"), 'Build card titles leave room for wrapped Chinese descriptions');

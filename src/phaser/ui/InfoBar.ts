@@ -3,6 +3,7 @@ import { IGameState, IItemData, IPoint } from '../../core/types';
 import { getProp, isClickSpecialProp, isClickSpawner, isMergeChainTop } from '../../core/config/PropConfig';
 import { itemIsBubble, itemInCd } from '../../core/model/Item';
 import { getBlueprintBuilding } from '../../core/config/BuildingConfig';
+import { isCoreChainItem } from '../../core/config/MergeCoreConfig';
 import { UI_FILL, UI_SLOT_FILL, UI_STROKE, drawUiBox } from './UiStyle';
 import { getItemIconKey } from '../config/ItemIconMap';
 import { getLanguage, getPropDescription, getPropName, getText } from '../../core/i18n';
@@ -110,6 +111,7 @@ export function buildInfoActions(
     onSkipCd: (pos: IPoint, cdType: 1 | 2) => void;
     onUse: (pos: IPoint) => void;
     onViewSpawner: (pos: IPoint) => void;
+    onViewIntro: (pos: IPoint) => void;
   }
 ): IInfoAction[] {
   const actions: IInfoAction[] = [];
@@ -124,6 +126,7 @@ export function buildInfoActions(
     return actions;
   }
   if (isClickSpawner(item.id)) actions.push({ label: getText('action.view'), onClick: () => handlers.onViewSpawner(pos) });
+  if (isCoreChainItem(item.id)) actions.push({ label: getText('action.intro'), onClick: () => handlers.onViewIntro(pos) });
   if (getBlueprintBuilding(item.id)) actions.push({ label: getText('action.use'), onClick: () => handlers.onUse(pos) });
   const unlockedSpawner = prop.mdt === 1 && !item.unlock && (item.times ?? 0) > 0;
   if (isClickSpecialProp(item.id) && !unlockedSpawner) actions.push({ label: getText('action.use'), onClick: () => handlers.onUse(pos) });

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "webpack serve --mode development",
     "build": "webpack --mode production",
+    "build:test": "cross-env DEV_FEATURES=1 webpack --mode production",
     "build:wx": "cross-env TARGET=wx webpack --mode production",
     "build:tt": "cross-env TARGET=tt webpack --mode production",
     "preview": "webpack serve --mode development --open",
@@ -27,6 +28,7 @@
     "copy-webpack-plugin": "^11.0.0",
     "cross-env": "^7.0.3",
     "html-webpack-plugin": "^5.5.3",
+    "playwright": "^1.62.1",
     "sharp": "^0.35.3",
     "ts-loader": "^9.5.0",
     "typescript": "^5.2.2",

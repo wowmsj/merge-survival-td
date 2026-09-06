@@ -5,13 +5,15 @@ import { StorageSystem } from '../../core/systems/StorageSystem';
 import { NightSystem, IBattle } from '../../core/systems/NightSystem';
 import { StorySystem } from '../../core/systems/StorySystem';
 import { StoryDialog } from '../ui/StoryDialog';
-import { getBuildingName, getHeroName, getText } from '../../core/i18n';
+import { getHeroName, getText } from '../../core/i18n';
 import { getBuildingConfig } from '../../core/config/BuildingConfig';
 import { getZombieConfig } from '../../core/config/ZombieConfig';
 import { getHeroConfig } from '../../core/config/HeroConfig';
 import { addFullscreenBg, showSceneToast, makeUiButton } from '../ui/UiWidgets';
-import { KIND_COLORS, KIND_ICON_KEYS } from '../config/BuildingKindStyle';
-import { isBuildingPoweredAtNight } from '../../core/systems/BaseSystem';
+import { KIND_COLORS, KIND_ICON_KEYS, buildingIconKey } from '../config/BuildingKindStyle';
+import { hasSupportCoverage, isBuildingPoweredAtNight } from '../../core/systems/BaseSystem';
+import { terrainAt } from '../../core/config/TerrainConfig';
+import { drawTerrainTile, terrainHasOverlayIcon } from '../ui/TerrainTiles';
 
 const GRID_TOP = 210;
 const GRID_LEFT = 24;
@@ -35,6 +37,9 @@ const TOWER_FX: Record<number, ITowerFx> = {
   104: { color: 0x74c0fc, shape: 'arrow', size: 5, flyMs: 150, hitSize: 14 }
 };
 const DEFAULT_TOWER_FX: ITowerFx = { color: 0xff922b, shape: 'arrow', size: 5, flyMs: 160, hitSize: 14 };
+
+/** 僵尸贴图显示尺寸（相对格子边长的倍数）：Boss/坦克更大，快速略小；缺贴图时回退彩色圆 */
+const ZOMBIE_SPRITE_SCALE: Record<number, number> = { 1: 0.8, 2: 0.75, 3: 1.05, 4: 0.85, 5: 0.95, 6: 1.35, 7: 0.8, 8: 0.85 };
 
 /**
  * 夜晚战斗场景：波次制尸潮防守
@@ -171,6 +176,18 @@ export class NightScene extends Phaser.Scene {
           .setDisplaySize(CELL, CELL)
           .setTint(0x8888bb);
         this.gridLayer.add(cell);
+        // 地形层：瓦片式地面（夜里不变，清理是白天操作），用夜间压暗色板
+        const terrain = terrainAt(this.state.base, row, col);
+        if (terrain) {
+          drawTerrainTile(this, this.gridLayer, this.state.base, row, col, x, y, CELL, GAP, true);
+          if (terrainHasOverlayIcon(terrain)) {
+            const texKey = `terrain-${terrain}`;
+            if (this.textures.exists(texKey)) {
+              const img = this.add.image(x, y, texKey).setDisplaySize((CELL - 8) * 0.72, (CELL - 8) * 0.72).setTint(0xaaaacc);
+              this.gridLayer.add(img);
+            }
+          }
+        }
       }
     }
   }
@@ -184,8 +201,9 @@ export class NightScene extends Phaser.Scene {
       // 夜战供电判定（塔优先）：缺电建筑压暗 + 红名 + 缺电角标，与基地页口径一致
       const powered = isBuildingPoweredAtNight(this.state, b);
 
-      // 有图标纹理用建筑图标，缺失回退色块；缺电建筑灰色压暗
-      const iconKey = KIND_ICON_KEYS[cfg.kind];
+      // 优先建筑专属贴图，缺失回退大类图标/色块；缺电建筑灰色压暗
+      const perKey = buildingIconKey(cfg.id);
+      const iconKey = this.textures.exists(perKey) ? perKey : KIND_ICON_KEYS[cfg.kind];
       const hasIcon = this.textures.exists(iconKey);
       if (hasIcon) {
         const img = this.add.image(x, y, iconKey).setDisplaySize(CELL - 12, CELL - 12);
@@ -198,11 +216,7 @@ export class NightScene extends Phaser.Scene {
         this.buildingLayer.add(g);
       }
 
-      // 缺电时名字变红并移到中央（给角标让位）
-      const name = this.add.text(x, hasIcon ? (powered ? y - CELL / 2 + 12 : y) : y - 4, getBuildingName(cfg.id).substring(0, 3), {
-        fontSize: '18px', color: powered ? '#ffffff' : '#ff6b6b', fontStyle: 'bold', stroke: '#000000', strokeThickness: 3
-      }).setOrigin(0.5);
-      this.buildingLayer.add(name);
+      // 名字不显示：靠图标识别建筑；缺电靠压暗 + 红角标表达
 
       // 缺电角标：右上角红底「缺电」
       if (!powered) {
@@ -211,6 +225,18 @@ export class NightScene extends Phaser.Scene {
         badge.fillRoundedRect(x + CELL / 2 - 46, y - CELL / 2 + 2, 44, 22, 6);
         this.buildingLayer.add(badge);
         const badgeText = this.add.text(x + CELL / 2 - 24, y - CELL / 2 + 13, getText('base.noPower'), {
+          fontSize: '15px', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.buildingLayer.add(badgeText);
+      }
+
+      // 对空角标：通电箭塔处于通电雷达覆盖内，左上角亮蓝「对空/AA」
+      if (b.cfgId === 101 && powered && hasSupportCoverage(this.state, 'radar', b.row, b.col, true)) {
+        const badge = this.add.graphics();
+        badge.fillStyle(0x1971c2, 0.95);
+        badge.fillRoundedRect(x - CELL / 2 + 2, y - CELL / 2 + 2, 44, 22, 6);
+        this.buildingLayer.add(badge);
+        const badgeText = this.add.text(x - CELL / 2 + 24, y - CELL / 2 + 13, getText('base.antiAir'), {
           fontSize: '15px', color: '#ffffff', fontStyle: 'bold'
         }).setOrigin(0.5);
         this.buildingLayer.add(badgeText);
@@ -269,16 +295,24 @@ export class NightScene extends Phaser.Scene {
         g.lineBetween(x - CELL * 0.2, y + CELL * 0.05, x + CELL * 0.2, y + CELL * 0.08);
       } else {
         if (cfg.moveType === 'fly') {
-          // 飞行：地面投影 → 本体 → 两侧翅膀
+          // 飞行：地面投影
           g.fillStyle(0x000000, 0.25);
           g.fillEllipse(x, y + CELL * 0.34, CELL * 0.4, CELL * 0.12);
         }
-        g.fillStyle(cfg.color, 1);
-        g.fillCircle(x, y, CELL * 0.32);
-        if (cfg.moveType === 'fly') {
-          g.fillStyle(0xe3f2fd, 0.9);
-          g.fillEllipse(x - CELL * 0.34, y - CELL * 0.08, CELL * 0.26, CELL * 0.14);
-          g.fillEllipse(x + CELL * 0.34, y - CELL * 0.08, CELL * 0.26, CELL * 0.14);
+        const texKey = `zombie-${cfg.id}`;
+        if (this.textures.exists(texKey)) {
+          // 生成贴图：按类型缩放（Boss/坦克更大）
+          const size = CELL * (ZOMBIE_SPRITE_SCALE[cfg.id] ?? 0.85);
+          this.zombieLayer.add(this.add.image(x, y, texKey).setDisplaySize(size, size));
+        } else {
+          // 贴图缺失回退：彩色圆（飞行加翅膀）
+          g.fillStyle(cfg.color, 1);
+          g.fillCircle(x, y, CELL * 0.32);
+          if (cfg.moveType === 'fly') {
+            g.fillStyle(0xe3f2fd, 0.9);
+            g.fillEllipse(x - CELL * 0.34, y - CELL * 0.08, CELL * 0.26, CELL * 0.14);
+            g.fillEllipse(x + CELL * 0.34, y - CELL * 0.08, CELL * 0.26, CELL * 0.14);
+          }
         }
         if (z.slowUntil > this.battle.time) {
           g.lineStyle(3, 0x74c0fc, 1);

@@ -47,7 +47,7 @@ export interface IZombieConfig {
   demolish?: number;
   /** 死亡时自爆伤害（波及 1 格范围建筑） */
   explode?: number;
-  /** 掉落池：低级材料 id 列表（合成链 1~2 级，留给玩家往上合），死亡时随机取 dropMin~dropMax 份；重复 id = 提高权重（如普通僵尸的旧保温箱×2） */
+  /** 掉落池：低级材料 id 列表（合成链 1~2 级，留给玩家往上合），死亡时随机取 dropMin~dropMax 份；重复 id = 提高权重。发射器链首材料（旧保温箱/旧车轮/小种子包/种子/钥匙）不在此掉落，统一由核心发射器产出 */
   dropPool: number[];
   dropMin: number;
   dropMax: number;
@@ -82,7 +82,7 @@ function getThreatStage(day: number): IThreatStage {
 }
 
 function isBossNight(day: number): boolean {
-  return day >= 28 && (day - 28) % 7 === 0;
+  return day >= 5 && day % 5 === 0;
 }
 
 export function getZombieConfig(id: number): IZombieConfig | undefined {
@@ -121,7 +121,8 @@ export function getLevelAttackScale(level: number): number {
 export function genWaveZombies(day: number, wave: number, totalWaves: number): number[] {
   const stage = getThreatStage(day);
   const debutNight = stage.day === day && !!stage.debut;
-  const scale = day >= 4 ? 2 : 1;
+  // 数量系数：基础 ×2（割草尸潮手感，血量同步降 1/3 平衡），第 4/5 天再翻倍
+  const scale = day >= 5 ? 8 : day >= 4 ? 4 : 2;
   const count = Math.max(2, Math.floor((2 + Math.ceil(day * 0.6) + wave) * scale * (debutNight ? 0.8 : 1)));
   const pool = stage.ids.map(id => ZOMBIE_MAP.get(id)).filter((z): z is IZombieConfig => !!z);
 
@@ -130,19 +131,24 @@ export function genWaveZombies(day: number, wave: number, totalWaves: number): n
     result.push(getRandomByWeight(pool)?.id ?? ZOMBIE_IDS.normal);
   }
 
-  // 最后一波保底一个精英（第 3 天起）；每 5 天最后一波出 Boss
+  // 最后一波保底：精英（第 6 天起、非 Boss 夜）；每 5 天最后一波出 Boss
   if (stage.debut && stage.day === day) result[result.length - 1] = stage.debut;
-  if (wave === totalWaves && isBossNight(day)) result.push(ZOMBIE_IDS.boss);
+  if (wave === totalWaves && isBossNight(day)) {
+    result.push(ZOMBIE_IDS.boss);
+  } else if (wave === totalWaves && day >= 6 && result[result.length - 1] !== ZOMBIE_IDS.elite) {
+    result.push(ZOMBIE_IDS.elite);
+  }
   return result;
 }
 
-/** 按掉落池随机一份掉落（材料 id -> 数量） */
-export function rollDrops(cfg: IZombieConfig): MaterialCost {
+/** 按掉落池随机一份掉落（材料 id -> 数量）；poolCap 限制掉落池出货件数（精英/Boss 保底掉落不受限） */
+export function rollDrops(cfg: IZombieConfig, poolCap: number = Infinity): MaterialCost {
   const out: MaterialCost = {};
-  if (cfg.id === ZOMBIE_IDS.elite) out[1003] = 1;
-  if (cfg.id === ZOMBIE_IDS.boss) out[1005] = 1;
-  if (!cfg.dropPool || cfg.dropPool.length === 0) return out;
-  const n = cfg.dropMin + Math.floor(Math.random() * (cfg.dropMax - cfg.dropMin + 1));
+  // 保底：精英掉蓝色手提包 + 核心材料，Boss 掉黑色手提包 + 双倍核心材料（均不占掉落池额度）
+  if (cfg.id === ZOMBIE_IDS.elite) { out[1003] = 1; out[60024] = 1; }
+  if (cfg.id === ZOMBIE_IDS.boss) { out[1005] = 1; out[60024] = 2; }
+  if (!cfg.dropPool || cfg.dropPool.length === 0 || poolCap <= 0) return out;
+  const n = Math.min(cfg.dropMin + Math.floor(Math.random() * (cfg.dropMax - cfg.dropMin + 1)), poolCap);
   for (let i = 0; i < n; i++) {
     const id = cfg.dropPool[Math.floor(Math.random() * cfg.dropPool.length)];
     out[id] = (out[id] || 0) + 1;
@@ -198,7 +204,7 @@ export function getNightPreview(day: number): INightPreview {
   let total = 0;
   for (let w = 1; w <= waves; w++) total += genWaveZombies(day, w, waves).length;
   const bossLast = isBossNight(day);
-  const eliteLast = false;
+  const eliteLast = !bossLast && day >= 6;
   const types: INightPreviewType[] = stage.ids
     .map(id => ZOMBIE_MAP.get(id))
     .filter((z): z is IZombieConfig => !!z)

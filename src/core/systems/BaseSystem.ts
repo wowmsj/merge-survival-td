@@ -7,6 +7,8 @@ import {
   capResourceKeys, capAmountAtLevel, providePowerAtLevel,
   MaterialCost, ProductionResult, ResourceOutput, SupportKind
 } from '../config/BuildingConfig';
+import { TERRAIN_CLEAR_COST, terrainAt } from '../config/TerrainConfig';
+import { applyCoreAura } from '../config/MergeCoreConfig';
 import { EconomySystem } from './EconomySystem';
 import { getBuildingName, getPropName, getText } from '../i18n';
 
@@ -179,6 +181,8 @@ export class BaseSystem {
     const base = this.ensure(state);
     if (row < 0 || row >= base.rows || col < 0 || col >= base.cols) return { ok: false, reason: getText('toast.outOfBase') };
     if (buildingAt(base, row, col)) return { ok: false, reason: getText('toast.cellOccupied') };
+    const terrain = terrainAt(base, row, col);
+    if (terrain) return { ok: false, reason: getText('toast.terrainBlocked', { terrain: getText(`terrain.${terrain}`) }) };
 
     if (!isClaimed(base, row, col)) return { ok: false, reason: getText('toast.expandTerritory') };
     if (cfg.kind !== 'trap' && !hasKillCorridor(base, { row, col })) {
@@ -285,6 +289,28 @@ export class BaseSystem {
     return true;
   }
 
+  /**
+   * 清理地形（P1 只收金币）：扣款后移除格子 terrain，可建与否仍走 claimed 规则。
+   * 道具清理与产出回收见方案 P2。
+   */
+  clearTerrain(state: IGameState, row: number, col: number): boolean {
+    const base = this.ensure(state);
+    const tile = base.tiles?.[row]?.[col];
+    const terrain = tile?.terrain;
+    if (!tile || !terrain) return false;
+    const costCoin = TERRAIN_CLEAR_COST[terrain];
+    if (state.resources.coin < costCoin) {
+      eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.notEnoughCoinsClear', { coins: costCoin }));
+      return false;
+    }
+    state.resources.coin -= costCoin;
+    tile.terrain = undefined;
+    eventBus.emit(GameEvents.RESOURCE_CHANGED, { type: 'coin', value: state.resources.coin, delta: -costCoin });
+    eventBus.emit(GameEvents.BASE_CHANGED, { row, col });
+    eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.terrainCleared', { terrain: getText(`terrain.${terrain}`), coins: costCoin }));
+    return true;
+  }
+
   /** 拆除建筑（返还 50% 金币），核心不可拆 */
   demolish(state: IGameState, row: number, col: number): boolean {
     const base = this.ensure(state);
@@ -355,12 +381,16 @@ export class BaseSystem {
       if (cycles <= 0) continue;
       b.lastProduceAt += cycles * interval * 1000;
 
-      // 低级合成材料产出（发到棋盘，棋盘满进卡片）
+      // 低级合成材料产出（发到棋盘，棋盘满进卡片）；核心光环概率升级
       if (hasOutput) {
         for (let i = 0; i < cycles; i++) {
-          const id = cfg.outputPool![Math.floor(Math.random() * cfg.outputPool!.length)];
-          items[id] = (items[id] || 0) + 1;
-          this.economy.giveItemToBoardOrCard(state, id);
+          const rawId = cfg.outputPool![Math.floor(Math.random() * cfg.outputPool!.length)];
+          const aura = applyCoreAura(state, rawId);
+          if (aura.upgraded) {
+            eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.coreResonance'));
+          }
+          items[aura.id] = (items[aura.id] || 0) + 1;
+          this.economy.giveItemToBoardOrCard(state, aura.id);
         }
       }
 

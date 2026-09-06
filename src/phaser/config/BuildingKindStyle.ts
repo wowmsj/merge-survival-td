@@ -19,3 +19,8 @@ export const KIND_ICON_KEYS: Record<BuildingKind, string> = {
   wall: 'build-icon-wall',
   ruin: 'build-icon-ruin'
 };
+
+/** 建筑专属贴图 key（bldg-<cfgId>）。纹理存在时优先于 KIND_ICON_KEYS 大类图标 */
+export function buildingIconKey(cfgId: number): string {
+  return `bldg-${cfgId}`;
+}

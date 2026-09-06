@@ -8,7 +8,8 @@ import { BagSystem } from './BagSystem';
 import { SpecialItemSystem } from './SpecialItemSystem';
 import { LevelSystem } from './LevelSystem';
 import { getRandomByWeight, now } from '../utils/Common';
-import { getText } from '../i18n';
+import { getCoreTier, getItemTier, TIER_CORE_REQUIREMENT } from '../config/MergeCoreConfig';
+import { getText, getPropName } from '../i18n';
 
 /**
  * 二合系统
@@ -113,6 +114,18 @@ export class MergeSystem {
       eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.spiderBoth'));
       result.kind = 'bounce';
       return result;
+    }
+
+    // 合成权限门槛：钢铁/科技档物品需要棋盘上的核心装置达到对应等级
+    if (srcItem.id === targetItem.id && nextId > 0) {
+      const needTier = getItemTier(nextId);
+      if (needTier > getCoreTier(state)) {
+        eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.mergeNeedsCore', {
+          core: getPropName(TIER_CORE_REQUIREMENT[needTier])
+        }));
+        result.kind = 'bounce';
+        return result;
+      }
     }
 
     if (srcItem.id === targetItem.id && nextId > 0

@@ -4,6 +4,7 @@ import { getMergeNextId, getProp, PROP_IDS } from '../../core/config/PropConfig'
 import { canChargerTarget, canLvUpTarget, canSplitTarget } from '../../core/config/PropConfig';
 import { getItem } from '../../core/model/Grid';
 import { itemCanDrag, itemIsBubble } from '../../core/model/Item';
+import { CORE_AURA } from '../../core/config/MergeCoreConfig';
 import { ItemSprite, CELL_SIZE } from './ItemSprite';
 
 import { HUD_BOTTOM } from '../ui/HUD';
@@ -38,6 +39,8 @@ export class GridRenderer {
   private draggingItem: ItemSprite | null = null;
   private lastActionTime = 0;
   private idleHintTween: Phaser.Tweens.Tween | null = null;
+  /** 核心装置格的呼吸光圈：'row,col' -> 圆环 */
+  private coreGlows = new Map<string, Phaser.GameObjects.Arc>();
 
   /** 由 GameScene 注入 */
   onCellClick: (pos: IPoint) => void = () => {};
@@ -68,6 +71,7 @@ export class GridRenderer {
     this.container.removeAll(true);
     this.itemSprites = [];
     this.hintPool = [];
+    this.coreGlows.clear();
 
     const { width } = this.scene.scale;
     const gridWidth = this.state.grid.colNum * (this.cellSize + GAP) - GAP;
@@ -131,6 +135,38 @@ export class GridRenderer {
     if (!itemSprite) return;
     const item = getItem(this.state.grid, row, col);
     itemSprite.updateItem(item, item ? this.isTaskNeeded(item.id) : false);
+    this.syncCoreGlow(row, col, item?.id, itemSprite);
+  }
+
+  /** 核心装置（60026+）格维护呼吸光圈：有核心加环、无核心拆环 */
+  private syncCoreGlow(row: number, col: number, itemId: number | undefined, itemSprite: ItemSprite): void {
+    const key = `${row},${col}`;
+    const existing = this.coreGlows.get(key);
+    const isCore = !!itemId && !!CORE_AURA[itemId];
+    if (existing && !isCore) {
+      existing.destroy();
+      this.coreGlows.delete(key);
+      return;
+    }
+    if (!existing && isCore) {
+      const { x, y } = this.getCellPosition(row, col);
+      const ring = this.scene.add.circle(x, y, this.cellSize * 0.46, 0, 0)
+        .setStrokeStyle(3, 0x7fd4ff, 0.9);
+      this.container.add(ring);
+      // Container 子级按加入顺序渲染：光圈插到物品图标之下
+      this.container.moveBelow(ring, itemSprite as unknown as Phaser.GameObjects.Arc);
+      this.scene.tweens.add({
+        targets: ring,
+        alpha: { from: 0.35, to: 0.95 },
+        scaleX: { from: 1, to: 1.08 },
+        scaleY: { from: 1, to: 1.08 },
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+      this.coreGlows.set(key, ring);
+    }
   }
 
   /** 选中框移动/隐藏 */

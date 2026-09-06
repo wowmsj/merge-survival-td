@@ -6,6 +6,7 @@ import { Night3DScene } from './phaser/scenes/Night3DScene';
 import { NightTestScene } from './phaser/scenes/NightTestScene';
 import { BootScene } from './phaser/scenes/BootScene';
 import { getPlatform } from './platform/common/Platform';
+import { initAnalytics } from './platform/common/analytics';
 
 function blockEdgeNavigation(): void {
   const edge = 24;
@@ -33,6 +34,7 @@ function blockEdgeNavigation(): void {
  */
 async function main() {
   blockEdgeNavigation();
+  initAnalytics();
   // 初始化平台
   const platform = getPlatform();
   await platform.init();

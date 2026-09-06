@@ -33,7 +33,10 @@ module.exports = (env, argv) => ({
   plugins: [
     // 每次构建注入版本号，BootScene 给素材 URL 加 ?v= 查询串，避免浏览器缓存旧图标
     new webpack.DefinePlugin({
-      __ASSET_VERSION__: JSON.stringify(Date.now().toString(36))
+      __ASSET_VERSION__: JSON.stringify(Date.now().toString(36)),
+      // 开发专用功能（夜战测试、2D/3D 切换等）：开发模式或 DEV_FEATURES=1 时开启；
+      // itch 发布包（npm run build）关闭，自有服务器部署（deploy.sh 走 build:test）开启
+      __DEV_FEATURES__: JSON.stringify(argv.mode !== 'production' || process.env.DEV_FEATURES === '1')
     }),
     new HtmlWebpackPlugin({
       template: './public/index.html',

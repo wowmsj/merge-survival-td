@@ -1,5 +1,5 @@
 import { GameEvents, eventBus } from '../events/EventBus';
-import { getIdByLvUp, getMergeChain, getMergeNextId, getProp, getPropLevel, isAutoSpawner, isClickSpawner, PROP_IDS } from '../config/PropConfig';
+import { getIdByLvUp, getMergeChain, getMergeNextId, getProp, getPropLevel, isAutoSpawner, isClickSpawner, isToolSeriesItem, PROP_IDS } from '../config/PropConfig';
 import { getHandTask, SAFE_TASKS, TASK_ORDER_TYPES } from '../config/TableConfig';
 import { IGameState, ITask } from '../types';
 import { forEachCell, setItem } from '../model/Grid';
@@ -7,6 +7,8 @@ import { itemIsNormal } from '../model/Item';
 import { BagSystem } from './BagSystem';
 import { EconomySystem } from './EconomySystem';
 import { getRandomByWeight } from '../utils/Common';
+import { getCoreTier, getItemTier, isCoreChainItem } from '../config/MergeCoreConfig';
+import { DIAMOND_TO_COIN_RATE } from './BlackMarketSystem';
 import { getText } from '../i18n';
 
 /** 物品位置信息（任务扣物品用） */
@@ -25,7 +27,7 @@ export const MAX_CONCURRENT_TASKS = 5;
  */
 const MERGE_LOOKAHEAD = 2;
 /** 订单候选豁免的物品 id：含这些 id 的整条链不进任务候选（同 type=7 蓝图豁免逻辑，防止剧情关键道具被订单抽走） */
-const ORDER_EXEMPT_ITEM_IDS = new Set([30048]); // 30048 病毒真相（病毒线索链链尾）
+const ORDER_EXEMPT_ITEM_IDS = new Set([30048, 60024, 60025, 60026, 60027, 60028, 60029, 60030, 60031]); // 30048 病毒真相；60024~60031 合成核心链（夜战养成的永久装置）
 
 /**
  * 目标合成工作量：N 级道具需要 2^(N-1) 个一级材料；多个目标与数量累加。
@@ -46,6 +48,17 @@ export function calcRandomTaskStars(propArr: { id: number; num: number }[]): num
 /** 任务金币奖励 = 星星 × 10 + 合成工作量；不再读取旧表 levelGold。 */
 export function calcTaskGold(propArr: { id: number; num: number }[], starNum: number): number {
   return starNum * 10 + calcTaskMergeEffort(propArr);
+}
+
+/** 钻石直接完成任务的消耗：按任务金币奖励折算（1 钻 = DIAMOND_TO_COIN_RATE 金币），向上取整，保底 1 钻。 */
+export function calcTaskDiamondCost(task: ITask): number {
+  const goldNum = task.goldNum ?? calcTaskGold(task.propArr, task.starNum);
+  return Math.max(1, Math.ceil(goldNum / DIAMOND_TO_COIN_RATE));
+}
+
+/** 工具链任务：目标全是工具箱发射器产出（螺丝刀/扳手/手套系列 10012~10028）。此类任务只奖励金币、不给星星。 */
+export function isToolChainTask(propArr: { id: number; num: number }[]): boolean {
+  return propArr.length > 0 && propArr.every(p => isToolSeriesItem(p.id));
 }
 
 /**
@@ -72,8 +85,10 @@ export class TaskSystem {
   /** 读档后统一应用当前奖励算法，避免旧订单继续显示旧的金币数。 */
   refreshTaskRewards(state: IGameState): void {
     for (const task of state.tasks) {
-      if (!task.hand) task.starNum = calcRandomTaskStars(task.propArr);
-      task.goldNum = calcTaskGold(task.propArr, task.starNum);
+      // 金币按原星星数折算保留；工具链任务星星清零（只奖金币）
+      const baseStar = task.hand ? task.starNum : calcRandomTaskStars(task.propArr);
+      task.goldNum = calcTaskGold(task.propArr, baseStar);
+      task.starNum = isToolChainTask(task.propArr) ? 0 : baseStar;
     }
   }
 
@@ -88,6 +103,7 @@ export class TaskSystem {
       hand: 1
     };
     task.goldNum = calcTaskGold(task.propArr, task.starNum);
+    if (isToolChainTask(task.propArr)) task.starNum = 0;
     // 早期新手任务的额外物品奖励（发射器件/宝箱，引导新发射器来源）
     if (row.rewardProp && (row.rewardProp < 70001 || row.rewardProp === 70001 || row.rewardProp === 70007 || row.rewardProp === 70015)) {
       task.rewardPropArr = [{ id: row.rewardProp, num: row.rewardNum ?? 1 }];
@@ -139,6 +155,14 @@ export class TaskSystem {
       const ownedCount = retRow.res1 === 2 ? this.countOwnedById(state) : null;
       const pool = [...idArr];
       for (let t = 0; t < needTypeNum && pool.length > 0; t++) {
+        // 工具系列（螺丝刀/手套等工具箱产出）单独成单：首件目标定下是否工具链后，其余候选只留同系列
+        if (propArr.length > 0) {
+          const toolTask = isToolSeriesItem(propArr[0].id);
+          for (let p = pool.length - 1; p >= 0; p--) {
+            if (isToolSeriesItem(pool[p]) !== toolTask) pool.splice(p, 1);
+          }
+          if (pool.length === 0) break;
+        }
         // 随机取一个不重复的
         const idx = ownedCount
           ? this.weightedPickIndex(pool, ownedCount)
@@ -161,7 +185,8 @@ export class TaskSystem {
 
       if (propArr.length > 0) {
         const starNum = calcRandomTaskStars(propArr);
-        tasks.push({ id: ++seqId, propArr, starNum, goldNum: calcTaskGold(propArr, starNum) });
+        // 工具链任务星星清零，金币仍按原星星数折算
+        tasks.push({ id: ++seqId, propArr, starNum: isToolChainTask(propArr) ? 0 : starNum, goldNum: calcTaskGold(propArr, starNum) });
         // 本批已用掉的物品也不再重复
         for (const p of propArr) {
           busyIds.add(p.id);
@@ -178,11 +203,12 @@ export class TaskSystem {
       const safe = pickFrom[Math.floor(Math.random() * pickFrom.length)];
       if (safe) {
         const propArr = [{ id: safe.prop, num: safe.num }];
+        const starNum = calcRandomTaskStars(propArr);
         tasks.push({
           id: ++seqId,
           propArr,
-          starNum: calcRandomTaskStars(propArr),
-          goldNum: calcTaskGold(propArr, calcRandomTaskStars(propArr))
+          starNum: isToolChainTask(propArr) ? 0 : starNum,
+          goldNum: calcTaskGold(propArr, starNum)
         });
       }
     }
@@ -268,7 +294,10 @@ export class TaskSystem {
    */
   private collectCandidateIds(res1: number, quality: number, state: IGameState): number[] {
     if (res1 === 2) {
-      return this.collectOwnedIds(quality, state);
+      // 库存消耗类订单也必须落在「棋盘上真有能产出的发射器」的链里：
+      // 否则夜战掉落的食物/水（保温箱 4 级才产出、尚无冰箱）也会被订单抽中，玩家无法再生
+      const reachable = new Set(this.collectReachableIds(state));
+      return this.collectOwnedIds(quality, state).filter(id => reachable.has(id));
     }
     const reachable = this.collectReachableIds(state);
     const owned = new Set(this.collectOwnedIds(quality, state));
@@ -322,6 +351,8 @@ export class TaskSystem {
    * 闭包高度受限：不超过「种子产物等级、该链在棋盘上已拥有最高等级」+ MERGE_LOOKAHEAD，
    * 保证任务要求的物品是玩家短期内真能合出来的。
    * 被封印（纸箱/蜘蛛网）或气泡中的物品不参与：它们当前无法产出，否则任务会遥不可及。
+   * 合成核心（60026~60031）虽是发射器但只作「链首来源」，不作种子：
+   * 某条链的订单必须棋盘上真有该链自己的发射器才会出现。
    */
   collectReachableIds(state: IGameState): number[] {
     const reachable = new Set<number>();
@@ -336,6 +367,10 @@ export class TaskSystem {
       if (!prop) return;
       if (!itemIsNormal(item, state.timestamp)) return; // 封印/气泡中的不算可产出
       ownedLevel.set(item.id, prop.luna ?? 1);
+      // 核心发射器（60026~60031）是通用链首来源，不作任务种子：
+      // 否则它一上场就点亮全部 16 条链，订单会要求玩家尚未建起对应发射器的物品。
+      // 规则：某条链的订单，必须在棋盘上真有该链的发射器（或链首本身是发射器）才出现。
+      if (isCoreChainItem(item.id)) return;
       // 发射器产出
       if (prop.atom) {
         for (const idStr of String(prop.atom).split(',')) {
@@ -366,6 +401,8 @@ export class TaskSystem {
       }
       // 剧情关键链豁免（病毒线索链等，链尾是剧情道具，不能被订单抽走）
       if (chain.some(id => ORDER_EXEMPT_ITEM_IDS.has(id))) continue;
+      // 合成权限档次：超过核心等级的物品玩家当前合不了，不进订单候选
+      const coreTier = getCoreTier(state);
       // 链上限 = max(种子等级, 该链已拥有最高等级) + 前瞻
       let baseLv = getPropLevel(seedId);
       for (const id of chain) {
@@ -374,7 +411,7 @@ export class TaskSystem {
       }
       const cap = baseLv + MERGE_LOOKAHEAD;
       for (const id of chain) {
-        if (getPropLevel(id) <= cap) reachable.add(id);
+        if (getPropLevel(id) <= cap && getItemTier(id) <= coreTier) reachable.add(id);
       }
     }
     return [...reachable];
@@ -447,6 +484,24 @@ export class TaskSystem {
       eventBus.emit(GameEvents.BAG_UPDATED, {});
     }
 
+    this.settleTask(state, task);
+    return true;
+  }
+
+  /**
+   * 钻石直接完成：不扣物品，按任务金币奖励折算钻石消耗（不足时 toast 并返回 false）
+   */
+  completeTaskWithDiamond(state: IGameState, task: ITask): boolean {
+    if (!state.tasks.includes(task)) return false;
+    if (!this.economy.subResource(state, 'diamond', calcTaskDiamondCost(task))) return false;
+    this.settleTask(state, task);
+    return true;
+  }
+
+  /** 任务结算：发星星/金币/额外奖励、移除任务、推进新手链并补满并发上限 */
+  private settleTask(state: IGameState, task: ITask): void {
+    // 卡单救济计时：任何订单（含钻石直通）完成都重置
+    state.lastTaskCompleteDay = state.day;
     // 奖励星星 + 金币（旧存档任务没有 goldNum，现场算）
     this.economy.addPropNum(state, PROP_IDS.star, task.starNum);
     const goldNum = task.goldNum ?? calcTaskGold(task.propArr, task.starNum);
@@ -475,7 +530,6 @@ export class TaskSystem {
     this.topUpTasks(state);
 
     eventBus.emit(GameEvents.TASK_UPDATED, { tasks: state.tasks });
-    return true;
   }
 
   /**
@@ -514,6 +568,46 @@ export class TaskSystem {
       }
     }
     return false;
+  }
+
+  /**
+   * 卡单救济（对应 Gossip Harbor 的隐藏订单兜底，做成透明版）：
+   * 订单本身绝不降级，但玩家连续 2 个游戏天没完成任何订单、且存在
+   * 「棋盘+背包完全没有该目标链任何物品」的死单时，天亮结算额外掉落
+   * 死单最高级目标的低 2 级材料 ×2（约 1/4 进度）。
+   * 每次天亮最多救济一单，救济后重置计时。
+   * 返回救济物品 {id, num}；不满足条件返回 undefined。
+   */
+  rollStuckOrderRelief(state: IGameState): { id: number; num: number } | undefined {
+    // 旧存档无此字段：从当前天开始计，不会一加载就触发救济
+    if (state.lastTaskCompleteDay === undefined) {
+      state.lastTaskCompleteDay = state.day;
+      return undefined;
+    }
+    if (state.day - state.lastTaskCompleteDay < 2) return undefined;
+
+    const stuck = state.tasks.find(task =>
+      task.propArr.length > 0 && task.propArr.every(need => {
+        const chain = getMergeChain(need.id);
+        return chain.every(id => this.countItem(state, id) === 0);
+      })
+    );
+    if (!stuck) return undefined;
+
+    // 取链上位置最深的目标作为瓶颈，救济它的低 2 级材料
+    let bestChain: number[] = [];
+    let bestIdx = -1;
+    for (const need of stuck.propArr) {
+      const chain = getMergeChain(need.id);
+      const idx = chain.indexOf(need.id);
+      if (idx > bestIdx) {
+        bestIdx = idx;
+        bestChain = chain;
+      }
+    }
+    if (bestIdx < 0) return undefined;
+    state.lastTaskCompleteDay = state.day;
+    return { id: bestChain[Math.max(0, bestIdx - 2)], num: 2 };
   }
 
   /**

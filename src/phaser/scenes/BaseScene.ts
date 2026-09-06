@@ -1,10 +1,11 @@
 import * as Phaser from 'phaser';
-import { IGameState, IBuilding, BuildingKind } from '../../core/types';
+import { IGameState, IBuilding, BuildingKind, TerrainKind } from '../../core/types';
 import { GameEvents, eventBus } from '../../core/events/EventBus';
 import { StorageSystem } from '../../core/systems/StorageSystem';
 import { EconomySystem } from '../../core/systems/EconomySystem';
-import { BaseSystem, canDefendFlyingEnemies, formatGains, formatResourceGains, getPowerInfo, isTowerPoweredAtNight } from '../../core/systems/BaseSystem';
+import { BaseSystem, canDefendFlyingEnemies, formatGains, formatResourceGains, getPowerInfo, hasSupportCoverage, isTowerPoweredAtNight } from '../../core/systems/BaseSystem';
 import { zoneOf, BaseZone, buildingAt, getShortestEntryPathLength } from '../../core/model/Base';
+import { TERRAIN_CLEAR_COST, terrainAt } from '../../core/config/TerrainConfig';
 import {
   getBuildingConfig, getBuildableList, getUpgradeCostCoin, getDemolishRefundCoin, getRepairCostCoin,
   attackAtLevel, outputIntervalAtLevel, outputAmountAtLevel, capResourceKeys, capAmountAtLevel, isBuildingUnlocked,
@@ -19,10 +20,13 @@ import { HUD, HUD_BOTTOM } from '../ui/HUD';
 import { StoryDialog } from '../ui/StoryDialog';
 import { StorySystem } from '../../core/systems/StorySystem';
 import { UI_FILL, UI_GOLD, UI_ORANGE, UI_SLOT_FILL, UI_STROKE, drawUiBox } from '../ui/UiStyle';
+import { drawTerrainTile, terrainHasOverlayIcon } from '../ui/TerrainTiles';
 import { addFullscreenBg, showSceneToast } from '../ui/UiWidgets';
-import { KIND_COLORS, KIND_ICON_KEYS } from '../config/BuildingKindStyle';
+import { KIND_COLORS, KIND_ICON_KEYS, buildingIconKey } from '../config/BuildingKindStyle';
 import { getBuildingName, getHeroDescription, getHeroName, getLanguage, getPropName, getText, getZombieName } from '../../core/i18n';
-import { BLACK_MARKET_ITEMS, buyBlackMarketBlueprint, exchangeDiamondForCoins, getRecommendedMarketItem } from '../../core/systems/BlackMarketSystem';
+import { BLACK_MARKET_ITEMS, buyBlackMarketBlueprint, buyNeededMaterial, exchangeDiamondForCoins, getNeededMaterials, getRecommendedMarketItem } from '../../core/systems/BlackMarketSystem';
+import { getItemIconKey } from '../config/ItemIconMap';
+import { colorFromId } from '../objects/ItemSprite';
 
 /** 顶栏（返回/天数/核心/迎接夜晚）中线 Y：压在 HUD 第二行胶囊之下 */
 const TOP_BAR_Y = HUD_BOTTOM + 40;
@@ -308,6 +312,9 @@ export class BaseScene extends Phaser.Scene {
         if (building) {
           this.drawBuilding(building, x, y);
         } else {
+          // 地形与建筑互斥（地形格不可摆放），画在地格层之上
+          const terrain = terrainAt(base, row, col);
+          if (terrain) this.drawTerrain(terrain, row, col, x, y);
           // 英雄不占 buildings[]，与建筑互斥（canDeployAt 校验过），画在建筑同一层
           const hero = this.heroSystem.getHeroAt(this.state, row, col);
           if (hero) this.drawHero(hero, x, y);
@@ -347,8 +354,9 @@ export class BaseScene extends Phaser.Scene {
     if (!cfg) return;
     const staffed = this.staffedForDisplay(building, cfg);
 
-    // 有图标纹理用建筑图标，缺失回退色块；缺电建筑灰色压暗
-    const iconKey = KIND_ICON_KEYS[cfg.kind];
+    // 优先建筑专属贴图（bldg-<id>），缺失回退大类图标，再缺失回退色块；缺电建筑灰色压暗
+    const perKey = buildingIconKey(cfg.id);
+    const iconKey = this.textures.exists(perKey) ? perKey : KIND_ICON_KEYS[cfg.kind];
     if (this.textures.exists(iconKey)) {
       const img = this.add.image(x, y, iconKey).setDisplaySize(CELL - 12, CELL - 12);
       if (!staffed) img.setTint(0x9aa0a6).setAlpha(0.55);
@@ -371,16 +379,8 @@ export class BaseScene extends Phaser.Scene {
       this.gridLayer.add(g);
     }
 
-    // 有图标时名字/等级贴 cell 上下缘，避免压住图标；缺电时名字变红并移到中央（给角标让位）
+    // 名字不显示：靠图标识别建筑；等级贴 cell 下缘，缺电靠压暗 + 红角标表达
     const hasIcon = this.textures.exists(iconKey);
-    const isEnglish = getLanguage() === 'en';
-    const buildingName = getBuildingName(cfg.id);
-    const name = this.add.text(x, isEnglish ? (hasIcon ? (staffed ? y - CELL / 2 + 20 : y + 2) : y - 2) : (hasIcon ? (staffed ? y - CELL / 2 + 12 : y) : y - 8),
-      isEnglish ? buildingName : buildingName.substring(0, 3), {
-      fontSize: isEnglish ? '13px' : '20px', color: staffed ? '#ffffff' : '#ff6b6b', fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
-      wordWrap: isEnglish ? { width: CELL - 6, useAdvancedWrap: true } : undefined, maxLines: isEnglish ? 2 : undefined
-    }).setOrigin(0.5);
-    this.gridLayer.add(name);
     const lv = this.add.text(x, hasIcon ? y + CELL / 2 - 26 : y + 16, `Lv.${building.level}`, {
       fontSize: '16px', color: '#ffe066', fontStyle: 'bold', stroke: '#000000', strokeThickness: 2
     }).setOrigin(0.5);
@@ -393,6 +393,18 @@ export class BaseScene extends Phaser.Scene {
       badge.fillRoundedRect(x + CELL / 2 - 46, y - CELL / 2 + 2, 44, 22, 6);
       this.gridLayer.add(badge);
       const badgeText = this.add.text(x + CELL / 2 - 24, y - CELL / 2 + 13, getText('base.noPower'), {
+        fontSize: '15px', color: '#ffffff', fontStyle: 'bold'
+      }).setOrigin(0.5);
+      this.gridLayer.add(badgeText);
+    }
+
+    // 对空角标：通电箭塔处于通电雷达覆盖内，左上角亮蓝「对空/AA」
+    if (building.cfgId === 101 && staffed && hasSupportCoverage(this.state, 'radar', building.row, building.col, true)) {
+      const badge = this.add.graphics();
+      badge.fillStyle(0x1971c2, 0.95);
+      badge.fillRoundedRect(x - CELL / 2 + 2, y - CELL / 2 + 2, 44, 22, 6);
+      this.gridLayer.add(badge);
+      const badgeText = this.add.text(x - CELL / 2 + 24, y - CELL / 2 + 13, getText('base.antiAir'), {
         fontSize: '15px', color: '#ffffff', fontStyle: 'bold'
       }).setOrigin(0.5);
       this.gridLayer.add(badgeText);
@@ -440,6 +452,17 @@ export class BaseScene extends Phaser.Scene {
     this.gridLayer.add(bar);
   }
 
+  /** 地形瓦片：地面连成一片（瓦片地图式），树林/破楼/瓦砾叠加小一号主体图标保持辨识度 */
+  private drawTerrain(terrain: TerrainKind, row: number, col: number, x: number, y: number): void {
+    drawTerrainTile(this, this.gridLayer, this.state.base, row, col, x, y, CELL, GAP);
+    if (!terrainHasOverlayIcon(terrain)) return;
+    const texKey = `terrain-${terrain}`;
+    if (this.textures.exists(texKey)) {
+      const img = this.add.image(x, y, texKey).setDisplaySize((CELL - 8) * 0.72, (CELL - 8) * 0.72);
+      this.gridLayer.add(img);
+    }
+  }
+
   private handleCellTap(row: number, col: number): void {
     if (this.placingHero !== null) {
       // 部署英雄：非法格由 core 弹 reason toast，成功才退出部署模式
@@ -465,8 +488,55 @@ export class BaseScene extends Phaser.Scene {
       this.openBuildingDialog(building);
       return;
     }
+    const terrain = terrainAt(this.state.base, row, col);
+    if (terrain) {
+      this.openTerrainDialog(row, col, terrain);
+      return;
+    }
     const hero = this.heroSystem.getHeroAt(this.state, row, col);
     if (hero) this.openHeroDialog(hero);
+  }
+
+  /** 地形清理确认弹窗：图标 + 名称 + 说明 + 金币清理按钮 */
+  private openTerrainDialog(row: number, col: number, terrain: TerrainKind): void {
+    this.closeDialog();
+    this.selectedRangeHint.setVisible(false);
+    const { width, height } = this.scale;
+    const panelW = 620;
+    const panelH = 560;
+    const px = (width - panelW) / 2;
+    const py = (height - panelH) / 2;
+
+    const mask = this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0).setInteractive();
+    mask.on('pointerup', () => this.closeDialog());
+    this.dialogLayer.add(mask);
+    const panel = this.add.graphics();
+    drawUiBox(panel, px + panelW / 2, py + panelH / 2, panelW, panelH, {
+      fill: UI_FILL, fillAlpha: 0.96, stroke: UI_GOLD, strokeAlpha: 0.5, strokeWidth: 2, radius: 16
+    });
+    this.dialogLayer.add(panel);
+
+    // 图标 + 名称
+    const texKey = `terrain-${terrain}`;
+    if (this.textures.exists(texKey)) {
+      this.dialogLayer.add(this.add.image(width / 2, py + 110, texKey).setDisplaySize(140, 140));
+    }
+    this.dialogLayer.add(this.add.text(width / 2, py + 210, getText(`terrain.${terrain}`), {
+      fontSize: '36px', color: '#ffd75e', fontStyle: 'bold'
+    }).setOrigin(0.5));
+    this.dialogLayer.add(this.add.text(width / 2, py + 290, getText(`terrain.hint.${terrain}`), {
+      fontSize: '24px', color: '#bfc5d8', wordWrap: { width: panelW - 100 }, align: 'center'
+    }).setOrigin(0.5));
+
+    const cost = TERRAIN_CLEAR_COST[terrain];
+    const canAfford = this.state.resources.coin >= cost;
+    this.addDialogButton(px + panelW / 2 - 140, py + panelH - 80, getText('terrain.clearAction', { coins: cost }), canAfford, () => {
+      if (this.baseSystem.clearTerrain(this.state, row, col)) {
+        this.closeDialog();
+        this.renderGrid();
+      }
+    }, 240, 64);
+    this.addDialogButton(px + panelW / 2 + 140, py + panelH - 80, getText('base.close'), true, () => this.closeDialog(), 200, 64);
   }
 
   // ============ 建造栏 ============
@@ -822,8 +892,9 @@ export class BaseScene extends Phaser.Scene {
       return;
     }
 
-    // 左侧：建筑图标 110×110，垂直居中，距卡片左缘 20px；缺失回退色块
-    const iconKey = KIND_ICON_KEYS[cfg.kind];
+    // 左侧：建筑图标 110×110，垂直居中，距卡片左缘 20px；优先专属贴图，缺失回退大类图标/色块
+    const perKey = buildingIconKey(cfg.id);
+    const iconKey = this.textures.exists(perKey) ? perKey : KIND_ICON_KEYS[cfg.kind];
     if (this.textures.exists(iconKey)) {
       const icon = this.add.image(x - 175, y, iconKey).setDisplaySize(110, 110);
       this.paletteLayer.add(icon);
@@ -946,8 +1017,9 @@ export class BaseScene extends Phaser.Scene {
     });
     this.dialogLayer.add(panel);
 
-    // ---- 顶部：图标 + 名称 + Lv 徽章 ----
-    const iconKey = KIND_ICON_KEYS[cfg.kind];
+    // ---- 顶部：图标 + 名称 + Lv 徽章 ----（优先专属贴图，缺失回退大类图标/色块）
+    const perKey = buildingIconKey(cfg.id);
+    const iconKey = this.textures.exists(perKey) ? perKey : KIND_ICON_KEYS[cfg.kind];
     if (this.textures.exists(iconKey)) {
       const img = this.add.image(px + 72, py + 64, iconKey).setDisplaySize(64, 64);
       this.dialogLayer.add(img);
@@ -1152,13 +1224,59 @@ export class BaseScene extends Phaser.Scene {
     marketList.setMask(this.marketClipShape.createGeometryMask());
     this.dialogLayer.add(marketList);
     let didDrag = false;
-    const marketItems: { y: number; objects: Phaser.GameObjects.GameObject[] }[] = [];
+    const marketItems: { y: number; h: number; objects: Phaser.GameObjects.GameObject[] }[] = [];
+    let cursorY = listTop;
+    const addSectionLabel = (key: string) => {
+      const label = this.add.text(px + 38, cursorY + 16, getText(key), { fontSize: '22px', color: '#8ecafc', fontStyle: 'bold' }).setOrigin(0, 0.5);
+      marketList.add(label);
+      marketItems.push({ y: cursorY, h: 34, objects: [label] });
+      cursorY += 44;
+    };
+
+    // 急缺材料：进行中订单的目标物品，星星直购（每次 1 件；订单不变即可重复购买）
+    const neededMaterials = getNeededMaterials(this.state);
+    if (neededMaterials.length > 0) {
+      addSectionLabel('base.marketMaterials');
+      const matW = panelW - 76 - 32; // 右侧给滚动条留位
+      for (const mat of neededMaterials) {
+        const x = px + 38;
+        const y = cursorY;
+        const card = this.add.graphics();
+        drawUiBox(card, x + matW / 2, y + 32, matW, 64, { fill: 0x202435, fillAlpha: 0.95, stroke: UI_STROKE, strokeAlpha: 0.75, radius: 10 });
+        card.setInteractive(new Phaser.Geom.Rectangle(x, y, matW, 64), Phaser.Geom.Rectangle.Contains);
+        card.on('pointerup', () => {
+          if (didDrag) return;
+          if (!buyNeededMaterial(this.state, mat.id)) return;
+          this.save();
+          refreshWallet();
+          this.showToast(getText('base.marketMaterialBought', { item: getPropName(mat.id) }));
+        });
+        const objects: Phaser.GameObjects.GameObject[] = [card];
+        const iconKey = getItemIconKey(mat.id, this.textures);
+        if (iconKey && this.textures.exists(iconKey)) {
+          objects.push(this.add.image(x + 40, y + 32, iconKey).setDisplaySize(48, 48));
+        } else {
+          const fallback = this.add.graphics();
+          fallback.fillStyle(colorFromId(mat.id), 1);
+          fallback.fillRoundedRect(x + 16, y + 8, 48, 48, 8);
+          objects.push(fallback);
+        }
+        objects.push(this.add.text(x + 76, y + 18, getPropName(mat.id), { fontSize: '22px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0, 0.5));
+        objects.push(this.add.text(x + 76, y + 46, getText('base.marketNeedQty', { num: mat.need }), { fontSize: '17px', color: '#9fa4b8' }).setOrigin(0, 0.5));
+        objects.push(this.add.text(x + matW - 24, y + 32, getText('base.marketPrice', { star: mat.star }), { fontSize: '20px', color: '#ffd75e', fontStyle: 'bold' }).setOrigin(1, 0.5));
+        marketList.add(objects);
+        marketItems.push({ y, h: 64, objects });
+        cursorY += 64 + 12;
+      }
+    }
+
+    addSectionLabel('base.marketBlueprints');
     const recommended = getRecommendedMarketItem(this.state.day);
     const marketCatalog = [...BLACK_MARKET_ITEMS].sort((a, b) => Number(b.cfgId === recommended?.cfgId) - Number(a.cfgId === recommended?.cfgId));
     marketCatalog.forEach((item, index) => {
       const cfg = getBuildingConfig(item.cfgId)!;
       const x = px + 38 + (index % cols) * (cardW + 42);
-      const y = listTop + Math.floor(index / cols) * (cardH + cardGap);
+      const y = cursorY + Math.floor(index / cols) * (cardH + cardGap);
       const card = this.add.graphics();
       drawUiBox(card, x + cardW / 2, y + cardH / 2, cardW, cardH, { fill: 0x202435, fillAlpha: 0.95, stroke: UI_STROKE, strokeAlpha: 0.75, radius: 10 });
       card.setInteractive(new Phaser.Geom.Rectangle(x, y, cardW, cardH), Phaser.Geom.Rectangle.Contains);
@@ -1170,20 +1288,21 @@ export class BaseScene extends Phaser.Scene {
         refreshWallet();
         this.showToast(getText('base.marketBought', { building: getBuildingName(item.cfgId) }));
       });
-      const iconKey = cfg.kind === 'tower' ? KIND_ICON_KEYS.tower : cfg.kind === 'resource' ? KIND_ICON_KEYS.resource : cfg.kind === 'trap' ? KIND_ICON_KEYS.trap : KIND_ICON_KEYS.wall;
+      const perKey = buildingIconKey(cfg.id);
+      const iconKey = this.textures.exists(perKey) ? perKey : (cfg.kind === 'tower' ? KIND_ICON_KEYS.tower : cfg.kind === 'resource' ? KIND_ICON_KEYS.resource : cfg.kind === 'trap' ? KIND_ICON_KEYS.trap : KIND_ICON_KEYS.wall);
       const icon = this.add.image(x + 52, y + cardH / 2, iconKey).setDisplaySize(64, 64);
       const name = this.add.text(x + 100, y + 32, getBuildingName(item.cfgId), { fontSize: '23px', color: '#ffffff', fontStyle: 'bold', wordWrap: { width: 175 }, maxLines: 1 }).setOrigin(0, 0.5);
-      const price = this.add.text(x + 100, y + 64, `${getText('base.marketPrice', { star: item.star })} · ${getText('base.marketFragments', { count: item.fragmentCount })}`, { fontSize: '19px', color: '#ffd75e', fontStyle: 'bold' }).setOrigin(0, 0.5);
+      const price = this.add.text(x + 100, y + 64, `${getText('base.marketPrice', { star: item.star })} · ${getText('base.marketComplete')}`, { fontSize: '19px', color: '#ffd75e', fontStyle: 'bold' }).setOrigin(0, 0.5);
       marketList.add([card, icon, name, price]);
-      marketItems.push({ y, objects: [card, icon, name, price] });
+      marketItems.push({ y, h: cardH, objects: [card, icon, name, price] });
     });
     const rows = Math.ceil(marketCatalog.length / cols);
-    const contentHeight = rows * cardH + Math.max(0, rows - 1) * cardGap;
+    const contentHeight = cursorY - listTop + rows * cardH + Math.max(0, rows - 1) * cardGap;
     const maxScroll = Math.max(0, contentHeight - listHeight);
     const updateMarketItems = () => {
       for (const entry of marketItems) {
         const top = entry.y + (marketList.y || 0);
-        const visible = top + cardH >= listTop && top <= listBottom;
+        const visible = top + entry.h >= listTop && top <= listBottom;
         for (const object of entry.objects) (object as Phaser.GameObjects.GameObject & { setVisible: (value: boolean) => void }).setVisible(visible);
       }
     };

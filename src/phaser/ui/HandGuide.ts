@@ -2,8 +2,10 @@ import * as Phaser from 'phaser';
 import { IGameState, IPoint } from '../../core/types';
 import { GameEvents, eventBus } from '../../core/events/EventBus';
 import { getItem } from '../../core/model/Grid';
+import { itemIsNormal } from '../../core/model/Item';
 import { getBuildingConfig } from '../../core/config/BuildingConfig';
 import { HAND_DONE_INDEX } from '../../core/systems/MergeSystem';
+import { isCoreChainItem } from '../../core/config/MergeCoreConfig';
 import { UI_FILL, UI_GOLD } from './UiStyle';
 import { getText } from '../../core/i18n';
 
@@ -34,7 +36,7 @@ const BANNER_H = 64;
 
 /**
  * 简版新手引导：顶部横幅文案 + 按关键事件推进 handIndex
- * 1~5 合成教学 / 6~7 点击发射器 / 8~9 继续合成 / 10 提交任务
+ * 1~5 点合成核心发射两个工具箱把手 / 6~7 拖动合成 / 8~9 点击发射器产出 / 10 提交任务
  * 11 点箭塔蓝图箱 / 12 合成箭塔蓝图 / 13 使用箭塔蓝图 / 14 建造箭塔
  * 15 点电站蓝图箱 / 16 合成电站蓝图 / 17 使用电站蓝图 / 25 建造发电机
  * 横幅为任务提示风格：金色「引导」标签 + 深色圆角条 + 金色光晕，
@@ -68,14 +70,17 @@ export class HandGuide {
     this.banner = scene.add.text(0, 0, '', {
       fontSize: '30px',
       color: '#ffe066',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      lineSpacing: 6
     }).setOrigin(0, 0.5);
     this.container.add([this.glowG, this.bannerG, this.tagG, this.tagText, this.banner]);
 
-    // 合成 → 推进到 6 / 10 / 13
+    // 合成 → 推进到 8 / 10 / 13
+    // 注意：第一阶段（<=5）只能由「点核心发射够两个把手」推进，合成不推进——
+    // 玩家没点合成核心前，横幅一直提示去点核心（开局有两个散螺丝刀可被合成，不能让它跳步）
     const onMerged = (data: { newItem?: { id: number } }) => {
-      if (this.state.handIndex <= 5) {
-        this.setHandIndex(6);
+      if (this.state.handIndex >= 6 && this.state.handIndex <= 7) {
+        this.setHandIndex(8);
       } else if (this.state.handIndex >= 8 && this.state.handIndex <= 9) {
         this.setHandIndex(10);
       } else if (this.state.handIndex === 12 && data.newItem && this.isTowerChain(data.newItem.id)) {
@@ -86,10 +91,13 @@ export class HandGuide {
     };
     eventBus.on(GameEvents.GRID_ITEM_MERGED, onMerged);
 
-    // 手动产出 → 推进到 8 / 12
+    // 手动产出 → 核心发射够两个工具箱把手推进到 6（新开局引导：先点核心）/ 12
     const onSpawned = (data: { isAuto: boolean; source?: IPoint | null }) => {
-      if (!data.isAuto && this.state.handIndex >= 6 && this.state.handIndex <= 7) {
-        this.setHandIndex(8);
+      if (!data.isAuto && this.state.handIndex <= 5 && data.source) {
+        const srcItem = getItem(this.state.grid, data.source.row, data.source.col);
+        if (srcItem && isCoreChainItem(srcItem.id) && this.countToolboxChainOnBoard() >= 2) {
+          this.setHandIndex(6);
+        }
       } else if (this.state.handIndex === 11 && data.source) {
         const srcItem = getItem(this.state.grid, data.source.row, data.source.col);
         if (srcItem?.id === TOWER_EMITTER) this.enterTowerBlueprintStage();
@@ -154,6 +162,17 @@ export class HandGuide {
     }
 
     this.refresh();
+  }
+
+  /** 棋盘上可用的工具箱链物品数量（10001 把手 ~ 10011 工作台，引导第一阶段要数够不够两个；封印/气泡中的不算） */
+  private countToolboxChainOnBoard(): number {
+    let n = 0;
+    for (const row of this.state.grid.cells) {
+      for (const cell of row) {
+        if (cell.item && cell.item.id >= 10001 && cell.item.id <= 10011 && itemIsNormal(cell.item, this.state.timestamp)) n++;
+      }
+    }
+    return n;
   }
 
   private isFarmChain(id: number): boolean {
@@ -230,11 +249,11 @@ export class HandGuide {
     const idx = this.state.handIndex;
     let text = '';
     if (idx <= 5) {
-      text = getText('guide.merge');
+      text = getText('guide.coreSpawn');
     } else if (idx <= 7) {
-      text = getText('guide.spawn');
+      text = getText('guide.merge');
     } else if (idx <= 9) {
-      text = getText('guide.collect');
+      text = getText('guide.spawn');
     } else if (idx <= 10) {
       text = getText('guide.submit');
     } else if (idx === 11) {
@@ -266,23 +285,28 @@ export class HandGuide {
     this.glowG.clear();
     this.tagG.clear();
     if (text) {
-      this.banner.setText(text);
       // 布局：「引导」标签 + 文案，整体在容器内水平居中
       const tagW = this.tagText.width + 28;
       const gap = 14;
       const padX = 28;
+      // 英文长句自动换行：文本限宽（屏宽 - 标签 - 内边距 - 安全边距），底板高度随行数自适应
+      const maxTextW = this.scene.scale.width - padX * 2 - tagW - gap - 48;
+      this.banner.setWordWrapWidth(maxTextW, true);
+      this.banner.setText(text);
       const contentW = tagW + gap + this.banner.width;
       const w = contentW + padX * 2;
+      const h = Math.max(BANNER_H, this.banner.height + 20);
       const left = -w / 2;
+      const radius = BANNER_H / 2;
 
       // 外层金色光晕（呼吸动效作用在这一层）
       this.glowG.fillStyle(UI_GOLD, 0.35);
-      this.glowG.fillRoundedRect(left - 5, -BANNER_H / 2 - 5, w + 10, BANNER_H + 10, BANNER_H / 2 + 5);
+      this.glowG.fillRoundedRect(left - 5, -h / 2 - 5, w + 10, h + 10, radius + 5);
       // 深色圆角主体 + 金边
       this.bannerG.fillStyle(UI_FILL, 0.95);
-      this.bannerG.fillRoundedRect(left, -BANNER_H / 2, w, BANNER_H, BANNER_H / 2);
+      this.bannerG.fillRoundedRect(left, -h / 2, w, h, radius);
       this.bannerG.lineStyle(3, UI_GOLD, 0.9);
-      this.bannerG.strokeRoundedRect(left, -BANNER_H / 2, w, BANNER_H, BANNER_H / 2);
+      this.bannerG.strokeRoundedRect(left, -h / 2, w, h, radius);
       // 左侧「引导」标签（金色实底 + 深色字）
       const tagCx = left + padX + tagW / 2;
       this.tagG.fillStyle(0xffd75e, 1);

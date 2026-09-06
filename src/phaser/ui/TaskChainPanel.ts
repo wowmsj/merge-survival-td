@@ -1,14 +1,19 @@
 import * as Phaser from 'phaser';
 import { ITask } from '../../core/types';
 import { getMergeChain, getMergeChainSpawner, getProp } from '../../core/config/PropConfig';
+import { calcTaskDiamondCost } from '../../core/systems/TaskSystem';
 import { getItemIconKey } from '../config/ItemIconMap';
 import { colorFromId } from '../objects/ItemSprite';
 import { getLanguage, getPropName, getText } from '../../core/i18n';
 import { UI_GOLD, UI_SLOT_FILL, UI_STROKE, drawUiBox } from './UiStyle';
+import { makeUiButton } from './UiWidgets';
 import { BasePanel } from './BasePanel';
 
 /** 任务目标的合成路径。 */
 export class TaskChainPanel extends BasePanel {
+  /** 钻石直接完成回调（由场景注入，负责扣钻、结算与存档） */
+  onDiamondComplete?: (task: ITask) => void;
+
   constructor(scene: Phaser.Scene) {
     super(scene, { depth: 700 });
   }
@@ -36,7 +41,9 @@ export class TaskChainPanel extends BasePanel {
       const rows = Math.max(1, Math.ceil(target.path.length / cols));
       return total + 52 + rows * cellH + (rows - 1) * gapY + 34;
     }, 0);
-    const panelH = Math.min(height - 110, Math.max(430, contentH + 135));
+    // 底部给钻石完成按钮 + 提示预留空间
+    const bottomReserve = this.onDiamondComplete ? 200 : 135;
+    const panelH = Math.min(height - 110, Math.max(430, contentH + bottomReserve));
     const { px, py } = this.addPanelChrome(getText('task.chainTitle'), panelW, panelH, {
       box: { fill: UI_SLOT_FILL, fillAlpha: 0.98, stroke: UI_GOLD, strokeAlpha: 0.7, strokeWidth: 2, radius: 20 },
       titleY: 44,
@@ -71,7 +78,7 @@ export class TaskChainPanel extends BasePanel {
       const startY = y + cellH / 2;
       target.path.forEach((id, index) => {
         const row = Math.floor(index / cols);
-        const col = row % 2 === 0 ? index % cols : cols - 1 - (index % cols);
+        const col = index % cols;
         const x = startX + col * (cellW + gapX);
         const cardY = startY + row * (cellH + gapY);
         const box = this.scene.add.graphics();
@@ -103,20 +110,30 @@ export class TaskChainPanel extends BasePanel {
           fontSize: '16px', color: '#9fa4b8'
         }).setOrigin(0.5));
         if (index < target.path.length - 1 && index % cols < cols - 1) {
-          const movingRight = row % 2 === 0;
-          const label = index === 0 ? (movingRight ? '>' : '<') : (movingRight ? 'x2 >' : '< x2');
-          const arrowX = x + (movingRight ? cellW / 2 + gapX / 2 : -cellW / 2 - gapX / 2);
+          const label = index === 0 ? '>' : 'x2 >';
+          const arrowX = x + cellW / 2 + gapX / 2;
           container.add(this.scene.add.text(arrowX, cardY, label, {
             fontSize: '20px', color: '#ffd75e', fontStyle: 'bold'
           }).setOrigin(0.5));
         } else if (index < target.path.length - 1) {
-          container.add(this.scene.add.text(x, cardY + cellH / 2 + gapY / 2, 'x2 v', {
+          container.add(this.scene.add.text(startX, cardY + cellH / 2 + gapY / 2, 'x2 v', {
             fontSize: '18px', color: '#ffd75e', fontStyle: 'bold'
           }).setOrigin(0.5));
         }
       });
       y += rows * cellH + (rows - 1) * gapY + 34;
     });
+    if (this.onDiamondComplete) {
+      const cost = calcTaskDiamondCost(task);
+      const btnW = 340;
+      const btnY = py + panelH - 96;
+      makeUiButton(this.scene, container, width / 2, btnY, btnW, 56,
+        getText('task.diamondComplete', { cost }), { fontSize: isEnglish ? '22px' : '26px' },
+        () => this.onDiamondComplete?.(task));
+      if (this.scene.textures.exists('res-icon-diamond')) {
+        container.add(this.scene.add.image(width / 2 - btnW / 2 + 34, btnY, 'res-icon-diamond').setDisplaySize(36, 36));
+      }
+    }
     container.add(this.scene.add.text(width / 2, py + panelH - 34, getText('task.chainHint'), {
       fontSize: '20px', color: '#9fa4b8'
     }).setOrigin(0.5));

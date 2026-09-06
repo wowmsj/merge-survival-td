@@ -83,20 +83,24 @@ export class TaskBar {
       }).setOrigin(0.5));
     }
 
-    // 奖励：右上星星 + 其左金币（旧存档无 goldNum 时现场算）
-    const reward = this.scene.add.text(x + TASK_SLOT_W - 10, 10, `★${task.starNum}`, {
-      fontSize: '18px',
-      color: '#ffe066',
-      fontStyle: 'bold',
-      stroke: '#000000',
-      strokeThickness: 2,
-      padding: { top: 4, bottom: 2 }
-    }).setOrigin(1, 0);
-    this.container.add(reward);
+    // 奖励：右上星星（0 星不显示） + 其左金币（旧存档无 goldNum 时现场算）
+    let rewardRight = x + TASK_SLOT_W - 10;
+    if (task.starNum > 0) {
+      const reward = this.scene.add.text(rewardRight, 10, `★${task.starNum}`, {
+        fontSize: '18px',
+        color: '#ffe066',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 2,
+        padding: { top: 4, bottom: 2 }
+      }).setOrigin(1, 0);
+      this.container.add(reward);
+      rewardRight = reward.x - reward.width - 8;
+    }
 
     const goldNum = task.goldNum ?? calcTaskGold(task.propArr, task.starNum);
     if (goldNum > 0) {
-      const goldText = this.scene.add.text(reward.x - reward.width - 8, 10, `${goldNum}`, {
+      const goldText = this.scene.add.text(rewardRight, 10, `${goldNum}`, {
         fontSize: '18px',
         color: '#ffd700',
         fontStyle: 'bold',

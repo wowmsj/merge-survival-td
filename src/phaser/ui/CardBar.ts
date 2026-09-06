@@ -15,6 +15,8 @@ export class CardBar {
   private state: IGameState;
   private container: Phaser.GameObjects.Container;
   private allCards: Phaser.GameObjects.Container | null = null;
+  /** 「全部道具」面板的滚动位置，refresh 重建面板时恢复，避免点击取卡后跳回顶部 */
+  private savedScrollY = 0;
   private wheelHandler: ((pointer: Phaser.Input.Pointer, objects: Phaser.GameObjects.GameObject[], dx: number, dy: number) => void) | null = null;
   private dragHandlers: {
     down: (pointer: Phaser.Input.Pointer) => void;
@@ -111,6 +113,7 @@ export class CardBar {
   }
 
   private openAllCards(): void {
+    const restoreScroll = this.savedScrollY;
     this.closeAllCards();
     this.onOpenAllCards();
     this.container.setVisible(false);
@@ -183,7 +186,9 @@ export class CardBar {
     const rows = Math.ceil(cards.length / cols);
     const contentHeight = rows * cellH + Math.max(0, rows - 1) * gap;
     const maxScroll = Math.max(0, contentHeight - listHeight);
-    let scrollY = 0;
+    let scrollY = Math.min(restoreScroll, maxScroll);
+    this.savedScrollY = scrollY;
+    list.y = -scrollY;
     const updateVisibleItems = () => {
       for (const entry of listItems) {
         const visible = entry.y + cellH / 2 - scrollY >= listTop && entry.y - cellH / 2 - scrollY <= listBottom;
@@ -207,6 +212,7 @@ export class CardBar {
       };
       const setScroll = (nextY: number) => {
         scrollY = Phaser.Math.Clamp(nextY, 0, maxScroll);
+        this.savedScrollY = scrollY;
         list.y = -scrollY;
         updateVisibleItems();
         drawScrollbar();
@@ -240,6 +246,8 @@ export class CardBar {
       this.scene.input.on('pointerdown', this.dragHandlers.down);
       this.scene.input.on('pointermove', this.dragHandlers.move);
       this.scene.input.on('pointerup', this.dragHandlers.up);
+    } else {
+      this.savedScrollY = 0;
     }
     panel.add(this.scene.add.text(width / 2, py + panelH - 27, getText('card.hint'), {
       fontSize: '20px', color: '#a9afc0'
@@ -259,6 +267,7 @@ export class CardBar {
     }
     this.allCards?.destroy();
     this.allCards = null;
+    this.savedScrollY = 0;
     this.container.setVisible(true);
   }
 }

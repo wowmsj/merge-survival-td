@@ -1,11 +1,15 @@
 import { IGameState } from '../types';
 import { createDefaultResources } from '../model/GameState';
 import { createDefaultBase, createDefaultTiles, initialEastRuinCells } from '../model/Base';
+import { findEmptyCell, setItem } from '../model/Grid';
+import { createItemFromConfig } from '../model/Item';
+import { GameEvents, eventBus } from '../events/EventBus';
 import { RUIN_ID } from '../config/BuildingConfig';
 import { ensureUnlockedBuildings } from './UnlockSystem';
 import { backfillJoinedHeroes } from '../config/StoryConfig';
 import { backfillStorySpawnProps } from './StorySystem';
 import { getHeroConfig } from '../config/HeroConfig';
+import { getText } from '../i18n';
 
 const SAVE_KEY = 'merge_survival_td_state';
 export { SAVE_KEY };
@@ -41,7 +45,7 @@ export class StorageSystem {
             hero.hp = Math.min(maxHp, Math.max(0, hero.hp ?? maxHp));
             if (hero.recoveryDays && hero.hp > 0) delete hero.recoveryDays;
           }
-          if (data.state.language !== 'zh-CN' && data.state.language !== 'en') data.state.language = 'zh-CN';
+          if (data.state.language !== 'zh-CN' && data.state.language !== 'en') data.state.language = 'en';
           if (!data.state.blueprintStock || typeof data.state.blueprintStock !== 'object') data.state.blueprintStock = {};
           if (data.state.playMode !== 'merge' && data.state.playMode !== 'build') data.state.playMode = 'merge';
           // joinHero 是后加的能力：旧存档按 storySeen 补发已加入的英雄
@@ -69,6 +73,8 @@ export class StorageSystem {
           if (data.state.handIndex === 11 && !hasPowerStationEmitter && !data.state.cardArr.includes(70007)) {
             data.state.cardArr.push(70007);
           }
+          // 合成核心改为开局自带（外婆的遗产）：旧存档棋盘/卡片/背包都没有核心链道具时补发一个核心基座
+          this.ensureMergeCore(data.state);
           return data.state;
         }
         console.warn('存档版本不匹配或结构异常，重置存档');
@@ -87,6 +93,23 @@ export class StorageSystem {
     if (!Array.isArray(state.tasks)) return false;
     if (!Array.isArray(state.cardArr)) return false;
     return true;
+  }
+
+  /** 旧存档补发核心基座：棋盘/卡片/背包都没有核心链道具（60024~60031）时发放，满则进卡片 */
+  private ensureMergeCore(state: IGameState): void {
+    const isCore = (id: number | undefined) => !!id && id >= 60024 && id <= 60031;
+    const onGrid = state.grid.cells.some(row => row.some(cell => isCore(cell.item?.id)));
+    if (onGrid) return;
+    if (state.cardArr.some(id => isCore(id))) return;
+    const bag = state.grid.cells.flat().find(cell => cell.item?.id === 401)?.item;
+    if (bag?.roomArr?.some(it => isCore(it?.id))) return;
+    const empty = findEmptyCell(state.grid);
+    if (empty) {
+      setItem(state.grid, empty.row, empty.col, createItemFromConfig(60026));
+    } else {
+      state.cardArr.push(60026);
+    }
+    eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.coreGifted'));
   }
 
   /** 保存状态 */

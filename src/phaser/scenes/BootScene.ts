@@ -21,7 +21,15 @@ const UI_TEXTURE_KEYS = [
   // 剧情角色立绘
   'char-hero', 'char-laogui', 'char-xiaoman', 'char-beian',
   'char-mancang', 'char-laoqiang', 'char-pangshen', 'char-doctor', 'char-xiaodian',
-  'char-douzi', 'char-wensente', 'char-tiezhua', 'char-officer'
+  'char-douzi', 'char-wensente', 'char-tiezhua', 'char-officer',
+  // 夜战僵尸贴图（缺失时 NightScene 回退彩色圆、MonsterPanel 回褪色块徽章）
+  'zombie-1', 'zombie-2', 'zombie-3', 'zombie-4', 'zombie-5', 'zombie-6', 'zombie-7', 'zombie-8',
+  // 建筑专属贴图（缺失时回退 build-icon-* 大类图标，再缺回退色块；id 对应 building.json）
+  'bldg-1', 'bldg-101', 'bldg-102', 'bldg-103', 'bldg-104',
+  'bldg-202', 'bldg-203', 'bldg-204', 'bldg-205', 'bldg-206', 'bldg-207', 'bldg-208', 'bldg-209', 'bldg-210',
+  'bldg-301', 'bldg-302', 'bldg-303', 'bldg-401', 'bldg-402', 'bldg-403',
+  // 地形贴图（缺失时 BaseScene 回退色块+名称；NightScene 夜里不画回退）
+  'terrain-grass', 'terrain-rubble', 'terrain-shack', 'terrain-woods', 'terrain-pond'
 ];
 
 /**

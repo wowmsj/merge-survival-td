@@ -55,6 +55,14 @@ const SQUARE_256 = [
   'char-hero', 'char-laogui', 'char-xiaoman', 'char-beian',
   'char-mancang', 'char-laoqiang', 'char-pangshen', 'char-doctor', 'char-xiaodian',
   'char-douzi', 'char-wensente', 'char-tiezhua', 'char-officer',
+  // 夜战僵尸贴图（显示最大约 CELL*1.35≈100，给 256；id 对应 zombie.json）
+  'zombie-1', 'zombie-2', 'zombie-3', 'zombie-4', 'zombie-5', 'zombie-6', 'zombie-7', 'zombie-8',
+  // 建筑专属贴图（显示最大约 110，给 256；id 对应 building.json）
+  'bldg-1', 'bldg-101', 'bldg-102', 'bldg-103', 'bldg-104',
+  'bldg-202', 'bldg-203', 'bldg-204', 'bldg-205', 'bldg-206', 'bldg-207', 'bldg-208', 'bldg-209', 'bldg-210',
+  'bldg-301', 'bldg-302', 'bldg-303', 'bldg-401', 'bldg-402', 'bldg-403',
+  // 地形贴图（显示约 CELL-8≈66，给 256；kind 对应 terrain.json）
+  'terrain-grass', 'terrain-rubble', 'terrain-shack', 'terrain-woods', 'terrain-pond',
   // 第四批：链内等级差异化（icon_p<propId>，清单同 scripts/icon-chain-plan.json，
   // 与 ItemIconMap.ts 的 PER_LEVEL_ICON_PROP_IDS 保持一致）
   ...PER_LEVEL_ICON_KEYS,

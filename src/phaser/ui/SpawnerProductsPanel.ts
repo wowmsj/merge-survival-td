@@ -131,12 +131,15 @@ export class SpawnerProductsPanel extends BasePanel {
         ? getText('spawner.chance', { chance: Math.round((view.weight / totalWeight) * 100) })
         : getText('spawner.unlockAt', { level: view.unlockLevel });
       const status = this.scene.add.text(x, isEnglish ? y - cellH / 2 + 168 : y - cellH / 2 + 142, statusText, {
-        fontSize: '22px',
+        fontSize: isEnglish ? '16px' : '22px',
         color: view.unlocked ? '#8ce99a' : '#ff8787',
         fontStyle: 'bold',
         stroke: '#000000',
         strokeThickness: 3,
-        padding: { top: 4, bottom: 2 }
+        align: 'center',
+        padding: { top: 4, bottom: 2 },
+        wordWrap: isEnglish ? { width: cellW - 10, useAdvancedWrap: true } : undefined,
+        maxLines: isEnglish ? 1 : undefined
       }).setOrigin(0.5);
       this.container.add(status);
     }

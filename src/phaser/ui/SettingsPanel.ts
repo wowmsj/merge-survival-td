@@ -8,6 +8,8 @@ import { BASE_CENTER } from '../../core/model/Base';
 import { getAllBuildingConfigs } from '../../core/config/BuildingConfig';
 import { PlayMode } from '../../core/types';
 
+declare const __DEV_FEATURES__: boolean;
+
 export type RenderMode = '2d' | '3d';
 const RENDER_MODE_KEY = 'merge_survival_td_render_mode';
 
@@ -36,38 +38,40 @@ export class SettingsPanel extends BasePanel {
     super.open();
     if (!this.container) return;
     this.addMask(() => this.close());
-    const { px, py } = this.addPanelChrome(getText('settings.title'), 620, 780, { dividerY: 88 });
+    // 生产包隐藏玩法切换、夜战渲染切换和夜战测试入口，面板相应收矮、重开按钮上移
+    const { px, py } = this.addPanelChrome(getText('settings.title'), 620, __DEV_FEATURES__ ? 780 : 400, { dividerY: 88 });
     makeUiButton(this.scene, this.container, px + 175, py + 140, 230, 68, getText('settings.chinese'), {}, () => this.onLanguage('zh-CN'));
     makeUiButton(this.scene, this.container, px + 445, py + 140, 230, 68, getText('settings.english'), {}, () => this.onLanguage('en'));
 
-    // 玩法模式切换
-    const modeLabel = getText('settings.playMode.current', { mode: getText(`settings.playMode.${this.playMode}`) });
-    this.container.add(this.scene.add.text(px + 310, py + 240, modeLabel, {
-      fontSize: '26px', color: '#ccccdd'
-    }).setOrigin(0.5));
-    makeUiButton(this.scene, this.container, px + 175, py + 310, 230, 68, getText('settings.playMode.merge'), {
-      box: { fill: this.playMode === 'merge' ? 0x2b4a2b : undefined, stroke: this.playMode === 'merge' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
-    }, () => this.confirmPlayModeChange('merge'));
-    makeUiButton(this.scene, this.container, px + 445, py + 310, 230, 68, getText('settings.playMode.build'), {
-      box: { fill: this.playMode === 'build' ? 0x2b4a2b : undefined, stroke: this.playMode === 'build' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
-    }, () => this.confirmPlayModeChange('build'));
+    if (__DEV_FEATURES__) {
+      // 玩法模式切换
+      const modeLabel = getText('settings.playMode.current', { mode: getText(`settings.playMode.${this.playMode}`) });
+      this.container.add(this.scene.add.text(px + 310, py + 240, modeLabel, {
+        fontSize: '26px', color: '#ccccdd'
+      }).setOrigin(0.5));
+      makeUiButton(this.scene, this.container, px + 175, py + 310, 230, 68, getText('settings.playMode.merge'), {
+        box: { fill: this.playMode === 'merge' ? 0x2b4a2b : undefined, stroke: this.playMode === 'merge' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
+      }, () => this.confirmPlayModeChange('merge'));
+      makeUiButton(this.scene, this.container, px + 445, py + 310, 230, 68, getText('settings.playMode.build'), {
+        box: { fill: this.playMode === 'build' ? 0x2b4a2b : undefined, stroke: this.playMode === 'build' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
+      }, () => this.confirmPlayModeChange('build'));
+      // 夜战渲染模式切换
+      const renderLabel = getText('settings.renderMode.current', { mode: getText(`settings.renderMode.${this.renderMode}`) });
+      this.container.add(this.scene.add.text(px + 310, py + 390, renderLabel, {
+        fontSize: '26px', color: '#ccccdd'
+      }).setOrigin(0.5));
+      makeUiButton(this.scene, this.container, px + 175, py + 450, 230, 68, getText('settings.renderMode.2d'), {
+        box: { fill: this.renderMode === '2d' ? 0x2b4a2b : undefined, stroke: this.renderMode === '2d' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
+      }, () => this.setRenderMode('2d'));
+      makeUiButton(this.scene, this.container, px + 445, py + 450, 230, 68, getText('settings.renderMode.3d'), {
+        box: { fill: this.renderMode === '3d' ? 0x2b4a2b : undefined, stroke: this.renderMode === '3d' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
+      }, () => this.setRenderMode('3d'));
 
-    // 夜战渲染模式切换
-    const renderLabel = getText('settings.renderMode.current', { mode: getText(`settings.renderMode.${this.renderMode}`) });
-    this.container.add(this.scene.add.text(px + 310, py + 390, renderLabel, {
-      fontSize: '26px', color: '#ccccdd'
-    }).setOrigin(0.5));
-    makeUiButton(this.scene, this.container, px + 175, py + 450, 230, 68, getText('settings.renderMode.2d'), {
-      box: { fill: this.renderMode === '2d' ? 0x2b4a2b : undefined, stroke: this.renderMode === '2d' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
-    }, () => this.setRenderMode('2d'));
-    makeUiButton(this.scene, this.container, px + 445, py + 450, 230, 68, getText('settings.renderMode.3d'), {
-      box: { fill: this.renderMode === '3d' ? 0x2b4a2b : undefined, stroke: this.renderMode === '3d' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
-    }, () => this.setRenderMode('3d'));
-
-    makeUiButton(this.scene, this.container, px + 310, py + 550, 300, 72, getText('settings.nightTest'), {
-      box: { stroke: UI_GOLD, strokeAlpha: 0.8, radius: 14 }
-    }, () => this.openNightTestDialog());
-    this.restartButton = makeUiButton(this.scene, this.container, px + 310, py + 660, 300, 72, getText('dialog.restart'), {
+      makeUiButton(this.scene, this.container, px + 310, py + 550, 300, 72, getText('settings.nightTest'), {
+        box: { stroke: UI_GOLD, strokeAlpha: 0.8, radius: 14 }
+      }, () => this.openNightTestDialog());
+    }
+    this.restartButton = makeUiButton(this.scene, this.container, px + 310, py + (__DEV_FEATURES__ ? 660 : 300), 300, 72, getText('dialog.restart'), {
       box: { stroke: UI_ORANGE, strokeAlpha: 0.7, radius: 14 }
     }, () => this.confirmRestart());
   }

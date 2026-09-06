@@ -163,6 +163,15 @@ export function isToolboxSpawner(id: number): boolean {
   return id >= TOOLBOX_CHAIN_MIN && id <= TOOLBOX_CHAIN_MAX;
 }
 
+/** 工具系列材料 id 范围（螺丝刀 10012 → … → 气动枪 10025、单只手套 10026 → 装修手套 10028，工具箱发射器的产出物） */
+export const TOOL_SERIES_MIN = 10012;
+export const TOOL_SERIES_MAX = 10028;
+
+/** 是否工具系列材料（任务订单要求该系列单独成单，不与其他发射器产出混目标） */
+export function isToolSeriesItem(id: number): boolean {
+  return id >= TOOL_SERIES_MIN && id <= TOOL_SERIES_MAX;
+}
+
 /** 合成结果 id（0 = 不可合成/满级） */
 export function getMergeNextId(id: number): number {
   return getProp(id)?.blessId ?? 0;
@@ -187,11 +196,22 @@ export function getMergeChain(id: number): number[] {
   return [id];
 }
 
-/** 返回能直接产出该合成链首级材料的最低级发射器。 */
+/**
+ * 返回能直接产出该合成链首级材料的发射器/自动器。
+ * 优先该链的专属来源（点击 atom 或自动 fair 产出链首），
+ * 核心发射器（60024~60031，见 MergeCoreConfig.isCoreChainItem）是通用链首来源，只作兜底——
+ * 否则它 atom 里挂了全部链首，面板会把每条链都标成核心基座产出。
+ */
 export function getMergeChainSpawner(id: number): number | undefined {
   const chain = getMergeChain(id);
   const sourceId = chain[0];
   if (!sourceId) return undefined;
+  const isCore = (rowId: number) => rowId >= 60024 && rowId <= 60031;
+  const dedicated = PROP_TABLE.find(row =>
+    !isCore(row.id) &&
+    (row.fair === sourceId || getClickProducts(row.id).some(product => product.id === sourceId))
+  )?.id;
+  if (dedicated) return dedicated;
   return PROP_TABLE.find(row => getClickProducts(row.id).some(product => product.id === sourceId))?.id;
 }
 

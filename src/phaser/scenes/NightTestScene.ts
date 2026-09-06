@@ -5,7 +5,7 @@ import { BASE_CENTER, BASE_COLS, BASE_ROWS, buildingAt } from '../../core/model/
 import { getAllBuildingConfigs, getBuildingConfig, RUIN_ID } from '../../core/config/BuildingConfig';
 import { getBuildingName, getText } from '../../core/i18n';
 import { addFullscreenBg, makeUiButton, showSceneToast } from '../ui/UiWidgets';
-import { KIND_COLORS, KIND_ICON_KEYS } from '../config/BuildingKindStyle';
+import { KIND_COLORS, KIND_ICON_KEYS, buildingIconKey } from '../config/BuildingKindStyle';
 import { UI_FILL, UI_GOLD, UI_ORANGE, UI_SLOT_FILL, UI_STROKE } from '../ui/UiStyle';
 import { GameEvents, eventBus } from '../../core/events/EventBus';
 
@@ -183,7 +183,8 @@ export class NightTestScene extends Phaser.Scene {
       const cfg = getBuildingConfig(b.cfgId);
       if (!cfg) continue;
       const { x, y } = this.cellXY(b.row, b.col);
-      const iconKey = KIND_ICON_KEYS[cfg.kind];
+      const perKey = buildingIconKey(cfg.id);
+      const iconKey = this.textures.exists(perKey) ? perKey : KIND_ICON_KEYS[cfg.kind];
       if (this.textures.exists(iconKey)) {
         const img = this.add.image(x, y, iconKey).setDisplaySize(CELL - 12, CELL - 12);
         this.buildingLayer.add(img);
@@ -269,7 +270,8 @@ export class NightTestScene extends Phaser.Scene {
     for (let i = 0; i < pageConfigs.length; i++) {
       const cfg = pageConfigs[i];
       const x = startX + i * (size + gap);
-      const iconKey = KIND_ICON_KEYS[cfg.kind];
+      const perKey = buildingIconKey(cfg.id);
+      const iconKey = this.textures.exists(perKey) ? perKey : KIND_ICON_KEYS[cfg.kind];
       const selected = cfg.id === this.selectedId;
 
       const btn = this.add.container(x, y);

@@ -10,7 +10,8 @@ export function resolveLanguage(language?: string): Language {
   return candidate?.toLowerCase().startsWith('en') ? 'en' : 'zh-CN';
 }
 
-let activeLanguage = resolveLanguage();
+/** 默认语言：发布面向海外（itch.io），新开局一律英文，玩家在设置里可切中文 */
+let activeLanguage: Language = 'en';
 
 export function setLanguage(language: Language): void {
   activeLanguage = language;

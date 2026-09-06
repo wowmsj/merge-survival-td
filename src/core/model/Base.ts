@@ -1,5 +1,6 @@
 import { IBaseState, IBaseTile, IBuilding, IPoint } from '../types';
 import { getBuildingConfig, RUIN_ID } from '../config/BuildingConfig';
+import { TERRAIN_TABLE, terrainAt, isTerrainWalkableForGround } from '../config/TerrainConfig';
 
 /** 基地网格：13×13（奇数保证核心居中），核心固定中央 */
 export const BASE_ROWS = 13;
@@ -75,7 +76,12 @@ export function createDefaultBase(): IBaseState {
   for (const cell of initialEastRuinCells()) {
     buildings.push({ cfgId: RUIN_ID, level: 1, hp: 80, maxHp: 80, row: cell.row, col: cell.col });
   }
-  return { rows: BASE_ROWS, cols: BASE_COLS, tiles: createDefaultTiles(), buildings };
+  const tiles = createDefaultTiles();
+  // 初始地形（外圈）：破旧建筑/树林/水池/瓦砾/杂草，中央 7×7 保持平地
+  for (const cell of TERRAIN_TABLE) {
+    if (tiles[cell.row]?.[cell.col]) tiles[cell.row][cell.col].terrain = cell.kind;
+  }
+  return { rows: BASE_ROWS, cols: BASE_COLS, tiles, buildings };
 }
 
 /** 废墟方位：north=顶边 row0，west=左边 col0，south=底边 row(rows-1)，east=东边 */
@@ -118,6 +124,8 @@ export function buildingAt(base: IBaseState, row: number, col: number): IBuildin
 
 function isWalkableForGround(base: IBaseState, row: number, col: number, extraBlocked?: IPoint): boolean {
   if (extraBlocked?.row === row && extraBlocked.col === col) return false;
+  const terrain = terrainAt(base, row, col);
+  if (terrain && !isTerrainWalkableForGround(terrain)) return false;
   const building = buildingAt(base, row, col);
   if (!building) return true;
   const kind = getBuildingConfig(building.cfgId)?.kind;

@@ -23,6 +23,7 @@ import { CardBar } from '../ui/CardBar';
 import { InfoBar, buildInfoActions } from '../ui/InfoBar';
 import { BagPanel } from '../ui/BagPanel';
 import { SpawnerProductsPanel } from '../ui/SpawnerProductsPanel';
+import { CoreIntroPanel } from '../ui/CoreIntroPanel';
 import { HandGuide } from '../ui/HandGuide';
 import { StoryArchivePanel } from '../ui/StoryArchivePanel';
 import { CharacterPanel } from '../ui/CharacterPanel';
@@ -35,7 +36,7 @@ import { getBlueprintBuilding } from '../../core/config/BuildingConfig';
 import { getHeroConfig } from '../../core/config/HeroConfig';
 import { hasTaskStoryBeat } from '../../core/config/StoryConfig';
 import { addFullscreenBg, showSceneToast, makeUiButton } from '../ui/UiWidgets';
-import { getBuildingName, getHeroName, getPropName, getText, resolveLanguage, setLanguage, type Language } from '../../core/i18n';
+import { getBuildingName, getHeroName, getPropName, getText, setLanguage, type Language } from '../../core/i18n';
 
 /**
  * 主游戏场景：系统装配 + 事件接线 + 输入判定
@@ -60,6 +61,7 @@ export class GameScene extends Phaser.Scene {
   private infoBar!: InfoBar;
   private bagPanel!: BagPanel;
   private spawnerPanel!: SpawnerProductsPanel;
+  private coreIntroPanel!: CoreIntroPanel;
   private storyDialog!: StoryDialog;
   /** 剧情回顾面板（每次打开新建实例，关闭后 isOpen 为 false） */
   private storyPanel: StoryArchivePanel | null = null;
@@ -107,8 +109,8 @@ export class GameScene extends Phaser.Scene {
       this.state = this.passedState ?? ((saved && this.gridHasItem(saved)) ? saved : GameInitializer.initNewGame(this.taskSystem, newGameMode));
       this.economySystem.recoverPower(this.state);
       const isNewGame = !this.passedState && !(saved && this.gridHasItem(saved));
-      const browserLanguage = typeof navigator === 'undefined' ? undefined : navigator.language;
-      if (isNewGame) this.state.language = browserLanguage?.toLowerCase().startsWith('zh') ? 'zh-CN' : browserLanguage ? 'en' : resolveLanguage();
+      // 发布面向海外（itch.io）：新开局默认英文，不看浏览器语言；玩家可在设置里切中文
+      if (isNewGame) this.state.language = 'en';
       setLanguage(this.state.language);
       // 清理存档里按旧规则生成、当前不可能完成的任务（仅读档时跑一次）
       if (saved && this.state === saved) {
@@ -123,7 +125,7 @@ export class GameScene extends Phaser.Scene {
       this.gridRenderer.isTaskNeeded = (id) => this.taskSystem.isTaskNeedWithId(this.state, id);
       // 剧情对话/剧情回顾/角色图鉴面板打开时屏蔽棋盘输入（遮罩挡不住场景级 pointer 监听，会点穿到棋盘）
       this.gridRenderer.inputBlocked = () =>
-        (this.storyDialog?.isOpen ?? false) || (this.storyPanel?.isOpen ?? false) || (this.characterPanel?.isOpen ?? false) || (this.monsterPanel?.isOpen ?? false) || (this.settingsPanel?.isOpen ?? false) || (this.taskChainPanel?.isOpen ?? false) || (this.cardBar?.isOpen ?? false) || (this.bagPanel?.isVisible() ?? false) || (this.spawnerPanel?.isVisible() ?? false);
+        (this.storyDialog?.isOpen ?? false) || (this.storyPanel?.isOpen ?? false) || (this.characterPanel?.isOpen ?? false) || (this.monsterPanel?.isOpen ?? false) || (this.settingsPanel?.isOpen ?? false) || (this.taskChainPanel?.isOpen ?? false) || (this.cardBar?.isOpen ?? false) || (this.bagPanel?.isVisible() ?? false) || (this.spawnerPanel?.isVisible() ?? false) || (this.coreIntroPanel?.isOpen ?? false);
 
       this.hud = new HUD(this, this.state);
       this.hud.getPowerFreeRemain = () => this.specialSystem.getPowerFreeRemain(this.state);
@@ -134,6 +136,7 @@ export class GameScene extends Phaser.Scene {
       this.taskBar.onSubmit = (task) => this.handleTaskSubmit(task);
       this.taskBar.onViewChain = (task) => {
         this.taskChainPanel = new TaskChainPanel(this);
+        this.taskChainPanel.onDiamondComplete = (t) => this.handleTaskDiamondComplete(t);
         this.taskChainPanel.open(task);
       };
 
@@ -153,6 +156,7 @@ export class GameScene extends Phaser.Scene {
       };
 
       this.spawnerPanel = new SpawnerProductsPanel(this);
+      this.coreIntroPanel = new CoreIntroPanel(this, this.state);
 
       // 底部菜单行：剧情 / 角色 / 怪物 / 基地 / 商店 / 设置
       const MENU_Y = 1852;
@@ -346,6 +350,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** 提交任务；有额外物品奖励时由满仓用对话发放（有专属任务剧情的除外——剧情里老鬼已代为打赏，不重复说） */
+  /** 钻石直接完成任务（合成路径弹窗的按钮回调） */
+  private handleTaskDiamondComplete(task: ITask): void {
+    if (!this.taskSystem.completeTaskWithDiamond(this.state, task)) return;
+    this.taskChainPanel?.close();
+    this.save();
+  }
+
   private handleTaskSubmit(task: ITask): void {
     const rewards = task.rewardPropArr ? task.rewardPropArr.map(r => ({ ...r })) : [];
     const ok = this.taskSystem.completeTask(this.state, task);
@@ -395,6 +406,9 @@ export class GameScene extends Phaser.Scene {
       onViewSpawner: (p) => {
         const it = getItem(this.state.grid, p.row, p.col);
         if (it) this.spawnerPanel.open(this.getHighestSpawnerId(it.id));
+      },
+      onViewIntro: () => {
+        this.coreIntroPanel.open();
       }
     }) : [];
     this.infoBar.showSelection(pos, item, actions);
