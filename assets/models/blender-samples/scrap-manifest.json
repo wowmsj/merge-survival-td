@@ -1,0 +1,57 @@
+[
+  {
+    "id": 20041,
+    "name": "废橡胶带",
+    "triangles": 544
+  },
+  {
+    "id": 20042,
+    "name": "旧绳圈",
+    "triangles": 2696
+  },
+  {
+    "id": 20043,
+    "name": "铁线圈",
+    "triangles": 1844
+  },
+  {
+    "id": 20044,
+    "name": "铁支架",
+    "triangles": 162
+  },
+  {
+    "id": 20045,
+    "name": "废铁轮",
+    "triangles": 1130
+  },
+  {
+    "id": 20046,
+    "name": "弹簧卷",
+    "triangles": 1784
+  },
+  {
+    "id": 20047,
+    "name": "铁皮桶",
+    "triangles": 1100
+  },
+  {
+    "id": 20048,
+    "name": "废铁板",
+    "triangles": 156
+  },
+  {
+    "id": 20049,
+    "name": "废钢架",
+    "triangles": 92
+  },
+  {
+    "id": 20050,
+    "name": "钢梁",
+    "triangles": 66
+  },
+  {
+    "id": 20051,
+    "name": "装甲钢板",
+    "triangles": 348
+  }
+]

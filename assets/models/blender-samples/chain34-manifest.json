@@ -1,0 +1,32 @@
+[
+  {
+    "id": 50011,
+    "name": "破包装纸",
+    "triangles": 48
+  },
+  {
+    "id": 50012,
+    "name": "鱼骨头",
+    "triangles": 360
+  },
+  {
+    "id": 50013,
+    "name": "饮料杯",
+    "triangles": 252
+  },
+  {
+    "id": 50014,
+    "name": "快餐盒",
+    "triangles": 50
+  },
+  {
+    "id": 50015,
+    "name": "废料箱",
+    "triangles": 36
+  },
+  {
+    "id": 50016,
+    "name": "大废料袋",
+    "triangles": 2370
+  }
+]

@@ -1,0 +1,17 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>工具箱 · 五级组装</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#272a2b;color:#eee4d1;font:16px system-ui}main{max-width:1500px;margin:auto;padding:28px}h1{font-size:26px}p{color:#c6baa6;line-height:1.7}.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}article{background:#353737;padding:12px;border-radius:14px}canvas{width:100%!important;height:auto!important;display:block;border-radius:8px}h2{font-size:18px}input{width:100%}a{color:#eabe72}article p{min-height:80px;font-size:14px}@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:500px){main{padding:16px}.grid{grid-template-columns:1fr}article p{min-height:0}}</style>
+<script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script>
+<main><h1>旧把手 → 箱盖 → 木箱 → 加固 → 铁皮箱</h1><p>五级组装方案 · 保留木纹、铆钉与磨损细节。拖动滑条旋转查看。本页为模型提案，尚未修改正式游戏配置。</p><div class="grid"></div><p><a href="toolbox-assembly.blend">下载整组 Blender 源文件</a> · <a href="index.html">查看此前的原图对比</a></p></main>
+<script type="module">
+import * as T from 'three';import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+window.assemblyChecks=[];const loader=new GLTFLoader();
+const cartoon=new URLSearchParams(location.search).has('cartoon');
+if(cartoon){document.title='L3 · 美式卡通对比';document.querySelector('h1').textContent='L3 简易工具箱 · 美式卡通方向';document.querySelector('main>p').textContent='左：原版。右：加粗轮廓、蜂蜜橙木材、深色拼缝与少量磨损。相同灯光，无投影。';document.querySelector('.grid').style.gridTemplateColumns='repeat(auto-fit,minmax(min(100%,360px),1fr))';document.querySelector('main').style.maxWidth='1100px';document.querySelector('main>p:last-child').innerHTML='<a href="cartoon-toolbox.blend">下载新版 Blender 源文件</a> · <a href="assembly.html">返回五级组装</a>';}
+for(const [i,name,detail] of (cartoon?[[3,'原版','较细的把手、规则轮廓与密集木纹。'],[3,'美式卡通试版','加粗把手与木框、放大木扣、橙色木板、少量裂纹与木结。']]:[[1,'旧把手','独立弯曲铁把手，保留安装脚和螺钉。'],[2,'带把手箱盖','木板拼成薄箱盖，装上把手；没有箱体。'],[3,'简易工具箱','增加木质箱体和拱顶，使用简单木扣。'],[4,'加固工具箱','增加金属箍带、包角和双锁扣。'],[5,'铁皮工具箱','升级为铁皮外壳与金属箱盖。']])){
+const id=10000+i,card=document.createElement('article');card.innerHTML=`<h2>L${i} · ${name}</h2><div></div><p>${detail}</p><label>旋转 <input type="range" min="-180" max="180" value="0" aria-label="${name}旋转"></label><a href="assembly_${id}.glb" download>下载 GLB</a>`;document.querySelector('.grid').append(card);
+const r=new T.WebGLRenderer({antialias:true});r.setSize(400,400);r.setPixelRatio(1.5);r.toneMapping=T.ACESFilmicToneMapping;r.shadowMap.enabled=false;card.querySelector('div').append(r.domElement);
+const s=new T.Scene();s.background=new T.Color('#d4caba');s.add(new T.HemisphereLight(0xffffff,0x867156,2));const l=new T.DirectionalLight(0xffeddb,2.4);l.position.set(-3,6,5);s.add(l);
+const file=cartoon&&name==='美式卡通试版'?'cartoon_10003.glb':`assembly_${id}.glb`;card.querySelector('a').href=file;
+const {scene:m}=await loader.loadAsync(file);s.add(m);const box=new T.Box3().setFromObject(m),size=box.getSize(new T.Vector3());const c=new T.OrthographicCamera(-.55,.55,.55,-.55,.1,20);c.position.set(-3,2.5,4);c.lookAt(0,size.y/2,0);const draw=()=>r.render(s,c);draw();card.querySelector('input').oninput=e=>{m.rotation.y=+e.target.value*Math.PI/180;draw()};window.assemblyChecks.push({id,size:size.toArray(),bottom:box.min.y,meshes:m.children.length});
+}window.assemblyReady=true;
+</script></html>

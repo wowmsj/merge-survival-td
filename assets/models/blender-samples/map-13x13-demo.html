@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>13×13 正式地图预览</title><style>*{box-sizing:border-box}html,body{margin:0;overflow:hidden;background:#d3c2a6;color:#443d32;font:15px system-ui,sans-serif}header{padding:14px 22px}h1{font-size:21px;margin:0 0 5px}p{margin:0;color:#5d5142}#stage{height:calc(100vh - 70px);min-height:360px}canvas{display:block;touch-action:none}</style><header><h1>13×13 正式地图 · 暖土色方块风格</h1><p>参考图布局：暖黄色地板、灰石围墙、砖红屋顶、中心核心、建筑与树林。拖动旋转，滚轮或双指缩放。</p></header><div id="stage"></div><script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script><script type="module">
+import * as T from 'three';import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const stage=document.querySelector('#stage'),scene=new T.Scene();window.addEventListener('error',e=>{document.querySelector('p').textContent='加载失败：'+e.message});window.addEventListener('unhandledrejection',e=>{document.querySelector('p').textContent='资源加载失败：'+(e.reason?.message||e.reason)});scene.background=new T.Color('#d9a94e');const renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;stage.append(renderer.domElement);scene.add(new T.HemisphereLight(0xfff4e0,0xd4a05a,.85));const sun=new T.DirectionalLight(0xffe2b0,2.5);sun.position.set(30,50,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-10,right:10,top:10,bottom:-10,near:.1,far:70});sun.shadow.normalBias=.02;scene.add(sun);
+const board=new T.Group();scene.add(board);const camera=new T.OrthographicCamera(-7.8,7.8,7.8,-7.8,.1,100),controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enableRotate=false;controls.enablePan=true;controls.screenSpacePanning=true;controls.minZoom=.62;controls.maxZoom=2.8;controls.zoomSpeed=.9;controls.panSpeed=1.05;controls.target.set(0,.35,0);function resize(){const w=stage.clientWidth,h=stage.clientHeight,a=w/h;camera.left=-7.8*Math.max(1,a);camera.right=-camera.left;camera.top=7.8*Math.max(1,1/a);camera.bottom=-camera.top;camera.updateProjectionMatrix();renderer.setSize(w,h)}new ResizeObserver(resize).observe(stage);resize();camera.position.set(-11,15,-11);controls.update();renderer.setAnimationLoop(()=>{controls.update();renderer.render(scene,camera)});window.ready=true;
+const loader=new GLTFLoader(),cache=new Map();async function load(file){if(!cache.has(file))cache.set(file,loader.loadAsync(file));return (await cache.get(file)).scene.clone(true)}
+let base;console.info('[map] base load start');try{base=await load('warm_base_13x13.glb');console.info('[map] base load done');base.scale.setScalar(1.02);base.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});board.add(base);const box=new T.Box3().setFromObject(base);console.info('[map] base bounds '+JSON.stringify({min:box.min.toArray(),max:box.max.toArray()}));window.__mapBaseLoaded=true;console.info('[map] base added')}catch(error){window.__mapBaseError=String(error?.message||error);document.querySelector('p').textContent='底图加载失败：'+window.__mapBaseError;console.error('[map] base load failed',error);throw error}
+function place(model,x,z,s=1,ry=0){model.position.set((x-6),0,(z-6));model.rotation.y=ry;model.scale.setScalar(s);model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});board.add(model)}
+const entries=[['warm_core.glb',6,6,.72,0],['reference_house.glb?v=materials-20260911',3,4,.72,0],['reference_house.glb?v=materials-20260911',9,3,.72,.12],['reference_house.glb?v=materials-20260911',2,8,.72,-.12],['reference_house.glb?v=materials-20260911',5,10,.72,.08],['reference_house.glb?v=materials-20260911',9,9,.72,-.08],['arrow_tower_v6.glb?v=20260911-04',4,6,.62,0],['arrow_tower_v6.glb?v=20260911-04',8,6,.62,Math.PI/2],['arrow_tower_v6.glb?v=20260911-04',6,3,.62,0],['tree_lowpoly_v3.glb?v=20260911-01',10,9,.72,0],['tree_lowpoly_v3.glb?v=20260911-01',11,8,.72,0],['tree_lowpoly_v3.glb?v=20260911-01',10,10,.72,0],['tree_lowpoly_v3.glb?v=20260911-01',11,10,.72,0],['tree_lowpoly_v3.glb?v=20260911-01',9,10,.72,0],['warm_pond.glb',7,10,.75,0],['warm_pond.glb',8,10,.75,0],['warm_rubble.glb',4,2,.75,0],['warm_rubble.glb',8,2,.75,0],['warm_rubble.glb',2,5,.75,0],['warm_rubble.glb',10,5,.75,0]];
+const ruinSites=[[1,2,.66,.1],[11,2,.72,-.2],[1,10,.62,.4],[11,11,.76,-.45],[2,3,.52,.8],[10,3,.54,-.7],[3,11,.56,-.25],[8,11,.6,.35]];
+const ruinShapes=['warm_ruin.glb','warm_ruin_1.glb','warm_ruin_2.glb'];
+ruinSites.forEach(([x,z,scale,rotation],i)=>entries.push([ruinShapes[(i*5+2)%ruinShapes.length],x,z,scale,rotation]));
+await Promise.allSettled(entries.map(e=>load(e[0]).then(model=>place(model,e[1],e[2],e[3],e[4]))));
+// 统一提升饱和度与中间调，让旧资源更接近参考图的鲜艳卡通色。
+board.traverse(o=>{if(!o.isMesh||!o.material)return;const materials=Array.isArray(o.material)?o.material:[o.material];o.material=materials.map(m=>{const copy=m.clone();if(copy.color){const hsl={h:0,s:0,l:0};copy.color.getHSL(hsl);copy.color.setHSL(hsl.h,Math.min(1,hsl.s*1.24),Math.min(.9,hsl.l*1.06))}copy.roughness=Math.min(copy.roughness??.9,.86);return copy})});
+renderer.toneMappingExposure=1.34;
+camera.position.set(-13.5,19,-13.5);controls.target.set(0,.35,0);controls.update();camera.zoom=.92;camera.updateProjectionMatrix();
+board.traverse(o=>{
+  if(!o.isMesh)return;
+  const convert=source=>{
+    const map=source.map;
+    if(map){map.colorSpace=T.SRGBColorSpace;if(map.channel<0)map.channel=0;}
+    const accents={dark:'#46352b',gold:'#be8b38',glass:'#467d89'};
+    return new T.MeshLambertMaterial({name:source.name,color:!map&&accents[source.name]||source.color.clone(),map,transparent:source.transparent,opacity:source.opacity,alphaTest:source.alphaTest,side:source.side});
+  };
+  // A material array requires geometry groups; the earlier color pass wrapped single materials.
+  const sources=Array.isArray(o.material)?o.material:[o.material];
+  o.material=sources.length===1?convert(sources[0]):sources.map(convert);
+});
+board.traverse(o=>{if(!o.isMesh||!o.material?.color)return;const hsl={h:0,s:0,l:0};o.material.color.getHSL(hsl);o.material.color.setHSL(hsl.h,Math.min(1,hsl.s*1.18),Math.min(.96,hsl.l*1.06))});
+const {applyPaintedGround}=await import('./painted-ground.js');
+applyPaintedGround(base,renderer);
+const {applyPaintedRuins}=await import('./painted-ruins.js');
+applyPaintedRuins(board,renderer);
+</script></html>
+
+
+
+

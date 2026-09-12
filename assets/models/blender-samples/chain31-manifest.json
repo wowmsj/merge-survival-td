@@ -1,0 +1,47 @@
+[
+  {
+    "id": 40039,
+    "name": "藤绳",
+    "triangles": 216
+  },
+  {
+    "id": 40040,
+    "name": "破草篮",
+    "triangles": 820
+  },
+  {
+    "id": 40041,
+    "name": "编织篮",
+    "triangles": 556
+  },
+  {
+    "id": 40042,
+    "name": "藤编篮",
+    "triangles": 1540
+  },
+  {
+    "id": 40043,
+    "name": "小药篮",
+    "triangles": 2188
+  },
+  {
+    "id": 40044,
+    "name": "大药篮",
+    "triangles": 2492
+  },
+  {
+    "id": 40045,
+    "name": "庆功药篮",
+    "triangles": 2942
+  },
+  {
+    "id": 40046,
+    "name": "精制药篮",
+    "triangles": 3224
+  },
+  {
+    "id": 40047,
+    "name": "豪华药篮",
+    "triangles": 3554
+  }
+]

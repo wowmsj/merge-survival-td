@@ -1,0 +1,52 @@
+[
+  {
+    "id": 50001,
+    "name": "电池",
+    "triangles": 24
+  },
+  {
+    "id": 50002,
+    "name": "加强电池",
+    "triangles": 24
+  },
+  {
+    "id": 50003,
+    "name": "CPU",
+    "triangles": 172
+  },
+  {
+    "id": 50004,
+    "name": "芯片板",
+    "triangles": 128
+  },
+  {
+    "id": 50005,
+    "name": "陈旧机器人",
+    "triangles": 388
+  },
+  {
+    "id": 50006,
+    "name": "扫地机器人",
+    "triangles": 380
+  },
+  {
+    "id": 50007,
+    "name": "维修机器人",
+    "triangles": 594
+  },
+  {
+    "id": 50008,
+    "name": "焊接机器人",
+    "triangles": 582
+  },
+  {
+    "id": 50009,
+    "name": "巡逻机器人",
+    "triangles": 538
+  },
+  {
+    "id": 50010,
+    "name": "哨卫机器人",
+    "triangles": 524
+  }
+]

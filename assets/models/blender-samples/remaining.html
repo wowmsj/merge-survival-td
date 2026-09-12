@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>剩余38组合成链 · 方块模型验收</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#272a2b;color:#eee4d1;font:16px system-ui}main{max-width:1200px;margin:auto;padding:24px}h1{font-size:26px}p{line-height:1.6;color:#c6baa6}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:18px}article{background:#353737;border-radius:12px;padding:16px}h2{font-size:20px}img{display:block;width:100%;height:230px;object-fit:cover;object-position:top;border-radius:6px}a{color:#eabe72}nav{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px}nav a{padding:10px 0}input{width:100%;padding:14px;margin:12px 0 24px;font:inherit;border:1px solid #827762;border-radius:8px;background:#353737;color:inherit}[hidden]{display:none!important}</style>
+<main><h1>剩余38组 · 182个方块模型</h1><p>第31～68组，包含追加蓝图。32格、无投影，可旋转及进入斜45°棋盘体验。发射器与单件功能道具保留实际合成规则，不作为连续升级等级。本批独立样品，待验收。</p><label for="search">查找合成链或道具</label><input id="search" type="search" placeholder="输入名称或序号"><div class="grid"></div></main>
+<script type="module">
+import {batchChains} from '/merge/batch-chains.js';
+for(const c of batchChains.filter(c=>c.seq>=31)){const a=document.createElement('article');a.dataset.search=`${c.seq} ${c.title} ${c.items.map(i=>i.name).join(' ')}`;a.innerHTML=`<h2>${c.seq} · ${c.title} · ${c.count}件</h2><a href="voxel.html?chain=${c.key}"><img loading="lazy" src="${c.key}-preview.png" alt="${c.title}模型预览"></a><nav><a href="voxel.html?chain=${c.key}">全链模型</a><a href="/merge/?voxel=1&${c.key}=1">棋盘体验</a><a href="voxel-${c.key}.blend">Blender源文件</a></nav>`;document.querySelector('.grid').append(a)}
+document.querySelector('#search').addEventListener('input',e=>{for(const a of document.querySelectorAll('article'))a.hidden=!a.dataset.search.includes(e.target.value.trim())});
+</script></html>

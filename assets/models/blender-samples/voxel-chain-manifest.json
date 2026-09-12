@@ -1,0 +1,79 @@
+[
+  {
+    "id": 10001,
+    "resolution": 32,
+    "occupiedCells": 432,
+    "exposedQuads": 548,
+    "triangles": 1096
+  },
+  {
+    "id": 10002,
+    "resolution": 32,
+    "occupiedCells": 2352,
+    "exposedQuads": 2020,
+    "triangles": 4040
+  },
+  {
+    "id": 10003,
+    "resolution": 32,
+    "occupiedCells": 11304,
+    "exposedQuads": 3680,
+    "triangles": 7360
+  },
+  {
+    "id": 10004,
+    "resolution": 32,
+    "occupiedCells": 11714,
+    "exposedQuads": 3990,
+    "triangles": 7980
+  },
+  {
+    "id": 10005,
+    "resolution": 32,
+    "occupiedCells": 13086,
+    "exposedQuads": 3762,
+    "triangles": 7524
+  },
+  {
+    "id": 10006,
+    "resolution": 32,
+    "occupiedCells": 13329,
+    "exposedQuads": 4028,
+    "triangles": 8056
+  },
+  {
+    "id": 10007,
+    "resolution": 32,
+    "occupiedCells": 8574,
+    "exposedQuads": 3896,
+    "triangles": 7792
+  },
+  {
+    "id": 10008,
+    "resolution": 32,
+    "occupiedCells": 12214,
+    "exposedQuads": 4544,
+    "triangles": 9088
+  },
+  {
+    "id": 10009,
+    "resolution": 32,
+    "occupiedCells": 12640,
+    "exposedQuads": 4566,
+    "triangles": 9132
+  },
+  {
+    "id": 10010,
+    "resolution": 32,
+    "occupiedCells": 12468,
+    "exposedQuads": 3936,
+    "triangles": 7872
+  },
+  {
+    "id": 10011,
+    "resolution": 32,
+    "occupiedCells": 6562,
+    "exposedQuads": 4940,
+    "triangles": 9880
+  }
+]

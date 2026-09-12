@@ -1,0 +1,1357 @@
+{
+  "rows": 13,
+  "cols": 13,
+  "cellPixels": 74,
+  "gapPixels": 6,
+  "cellPitch": 1,
+  "surfaceY": 0,
+  "origin": "center, glTF Y-up",
+  "eastGapRows": [
+    4,
+    5,
+    6
+  ],
+  "ruinCollapseOrder": [
+    "north",
+    "west",
+    "south",
+    "east"
+  ],
+  "modules": {
+    "ground": "base_ground.glb",
+    "core": "base_core.glb",
+    "grass": "base_grass.glb",
+    "woods": "base_woods.glb",
+    "rubble": "base_rubble.glb",
+    "shack": "base_shack.glb",
+    "pond": "base_pond.glb",
+    "ruin": "base_ruin.glb",
+    "ruin_1": "base_ruin_1.glb",
+    "ruin_2": "base_ruin_2.glb"
+  },
+  "tiles": [
+    {
+      "row": 0,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 1,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 4,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 5,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 6,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 7,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 8,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 9,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 10,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 11,
+      "claimed": false
+    },
+    {
+      "row": 0,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "claimed": false
+    },
+    {
+      "row": 1,
+      "col": 5,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 1,
+      "col": 6,
+      "claimed": false
+    },
+    {
+      "row": 1,
+      "col": 7,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 1,
+      "col": 8,
+      "claimed": false
+    },
+    {
+      "row": 1,
+      "col": 9,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 1,
+      "col": 10,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 1,
+      "col": 11,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 1,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "claimed": false
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 2,
+      "col": 5,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 2,
+      "col": 6,
+      "claimed": false
+    },
+    {
+      "row": 2,
+      "col": 7,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 2,
+      "col": 8,
+      "claimed": false
+    },
+    {
+      "row": 2,
+      "col": 9,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 2,
+      "col": 10,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 2,
+      "col": 11,
+      "claimed": false
+    },
+    {
+      "row": 2,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "claimed": false,
+      "terrain": "woods"
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "claimed": false,
+      "terrain": "woods"
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "claimed": true
+    },
+    {
+      "row": 3,
+      "col": 4,
+      "claimed": true,
+      "terrain": "rubble"
+    },
+    {
+      "row": 3,
+      "col": 5,
+      "claimed": true
+    },
+    {
+      "row": 3,
+      "col": 6,
+      "claimed": true
+    },
+    {
+      "row": 3,
+      "col": 7,
+      "claimed": true
+    },
+    {
+      "row": 3,
+      "col": 8,
+      "claimed": true
+    },
+    {
+      "row": 3,
+      "col": 9,
+      "claimed": true,
+      "terrain": "rubble"
+    },
+    {
+      "row": 3,
+      "col": 10,
+      "claimed": false,
+      "terrain": "grass"
+    },
+    {
+      "row": 3,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass"
+    },
+    {
+      "row": 3,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "claimed": false,
+      "terrain": "woods"
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "claimed": true,
+      "terrain": "rubble"
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "claimed": true
+    },
+    {
+      "row": 4,
+      "col": 5,
+      "claimed": true
+    },
+    {
+      "row": 4,
+      "col": 6,
+      "claimed": true
+    },
+    {
+      "row": 4,
+      "col": 7,
+      "claimed": true
+    },
+    {
+      "row": 4,
+      "col": 8,
+      "claimed": true
+    },
+    {
+      "row": 4,
+      "col": 9,
+      "claimed": true
+    },
+    {
+      "row": 4,
+      "col": 10,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 4,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass"
+    },
+    {
+      "row": 4,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 5,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 5,
+      "col": 1,
+      "claimed": false,
+      "terrain": "woods"
+    },
+    {
+      "row": 5,
+      "col": 2,
+      "claimed": false,
+      "terrain": "woods"
+    },
+    {
+      "row": 5,
+      "col": 3,
+      "claimed": true
+    },
+    {
+      "row": 5,
+      "col": 4,
+      "claimed": true
+    },
+    {
+      "row": 5,
+      "col": 5,
+      "claimed": true
+    },
+    {
+      "row": 5,
+      "col": 6,
+      "claimed": true
+    },
+    {
+      "row": 5,
+      "col": 7,
+      "claimed": true
+    },
+    {
+      "row": 5,
+      "col": 8,
+      "claimed": true
+    },
+    {
+      "row": 5,
+      "col": 9,
+      "claimed": true
+    },
+    {
+      "row": 5,
+      "col": 10,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 5,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass"
+    },
+    {
+      "row": 5,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 6,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 6,
+      "col": 1,
+      "claimed": false,
+      "terrain": "woods"
+    },
+    {
+      "row": 6,
+      "col": 2,
+      "claimed": false,
+      "terrain": "woods"
+    },
+    {
+      "row": 6,
+      "col": 3,
+      "claimed": true
+    },
+    {
+      "row": 6,
+      "col": 4,
+      "claimed": true
+    },
+    {
+      "row": 6,
+      "col": 5,
+      "claimed": true
+    },
+    {
+      "row": 6,
+      "col": 6,
+      "claimed": true
+    },
+    {
+      "row": 6,
+      "col": 7,
+      "claimed": true
+    },
+    {
+      "row": 6,
+      "col": 8,
+      "claimed": true
+    },
+    {
+      "row": 6,
+      "col": 9,
+      "claimed": true
+    },
+    {
+      "row": 6,
+      "col": 10,
+      "claimed": false,
+      "terrain": "grass"
+    },
+    {
+      "row": 6,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass"
+    },
+    {
+      "row": 6,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 7,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 7,
+      "col": 1,
+      "claimed": false,
+      "terrain": "woods"
+    },
+    {
+      "row": 7,
+      "col": 2,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 7,
+      "col": 3,
+      "claimed": true,
+      "terrain": "grass"
+    },
+    {
+      "row": 7,
+      "col": 4,
+      "claimed": true
+    },
+    {
+      "row": 7,
+      "col": 5,
+      "claimed": true
+    },
+    {
+      "row": 7,
+      "col": 6,
+      "claimed": true
+    },
+    {
+      "row": 7,
+      "col": 7,
+      "claimed": true
+    },
+    {
+      "row": 7,
+      "col": 8,
+      "claimed": true
+    },
+    {
+      "row": 7,
+      "col": 9,
+      "claimed": true
+    },
+    {
+      "row": 7,
+      "col": 10,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 7,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass"
+    },
+    {
+      "row": 7,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 8,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 8,
+      "col": 1,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 8,
+      "col": 2,
+      "claimed": false,
+      "terrain": "woods"
+    },
+    {
+      "row": 8,
+      "col": 3,
+      "claimed": true,
+      "terrain": "rubble"
+    },
+    {
+      "row": 8,
+      "col": 4,
+      "claimed": true
+    },
+    {
+      "row": 8,
+      "col": 5,
+      "claimed": true
+    },
+    {
+      "row": 8,
+      "col": 6,
+      "claimed": true
+    },
+    {
+      "row": 8,
+      "col": 7,
+      "claimed": true
+    },
+    {
+      "row": 8,
+      "col": 8,
+      "claimed": true
+    },
+    {
+      "row": 8,
+      "col": 9,
+      "claimed": true
+    },
+    {
+      "row": 8,
+      "col": 10,
+      "claimed": false,
+      "terrain": "grass"
+    },
+    {
+      "row": 8,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass"
+    },
+    {
+      "row": 8,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 9,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 9,
+      "col": 1,
+      "claimed": false
+    },
+    {
+      "row": 9,
+      "col": 2,
+      "claimed": false
+    },
+    {
+      "row": 9,
+      "col": 3,
+      "claimed": true
+    },
+    {
+      "row": 9,
+      "col": 4,
+      "claimed": true
+    },
+    {
+      "row": 9,
+      "col": 5,
+      "claimed": true,
+      "terrain": "rubble"
+    },
+    {
+      "row": 9,
+      "col": 6,
+      "claimed": true
+    },
+    {
+      "row": 9,
+      "col": 7,
+      "claimed": true,
+      "terrain": "grass"
+    },
+    {
+      "row": 9,
+      "col": 8,
+      "claimed": true
+    },
+    {
+      "row": 9,
+      "col": 9,
+      "claimed": true
+    },
+    {
+      "row": 9,
+      "col": 10,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 9,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass"
+    },
+    {
+      "row": 9,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 10,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 10,
+      "col": 1,
+      "claimed": false
+    },
+    {
+      "row": 10,
+      "col": 2,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 10,
+      "col": 3,
+      "claimed": false
+    },
+    {
+      "row": 10,
+      "col": 4,
+      "claimed": false,
+      "terrain": "shack"
+    },
+    {
+      "row": 10,
+      "col": 5,
+      "claimed": false
+    },
+    {
+      "row": 10,
+      "col": 6,
+      "claimed": false,
+      "terrain": "pond"
+    },
+    {
+      "row": 10,
+      "col": 7,
+      "claimed": false,
+      "terrain": "pond"
+    },
+    {
+      "row": 10,
+      "col": 8,
+      "claimed": false,
+      "terrain": "pond"
+    },
+    {
+      "row": 10,
+      "col": 9,
+      "claimed": false
+    },
+    {
+      "row": 10,
+      "col": 10,
+      "claimed": false,
+      "terrain": "grass"
+    },
+    {
+      "row": 10,
+      "col": 11,
+      "claimed": false
+    },
+    {
+      "row": 10,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 11,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 11,
+      "col": 1,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 11,
+      "col": 2,
+      "claimed": false
+    },
+    {
+      "row": 11,
+      "col": 3,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 11,
+      "col": 4,
+      "claimed": false
+    },
+    {
+      "row": 11,
+      "col": 5,
+      "claimed": false,
+      "terrain": "pond"
+    },
+    {
+      "row": 11,
+      "col": 6,
+      "claimed": false,
+      "terrain": "pond"
+    },
+    {
+      "row": 11,
+      "col": 7,
+      "claimed": false,
+      "terrain": "pond"
+    },
+    {
+      "row": 11,
+      "col": 8,
+      "claimed": false,
+      "terrain": "pond"
+    },
+    {
+      "row": 11,
+      "col": 9,
+      "claimed": false,
+      "terrain": "rubble"
+    },
+    {
+      "row": 11,
+      "col": 10,
+      "claimed": false
+    },
+    {
+      "row": 11,
+      "col": 11,
+      "claimed": false,
+      "terrain": "pond"
+    },
+    {
+      "row": 11,
+      "col": 12,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 0,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 1,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 2,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 3,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 4,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 5,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 6,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 7,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 8,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 9,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 10,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 11,
+      "claimed": false
+    },
+    {
+      "row": 12,
+      "col": 12,
+      "claimed": false
+    }
+  ],
+  "buildings": [
+    {
+      "cfgId": 1,
+      "level": 1,
+      "hp": 1000,
+      "maxHp": 1000,
+      "row": 6,
+      "col": 6,
+      "model": "base_core.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 0,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 1,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 2,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 3,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 4,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 5,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 6,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 7,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 8,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 9,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 10,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 11,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 12,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 1,
+      "col": 0,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 2,
+      "col": 0,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 3,
+      "col": 0,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 4,
+      "col": 0,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 5,
+      "col": 0,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 6,
+      "col": 0,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 7,
+      "col": 0,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 8,
+      "col": 0,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 9,
+      "col": 0,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 10,
+      "col": 0,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 11,
+      "col": 0,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 0,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 1,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 2,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 3,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 4,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 5,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 6,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 7,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 8,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 9,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 10,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 11,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 12,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 1,
+      "col": 12,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 2,
+      "col": 12,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 3,
+      "col": 12,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 7,
+      "col": 12,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 8,
+      "col": 12,
+      "model": "base_ruin_2.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 9,
+      "col": 12,
+      "model": "base_ruin.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 10,
+      "col": 12,
+      "model": "base_ruin_1.glb"
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 11,
+      "col": 12,
+      "model": "base_ruin_2.glb"
+    }
+  ]
+}

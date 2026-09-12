@@ -1,0 +1,67 @@
+[
+  {
+    "id": 30024,
+    "name": "碎纸堆",
+    "triangles": 192
+  },
+  {
+    "id": 30025,
+    "name": "碎纸片",
+    "triangles": 176
+  },
+  {
+    "id": 30026,
+    "name": "地图残片",
+    "triangles": 214
+  },
+  {
+    "id": 30027,
+    "name": "拼接残片",
+    "triangles": 244
+  },
+  {
+    "id": 30028,
+    "name": "小块地图",
+    "triangles": 330
+  },
+  {
+    "id": 30029,
+    "name": "大块地图",
+    "triangles": 384
+  },
+  {
+    "id": 30030,
+    "name": "地图一角",
+    "triangles": 322
+  },
+  {
+    "id": 30031,
+    "name": "城区地图",
+    "triangles": 274
+  },
+  {
+    "id": 30032,
+    "name": "半张地图",
+    "triangles": 516
+  },
+  {
+    "id": 30033,
+    "name": "地图轮廓",
+    "triangles": 532
+  },
+  {
+    "id": 30034,
+    "name": "缺角地图",
+    "triangles": 260
+  },
+  {
+    "id": 30035,
+    "name": "旧世界地图",
+    "triangles": 232
+  },
+  {
+    "id": 30036,
+    "name": "完整藏点图",
+    "triangles": 334
+  }
+]

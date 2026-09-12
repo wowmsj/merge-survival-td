@@ -1,0 +1,19 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Blender 棋子样品</title>
+<style>body{margin:0;background:#272a2b;color:#eee4d1;font:16px system-ui}main{max-width:1100px;margin:auto;padding:24px}h1{font-size:26px}p{color:#c6baa6}section{margin:24px 0;padding:16px;background:#353737;border-radius:16px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}figure{margin:0;min-width:0;text-align:center}img,canvas{width:100%;aspect-ratio:1;display:block;background:#d4caba;border-radius:8px;object-fit:contain}figcaption{padding:10px}input{width:100%;margin:15px 0}a{color:#eabe72} @media(max-width:600px){main{padding:12px}.grid{grid-template-columns:1fr}h1{font-size:22px}}</style>
+<script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script>
+<style>canvas{width:100%!important;height:auto!important}</style>
+<main><h1>工具箱链 · 重制样品</h1><p>展示你指定的三件道具（非连续等级）：工具箱把手 L1、旧箱盖 L2、旧工具箱 L5。造型以现有原图为准。</p><div id="samples"></div><a href="toolbox-chain-rebuilt.blend">下载木箱重制源文件</a> · <a href="refined-samples.blend">下载已认可工具箱源文件</a></main>
+<script type="module">
+import * as T from 'three';import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+const loader=new GLTFLoader();window.sampleChecks=[];
+for(const [id,name] of [[10001,'工具箱把手 · L1'],[10002,'旧箱盖 · L2'],[10005,'完整旧工具箱 · L5']]){
+const newFile=id===10005?'prop_10005.glb':`rebuilt_${id}.glb`;
+const section=document.createElement('section');section.innerHTML=`<h2>${name}</h2><div class="grid"><figure><img src="/icons/icon_p${id}.png" alt="${name}原图"><figcaption>2D 原图</figcaption></figure></div><label>旋转角度 <input type="range" min="-180" max="180" value="0" aria-label="${name}旋转角度"></label><a href="prop_${id}.glb" download>下载新版 GLB</a>`;document.querySelector('#samples').append(section);const views=[];
+section.querySelector('a').href=newFile;
+for(const [file,label] of [[`../props/prop_${id}.glb`,'旧版 Three.js'],[newFile,id===10005?'已认可 Blender 样品':'重制 Blender 样品']]){
+const fig=document.createElement('figure'),renderer=new T.WebGLRenderer({antialias:true});renderer.setSize(400,400);renderer.setPixelRatio(1.5);renderer.toneMapping=T.ACESFilmicToneMapping;renderer.shadowMap.enabled=false;fig.append(renderer.domElement);const caption=document.createElement('figcaption');caption.textContent=label;fig.append(caption);section.querySelector('.grid').append(fig);
+const scene=new T.Scene();scene.background=new T.Color('#d4caba');scene.add(new T.HemisphereLight(0xffffff,0x867156,2));const light=new T.DirectionalLight(0xffeddb,2.4);light.position.set(-3,6,5);scene.add(light);const camera=new T.OrthographicCamera(-.57,.57,.57,-.57,.1,20);camera.position.set(-3,2.5,4);camera.lookAt(0,.415,0);
+const {scene:model}=await loader.loadAsync(file);scene.add(model);const bounds=new T.Box3().setFromObject(model),size=bounds.getSize(new T.Vector3());window.sampleChecks.push({id,label,size:size.toArray(),bottom:bounds.min.y});camera.lookAt(0,size.y/2,0);views.push({model,draw:()=>renderer.render(scene,camera)});renderer.render(scene,camera);
+}section.querySelector('input').oninput=e=>views.forEach(v=>{v.model.rotation.y=Number(e.target.value)*Math.PI/180;v.draw()});
+}window.samplesReady=true;
+</script></html>

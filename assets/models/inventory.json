@@ -1,0 +1,3426 @@
+{
+  "props": [
+    {
+      "id": 101,
+      "name": "金币",
+      "nextId": 0,
+      "reference": "assets/generated/prop_coin1.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 102,
+      "name": "钻石",
+      "nextId": 0,
+      "reference": "assets/generated/res-icon-diamond.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 103,
+      "name": "体力",
+      "nextId": 0,
+      "reference": "assets/generated/prop_energy1.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 104,
+      "name": "经验",
+      "nextId": 0,
+      "reference": "assets/generated/prop_exp.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 105,
+      "name": "星星",
+      "nextId": 0,
+      "reference": "assets/generated/res-icon-star.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 106,
+      "name": "装扮值",
+      "nextId": 0,
+      "reference": "assets/generated/prop_dress.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 107,
+      "name": "人民币",
+      "nextId": 0,
+      "reference": "assets/generated/prop_coin1.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 108,
+      "name": "美金",
+      "nextId": 0,
+      "reference": "assets/generated/prop_coin1.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 201,
+      "name": "一枚金币",
+      "nextId": 202,
+      "reference": "assets/generated/icon_p201.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 202,
+      "name": "少量金币",
+      "nextId": 203,
+      "reference": "assets/generated/icon_p202.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 203,
+      "name": "适量金币",
+      "nextId": 204,
+      "reference": "assets/generated/icon_p203.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 204,
+      "name": "中量金币",
+      "nextId": 205,
+      "reference": "assets/generated/icon_p204.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 205,
+      "name": "大量金币",
+      "nextId": 211,
+      "reference": "assets/generated/icon_p205.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 206,
+      "name": "一点钻石",
+      "nextId": 207,
+      "reference": "assets/generated/icon_p206.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 207,
+      "name": "少量钻石",
+      "nextId": 208,
+      "reference": "assets/generated/icon_p207.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 208,
+      "name": "大量钻石",
+      "nextId": 209,
+      "reference": "assets/generated/icon_p208.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 209,
+      "name": "超多钻石",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p209.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 210,
+      "name": "体力",
+      "nextId": 0,
+      "reference": "assets/generated/prop_energy1.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 211,
+      "name": "超多金币",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p211.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 301,
+      "name": "经验（绿色星星）",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p301.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 302,
+      "name": "经验",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p302.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 303,
+      "name": "经验",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p303.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 304,
+      "name": "经验",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p304.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 305,
+      "name": "装扮券",
+      "nextId": 0,
+      "reference": "assets/generated/prop_dress.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 306,
+      "name": "幸运福袋",
+      "nextId": 0,
+      "reference": "assets/generated/prop_fudai.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 401,
+      "name": "背包",
+      "nextId": 0,
+      "reference": "assets/generated/prop_bag.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 801,
+      "name": "一点能量",
+      "nextId": 802,
+      "reference": "assets/generated/icon_p801.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 802,
+      "name": "少量能量",
+      "nextId": 803,
+      "reference": "assets/generated/icon_p802.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 803,
+      "name": "适量能量",
+      "nextId": 804,
+      "reference": "assets/generated/icon_p803.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 804,
+      "name": "大量能量",
+      "nextId": 805,
+      "reference": "assets/generated/icon_p804.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 805,
+      "name": "超多能量",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p805.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 806,
+      "name": "小型应急电源",
+      "nextId": 0,
+      "reference": "assets/generated/icon_60020.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 807,
+      "name": "小型充电桩",
+      "nextId": 0,
+      "reference": "assets/generated/icon_60001.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 808,
+      "name": "小型拆解器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_60005.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 809,
+      "name": "小型超频器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_60024.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 901,
+      "name": "钻石瓶",
+      "nextId": 0,
+      "reference": "assets/generated/prop_ccbox.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 1001,
+      "name": "金币宝箱",
+      "nextId": 0,
+      "reference": "assets/generated/prop_coinbox.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 1002,
+      "name": "能量宝箱",
+      "nextId": 0,
+      "reference": "assets/generated/prop_powerbox.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 1003,
+      "name": "蓝色拾荒包",
+      "nextId": 1004,
+      "reference": "assets/generated/icon_p1003.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 1004,
+      "name": "大号蓝色拾荒包",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p1004.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 1005,
+      "name": "黑色拾荒包",
+      "nextId": 1006,
+      "reference": "assets/generated/icon_p1005.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 1006,
+      "name": "大号黑色拾荒包",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p1006.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 1007,
+      "name": "铁皮存钱罐",
+      "nextId": 1008,
+      "reference": "assets/generated/icon_p1007.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 1008,
+      "name": "中号铁皮存钱罐",
+      "nextId": 1009,
+      "reference": "assets/generated/icon_p1008.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 1009,
+      "name": "大号铁皮存钱罐",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p1009.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 1010,
+      "name": "补给空投",
+      "nextId": 0,
+      "reference": "assets/generated/prop_giftbox.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 2001,
+      "name": "简易工具箱",
+      "nextId": 0,
+      "reference": "assets/generated/prop_toolchest.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 2002,
+      "name": "工具种子箱",
+      "nextId": 0,
+      "reference": "assets/generated/prop_seedbox.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 2003,
+      "name": "军用物资箱",
+      "nextId": 0,
+      "reference": "assets/generated/prop_gymbox.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 2004,
+      "name": "冷藏工具箱",
+      "nextId": 0,
+      "reference": "assets/generated/prop_coolerbox.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 2005,
+      "name": "绿植补给",
+      "nextId": 0,
+      "reference": "assets/generated/prop_supply_plant.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 2006,
+      "name": "军用补给",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p2006.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 2007,
+      "name": "材料补给",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p2007.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 2008,
+      "name": "净水补给",
+      "nextId": 0,
+      "reference": "assets/generated/prop_supply_drink.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 2009,
+      "name": "技能补给",
+      "nextId": 0,
+      "reference": "assets/generated/prop_supply_course.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 2010,
+      "name": "废料回收",
+      "nextId": 0,
+      "reference": "assets/generated/prop_supply_recycle.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10001,
+      "name": "工具箱把手",
+      "nextId": 10002,
+      "reference": "assets/generated/icon_p10001.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10002,
+      "name": "旧箱盖",
+      "nextId": 10003,
+      "reference": "assets/generated/icon_p10002.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10003,
+      "name": "空木箱",
+      "nextId": 10004,
+      "reference": "assets/generated/icon_p10003.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10004,
+      "name": "零散五金盒",
+      "nextId": 10005,
+      "reference": "assets/generated/icon_p10004.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10005,
+      "name": "旧工具箱",
+      "nextId": 10006,
+      "reference": "assets/generated/icon_p10005.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10006,
+      "name": "拾荒工具箱",
+      "nextId": 10007,
+      "reference": "assets/generated/icon_p10006.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10007,
+      "name": "专业工具箱",
+      "nextId": 10008,
+      "reference": "assets/generated/icon_p10007.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10008,
+      "name": "双层工具箱",
+      "nextId": 10009,
+      "reference": "assets/generated/icon_p10008.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10009,
+      "name": "综合维修套组",
+      "nextId": 10010,
+      "reference": "assets/generated/icon_p10009.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10010,
+      "name": "多功能工具箱",
+      "nextId": 10011,
+      "reference": "assets/generated/icon_p10010.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10011,
+      "name": "维修工作台",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p10011.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10012,
+      "name": "螺丝刀",
+      "nextId": 10013,
+      "reference": "assets/generated/icon_p10012.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10013,
+      "name": "锤子",
+      "nextId": 10014,
+      "reference": "assets/generated/icon_p10013.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10014,
+      "name": "六角扳手",
+      "nextId": 10015,
+      "reference": "assets/generated/icon_p10014.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10015,
+      "name": "起钉器",
+      "nextId": 10016,
+      "reference": "assets/generated/icon_p10015.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10016,
+      "name": "夹子",
+      "nextId": 10017,
+      "reference": "assets/generated/icon_p10016.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10017,
+      "name": "木工锯",
+      "nextId": 10018,
+      "reference": "assets/generated/icon_p10017.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10018,
+      "name": "电工钳",
+      "nextId": 10019,
+      "reference": "assets/generated/icon_p10018.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10019,
+      "name": "电钻",
+      "nextId": 10020,
+      "reference": "assets/generated/icon_p10019.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10020,
+      "name": "抛光机",
+      "nextId": 10021,
+      "reference": "assets/generated/icon_p10020.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10021,
+      "name": "铆钉枪",
+      "nextId": 10022,
+      "reference": "assets/generated/icon_p10021.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10022,
+      "name": "木工电锯",
+      "nextId": 10023,
+      "reference": "assets/generated/icon_p10022.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10023,
+      "name": "管钳子",
+      "nextId": 10024,
+      "reference": "assets/generated/icon_p10023.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10024,
+      "name": "打磨机",
+      "nextId": 10025,
+      "reference": "assets/generated/icon_p10024.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10025,
+      "name": "气动枪",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p10025.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10026,
+      "name": "单只手套",
+      "nextId": 10027,
+      "reference": "assets/generated/icon_p10026.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10027,
+      "name": "一只手套",
+      "nextId": 10028,
+      "reference": "assets/generated/icon_p10027.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 10028,
+      "name": "装修手套",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p10028.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20001,
+      "name": "旧保温箱",
+      "nextId": 20002,
+      "reference": "assets/generated/icon_p20001.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20002,
+      "name": "手提保温箱",
+      "nextId": 20003,
+      "reference": "assets/generated/icon_p20002.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20003,
+      "name": "迷你冷藏箱",
+      "nextId": 20004,
+      "reference": "assets/generated/icon_p20003.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20004,
+      "name": "翻修冷藏箱",
+      "nextId": 20005,
+      "reference": "assets/generated/icon_p20004.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20005,
+      "name": "旧冷藏箱",
+      "nextId": 20006,
+      "reference": "assets/generated/icon_p20005.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20006,
+      "name": "保鲜冷藏箱",
+      "nextId": 20007,
+      "reference": "assets/generated/icon_p20006.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20007,
+      "name": "双层冷藏箱",
+      "nextId": 20008,
+      "reference": "assets/generated/icon_p20007.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20008,
+      "name": "加固冷藏箱",
+      "nextId": 20009,
+      "reference": "assets/generated/icon_p20008.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20009,
+      "name": "大型冷藏箱",
+      "nextId": 20010,
+      "reference": "assets/generated/icon_p20009.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20010,
+      "name": "双门冷藏库",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p20010.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20011,
+      "name": "脏水",
+      "nextId": 20012,
+      "reference": "assets/generated/icon_p20011.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20012,
+      "name": "沉淀水",
+      "nextId": 20013,
+      "reference": "assets/generated/icon_p20012.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20013,
+      "name": "煮沸水",
+      "nextId": 20014,
+      "reference": "assets/generated/icon_p20013.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20014,
+      "name": "过滤水",
+      "nextId": 20015,
+      "reference": "assets/generated/icon_p20014.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20015,
+      "name": "蒸馏水",
+      "nextId": 20016,
+      "reference": "assets/generated/icon_p20015.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20016,
+      "name": "纯净水",
+      "nextId": 20017,
+      "reference": "assets/generated/icon_p20016.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20017,
+      "name": "瓶装净水",
+      "nextId": 20018,
+      "reference": "assets/generated/icon_p20017.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20018,
+      "name": "电解质水",
+      "nextId": 20019,
+      "reference": "assets/generated/icon_p20018.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20019,
+      "name": "营养冲剂",
+      "nextId": 20020,
+      "reference": "assets/generated/icon_p20019.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20020,
+      "name": "行军水壶",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p20020.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20021,
+      "name": "干面包",
+      "nextId": 20022,
+      "reference": "assets/generated/icon_p20021.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20022,
+      "name": "硬面饼",
+      "nextId": 20023,
+      "reference": "assets/generated/icon_p20022.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20023,
+      "name": "压缩饼干",
+      "nextId": 20024,
+      "reference": "assets/generated/icon_p20023.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20024,
+      "name": "肉罐头",
+      "nextId": 20025,
+      "reference": "assets/generated/icon_p20024.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20025,
+      "name": "真空口粮",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p20025.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20026,
+      "name": "酒精喷雾",
+      "nextId": 20027,
+      "reference": "assets/generated/icon_p20026.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20027,
+      "name": "创可贴",
+      "nextId": 20028,
+      "reference": "assets/generated/icon_p20027.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20028,
+      "name": "止痛药",
+      "nextId": 20029,
+      "reference": "assets/generated/icon_p20028.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20029,
+      "name": "医疗包",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p20029.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20030,
+      "name": "废塑料板",
+      "nextId": 20031,
+      "reference": "assets/generated/icon_p20030.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20031,
+      "name": "一捆塑料板",
+      "nextId": 20032,
+      "reference": "assets/generated/icon_p20031.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20032,
+      "name": "旧塑料篮",
+      "nextId": 20033,
+      "reference": "assets/generated/icon_p20032.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20033,
+      "name": "杂物盒",
+      "nextId": 20034,
+      "reference": "assets/generated/icon_p20033.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20034,
+      "name": "拾荒篮",
+      "nextId": 20035,
+      "reference": "assets/generated/icon_p20034.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20035,
+      "name": "物资推车",
+      "nextId": 20036,
+      "reference": "assets/generated/icon_p20035.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20036,
+      "name": "轻便推车",
+      "nextId": 20037,
+      "reference": "assets/generated/icon_p20036.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20037,
+      "name": "建材推车",
+      "nextId": 20038,
+      "reference": "assets/generated/icon_p20037.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20038,
+      "name": "运货推车",
+      "nextId": 20039,
+      "reference": "assets/generated/icon_p20038.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20039,
+      "name": "满载推车",
+      "nextId": 20040,
+      "reference": "assets/generated/icon_p20039.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20040,
+      "name": "改装铲车",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p20040.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20041,
+      "name": "废橡胶带",
+      "nextId": 20042,
+      "reference": "assets/generated/icon_p20041.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20042,
+      "name": "旧绳圈",
+      "nextId": 20043,
+      "reference": "assets/generated/icon_p20042.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20043,
+      "name": "铁线圈",
+      "nextId": 20044,
+      "reference": "assets/generated/icon_p20043.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20044,
+      "name": "铁支架",
+      "nextId": 20045,
+      "reference": "assets/generated/icon_p20044.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20045,
+      "name": "废铁轮",
+      "nextId": 20046,
+      "reference": "assets/generated/icon_p20045.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20046,
+      "name": "弹簧卷",
+      "nextId": 20047,
+      "reference": "assets/generated/icon_p20046.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20047,
+      "name": "铁皮桶",
+      "nextId": 20048,
+      "reference": "assets/generated/icon_p20047.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20048,
+      "name": "废铁板",
+      "nextId": 20049,
+      "reference": "assets/generated/icon_p20048.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20049,
+      "name": "废钢架",
+      "nextId": 20050,
+      "reference": "assets/generated/icon_p20049.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20050,
+      "name": "钢梁",
+      "nextId": 20051,
+      "reference": "assets/generated/icon_p20050.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20051,
+      "name": "装甲钢板",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p20051.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20052,
+      "name": "弹簧零件",
+      "nextId": 20053,
+      "reference": "assets/generated/icon_p20052.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20053,
+      "name": "废铁块",
+      "nextId": 20054,
+      "reference": "assets/generated/icon_p20053.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20054,
+      "name": "铁棒",
+      "nextId": 20055,
+      "reference": "assets/generated/icon_p20054.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20055,
+      "name": "钢筋捆",
+      "nextId": 20056,
+      "reference": "assets/generated/icon_p20055.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20056,
+      "name": "钢架",
+      "nextId": 20057,
+      "reference": "assets/generated/icon_p20056.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20057,
+      "name": "加固钢架",
+      "nextId": 20058,
+      "reference": "assets/generated/icon_p20057.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20058,
+      "name": "装甲板",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p20058.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20059,
+      "name": "手绘告示",
+      "nextId": 20060,
+      "reference": "assets/generated/icon_p20059.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20060,
+      "name": "手摇喇叭",
+      "nextId": 20061,
+      "reference": "assets/generated/icon_p20060.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20061,
+      "name": "破旧收音机",
+      "nextId": 20062,
+      "reference": "assets/generated/icon_p20061.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20062,
+      "name": "堡垒电台",
+      "nextId": 20063,
+      "reference": "assets/generated/icon_p20062.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20063,
+      "name": "短波电台",
+      "nextId": 20064,
+      "reference": "assets/generated/icon_p20063.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20064,
+      "name": "无线电发射塔",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p20064.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20065,
+      "name": "体能手册",
+      "nextId": 20066,
+      "reference": "assets/generated/icon_p20065.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20066,
+      "name": "耐力手册",
+      "nextId": 20067,
+      "reference": "assets/generated/icon_p20066.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20067,
+      "name": "战术手册",
+      "nextId": 20068,
+      "reference": "assets/generated/icon_p20067.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20068,
+      "name": "精英手册",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p20068.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20069,
+      "name": "拾荒入门",
+      "nextId": 20070,
+      "reference": "assets/generated/icon_p20069.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20070,
+      "name": "搜索技巧",
+      "nextId": 20071,
+      "reference": "assets/generated/icon_p20070.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20071,
+      "name": "潜行技巧",
+      "nextId": 20072,
+      "reference": "assets/generated/icon_p20071.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20072,
+      "name": "格斗技巧",
+      "nextId": 20073,
+      "reference": "assets/generated/icon_p20072.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20073,
+      "name": "射击技巧",
+      "nextId": 20074,
+      "reference": "assets/generated/icon_p20073.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20074,
+      "name": "急救技巧",
+      "nextId": 20075,
+      "reference": "assets/generated/icon_p20074.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20075,
+      "name": "防御工事",
+      "nextId": 20076,
+      "reference": "assets/generated/icon_p20075.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20076,
+      "name": "陷阱制作",
+      "nextId": 20077,
+      "reference": "assets/generated/icon_p20076.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 20077,
+      "name": "生存大师",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p20077.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30001,
+      "name": "旧车轮",
+      "nextId": 30002,
+      "reference": "assets/generated/icon_p30001.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30002,
+      "name": "一对旧车轮",
+      "nextId": 30003,
+      "reference": "assets/generated/icon_p30002.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30003,
+      "name": "旧车架",
+      "nextId": 30004,
+      "reference": "assets/generated/icon_p30003.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30004,
+      "name": "空推车",
+      "nextId": 30005,
+      "reference": "assets/generated/icon_p30004.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30005,
+      "name": "拾荒推车",
+      "nextId": 30006,
+      "reference": "assets/generated/icon_p30005.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30006,
+      "name": "大型推车",
+      "nextId": 30007,
+      "reference": "assets/generated/icon_p30006.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30007,
+      "name": "满载推车",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p30007.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30008,
+      "name": "储物篮",
+      "nextId": 30009,
+      "reference": "assets/generated/icon_p30008.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30009,
+      "name": "抽屉零件",
+      "nextId": 30010,
+      "reference": "assets/generated/icon_p30009.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30010,
+      "name": "抽屉雏形",
+      "nextId": 30011,
+      "reference": "assets/generated/icon_p30010.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30011,
+      "name": "破损抽屉",
+      "nextId": 30012,
+      "reference": "assets/generated/icon_p30011.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30012,
+      "name": "储物抽屉",
+      "nextId": 30013,
+      "reference": "assets/generated/icon_p30012.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30013,
+      "name": "双层储物柜",
+      "nextId": 30014,
+      "reference": "assets/generated/icon_p30013.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30014,
+      "name": "双排储物柜",
+      "nextId": 30015,
+      "reference": "assets/generated/icon_p30014.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30015,
+      "name": "高级储物柜",
+      "nextId": 30016,
+      "reference": "assets/generated/icon_p30015.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30016,
+      "name": "豪华储物柜",
+      "nextId": 30017,
+      "reference": "assets/generated/icon_p30016.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30017,
+      "name": "防盗储物柜",
+      "nextId": 30018,
+      "reference": "assets/generated/icon_p30017.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30018,
+      "name": "密封储物柜",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p30018.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30019,
+      "name": "钥匙",
+      "nextId": 30020,
+      "reference": "assets/generated/icon_p30019.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30020,
+      "name": "钥匙串",
+      "nextId": 30021,
+      "reference": "assets/generated/icon_p30020.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30021,
+      "name": "感应钥匙",
+      "nextId": 30022,
+      "reference": "assets/generated/icon_p30021.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30022,
+      "name": "自动感应钥匙",
+      "nextId": 30023,
+      "reference": "assets/generated/icon_p30022.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30023,
+      "name": "感应手环",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p30023.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30024,
+      "name": "碎纸堆",
+      "nextId": 30025,
+      "reference": "assets/generated/icon_p30024.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30025,
+      "name": "碎纸片",
+      "nextId": 30026,
+      "reference": "assets/generated/icon_p30025.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30026,
+      "name": "地图残片",
+      "nextId": 30027,
+      "reference": "assets/generated/icon_p30026.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30027,
+      "name": "拼接残片",
+      "nextId": 30028,
+      "reference": "assets/generated/icon_p30027.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30028,
+      "name": "小块地图",
+      "nextId": 30029,
+      "reference": "assets/generated/icon_p30028.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30029,
+      "name": "大块地图",
+      "nextId": 30030,
+      "reference": "assets/generated/icon_p30029.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30030,
+      "name": "地图一角",
+      "nextId": 30031,
+      "reference": "assets/generated/icon_p30030.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30031,
+      "name": "城区地图",
+      "nextId": 30032,
+      "reference": "assets/generated/icon_p30031.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30032,
+      "name": "半张地图",
+      "nextId": 30033,
+      "reference": "assets/generated/icon_p30032.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30033,
+      "name": "地图轮廓",
+      "nextId": 30034,
+      "reference": "assets/generated/icon_p30033.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30034,
+      "name": "缺角地图",
+      "nextId": 30035,
+      "reference": "assets/generated/icon_p30034.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30035,
+      "name": "旧世界地图",
+      "nextId": 30036,
+      "reference": "assets/generated/icon_p30035.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30036,
+      "name": "完整藏点图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p30036.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30037,
+      "name": "旧斗篷",
+      "nextId": 30038,
+      "reference": "assets/generated/icon_p30037.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30038,
+      "name": "破碎烧杯",
+      "nextId": 30039,
+      "reference": "assets/generated/icon_p30038.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30039,
+      "name": "实验笔记",
+      "nextId": 30040,
+      "reference": "assets/generated/icon_p30039.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30040,
+      "name": "病毒样本",
+      "nextId": 30041,
+      "reference": "assets/generated/icon_p30040.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30041,
+      "name": "泄漏警报",
+      "nextId": 30042,
+      "reference": "assets/generated/icon_p30041.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30042,
+      "name": "空荡街道照片",
+      "nextId": 30043,
+      "reference": "assets/generated/icon_p30042.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30043,
+      "name": "废弃医院钥匙",
+      "nextId": 30044,
+      "reference": "assets/generated/icon_p30043.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30044,
+      "name": "隔离区通行证",
+      "nextId": 30045,
+      "reference": "assets/generated/icon_p30044.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30045,
+      "name": "零号病人档案",
+      "nextId": 30046,
+      "reference": "assets/generated/icon_p30045.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30046,
+      "name": "研究员加密硬盘",
+      "nextId": 30047,
+      "reference": "assets/generated/icon_p30046.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30047,
+      "name": "实验日志残页",
+      "nextId": 30048,
+      "reference": "assets/generated/icon_p30047.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30048,
+      "name": "病毒真相",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p30048.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30049,
+      "name": "遗失的眼镜",
+      "nextId": 30050,
+      "reference": "assets/generated/icon_p30049.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30050,
+      "name": "遗失的遮阳帽",
+      "nextId": 30051,
+      "reference": "assets/generated/icon_p30050.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30051,
+      "name": "遗失的拳套",
+      "nextId": 30052,
+      "reference": "assets/generated/icon_p30051.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30052,
+      "name": "失物篮",
+      "nextId": 30053,
+      "reference": "assets/generated/icon_p30052.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30053,
+      "name": "大型失物篮",
+      "nextId": 30054,
+      "reference": "assets/generated/icon_p30053.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30054,
+      "name": "失物招领处",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p30054.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30055,
+      "name": "旧U盘",
+      "nextId": 30056,
+      "reference": "assets/generated/icon_p30055.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30056,
+      "name": "旧鼠标",
+      "nextId": 30057,
+      "reference": "assets/generated/icon_p30056.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30057,
+      "name": "游戏手柄",
+      "nextId": 30058,
+      "reference": "assets/generated/icon_p30057.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30058,
+      "name": "随身听",
+      "nextId": 30059,
+      "reference": "assets/generated/icon_p30058.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30059,
+      "name": "蓝牙耳机",
+      "nextId": 30060,
+      "reference": "assets/generated/icon_p30059.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30060,
+      "name": "投影仪",
+      "nextId": 30061,
+      "reference": "assets/generated/icon_p30060.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30061,
+      "name": "VR眼镜",
+      "nextId": 30062,
+      "reference": "assets/generated/icon_p30061.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30062,
+      "name": "旧物收藏箱",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p30062.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30063,
+      "name": "旧掌机",
+      "nextId": 30064,
+      "reference": "assets/generated/icon_p30063.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30064,
+      "name": "便携终端",
+      "nextId": 30065,
+      "reference": "assets/generated/icon_p30064.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30065,
+      "name": "数据终端",
+      "nextId": 30066,
+      "reference": "assets/generated/icon_p30065.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30066,
+      "name": "军用终端",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p30066.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30067,
+      "name": "补给篮",
+      "nextId": 30068,
+      "reference": "assets/generated/icon_p30067.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30068,
+      "name": "帆布背包",
+      "nextId": 30069,
+      "reference": "assets/generated/icon_p30068.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30069,
+      "name": "远征行囊",
+      "nextId": 30070,
+      "reference": "assets/generated/icon_p30069.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30070,
+      "name": "满载行囊",
+      "nextId": 30071,
+      "reference": "assets/generated/icon_p30070.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30071,
+      "name": "探索者背包",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p30071.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30072,
+      "name": "弹弓",
+      "nextId": 30073,
+      "reference": "assets/generated/icon_p30072.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30073,
+      "name": "猎弓",
+      "nextId": 30074,
+      "reference": "assets/generated/icon_p30073.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30074,
+      "name": "劲弩",
+      "nextId": 30075,
+      "reference": "assets/generated/icon_p30074.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30075,
+      "name": "猎枪",
+      "nextId": 30076,
+      "reference": "assets/generated/icon_p30075.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30076,
+      "name": "军用步枪",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p30076.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30077,
+      "name": "小鸟精灵",
+      "nextId": 30078,
+      "reference": "assets/generated/icon_p30077.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30078,
+      "name": "小鸟游侠",
+      "nextId": 30079,
+      "reference": "assets/generated/icon_p30078.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30079,
+      "name": "小鸟法师",
+      "nextId": 30080,
+      "reference": "assets/generated/icon_p30079.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30080,
+      "name": "小鸟勇者",
+      "nextId": 30081,
+      "reference": "assets/generated/icon_p30080.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30081,
+      "name": "小鸟骑士",
+      "nextId": 30082,
+      "reference": "assets/generated/icon_p30081.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 30082,
+      "name": "小鸟公主",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p30082.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40001,
+      "name": "破碎花盆",
+      "nextId": 40002,
+      "reference": "assets/generated/icon_p40001.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40002,
+      "name": "残破花盆",
+      "nextId": 40003,
+      "reference": "assets/generated/icon_p40002.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40003,
+      "name": "破损花盆",
+      "nextId": 40004,
+      "reference": "assets/generated/icon_p40003.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40004,
+      "name": "组装花盆",
+      "nextId": 40005,
+      "reference": "assets/generated/icon_p40004.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40005,
+      "name": "花盆泥胚",
+      "nextId": 40006,
+      "reference": "assets/generated/icon_p40005.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40006,
+      "name": "新漆花盆",
+      "nextId": 40007,
+      "reference": "assets/generated/icon_p40006.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40007,
+      "name": "空花盆",
+      "nextId": 40008,
+      "reference": "assets/generated/icon_p40007.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40008,
+      "name": "培养土盆",
+      "nextId": 40009,
+      "reference": "assets/generated/icon_p40008.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40009,
+      "name": "盆栽小苗",
+      "nextId": 40010,
+      "reference": "assets/generated/icon_p40009.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40010,
+      "name": "盆栽",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p40010.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40011,
+      "name": "小种子包",
+      "nextId": 40012,
+      "reference": "assets/generated/icon_p40011.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40012,
+      "name": "加量种子包",
+      "nextId": 40013,
+      "reference": "assets/generated/icon_p40012.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40013,
+      "name": "大种子包",
+      "nextId": 40014,
+      "reference": "assets/generated/icon_p40013.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40014,
+      "name": "种子堆",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p40014.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40015,
+      "name": "空种子袋",
+      "nextId": 40016,
+      "reference": "assets/generated/icon_p40015.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40016,
+      "name": "少量种子袋",
+      "nextId": 40017,
+      "reference": "assets/generated/icon_p40016.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40017,
+      "name": "一叠种子袋",
+      "nextId": 40018,
+      "reference": "assets/generated/icon_p40017.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40018,
+      "name": "一堆种子袋",
+      "nextId": 40019,
+      "reference": "assets/generated/icon_p40018.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40019,
+      "name": "麻袋布",
+      "nextId": 40020,
+      "reference": "assets/generated/icon_p40019.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40020,
+      "name": "缝纫布料",
+      "nextId": 40021,
+      "reference": "assets/generated/icon_p40020.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40021,
+      "name": "布艺口袋",
+      "nextId": 40022,
+      "reference": "assets/generated/icon_p40021.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40022,
+      "name": "帆布背包",
+      "nextId": 40023,
+      "reference": "assets/generated/icon_p40022.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40023,
+      "name": "防弹夹层",
+      "nextId": 40024,
+      "reference": "assets/generated/icon_p40023.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40024,
+      "name": "自制防弹衣",
+      "nextId": 40025,
+      "reference": "assets/generated/icon_p40024.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40025,
+      "name": "加固防弹衣",
+      "nextId": 40026,
+      "reference": "assets/generated/icon_p40025.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40026,
+      "name": "守卫重甲",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p40026.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40027,
+      "name": "种子",
+      "nextId": 40028,
+      "reference": "assets/generated/icon_p40027.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40028,
+      "name": "温室花苗",
+      "nextId": 40029,
+      "reference": "assets/generated/icon_p40028.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40029,
+      "name": "花苗",
+      "nextId": 40030,
+      "reference": "assets/generated/icon_p40029.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40030,
+      "name": "绿植",
+      "nextId": 40031,
+      "reference": "assets/generated/icon_p40030.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40031,
+      "name": "发财树",
+      "nextId": 40032,
+      "reference": "assets/generated/icon_p40031.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40032,
+      "name": "花树",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p40032.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40033,
+      "name": "变异幼虫",
+      "nextId": 40034,
+      "reference": "assets/generated/icon_p40033.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40034,
+      "name": "硬壳虫蛹",
+      "nextId": 40035,
+      "reference": "assets/generated/icon_p40034.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40035,
+      "name": "变异成虫",
+      "nextId": 40036,
+      "reference": "assets/generated/icon_p40035.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40036,
+      "name": "荧光飞蛾",
+      "nextId": 40037,
+      "reference": "assets/generated/icon_p40036.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40037,
+      "name": "赤翼飞蛾",
+      "nextId": 40038,
+      "reference": "assets/generated/icon_p40037.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40038,
+      "name": "变异萤后",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p40038.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40039,
+      "name": "藤绳",
+      "nextId": 40040,
+      "reference": "assets/generated/icon_p40039.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40040,
+      "name": "破草篮",
+      "nextId": 40041,
+      "reference": "assets/generated/icon_p40040.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40041,
+      "name": "编织篮",
+      "nextId": 40042,
+      "reference": "assets/generated/icon_p40041.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40042,
+      "name": "藤编篮",
+      "nextId": 40043,
+      "reference": "assets/generated/icon_p40042.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40043,
+      "name": "小药篮",
+      "nextId": 40044,
+      "reference": "assets/generated/icon_p40043.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40044,
+      "name": "大药篮",
+      "nextId": 40045,
+      "reference": "assets/generated/icon_p40044.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40045,
+      "name": "庆功药篮",
+      "nextId": 40046,
+      "reference": "assets/generated/icon_p40045.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40046,
+      "name": "精制药篮",
+      "nextId": 40047,
+      "reference": "assets/generated/icon_p40046.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40047,
+      "name": "豪华药篮",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p40047.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40048,
+      "name": "野生艾草",
+      "nextId": 40049,
+      "reference": "assets/generated/icon_p40048.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40049,
+      "name": "瓶装艾草",
+      "nextId": 40050,
+      "reference": "assets/generated/icon_p40049.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40050,
+      "name": "干薄荷",
+      "nextId": 40051,
+      "reference": "assets/generated/icon_p40050.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40051,
+      "name": "薄荷药罐",
+      "nextId": 40052,
+      "reference": "assets/generated/icon_p40051.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40052,
+      "name": "散装草药",
+      "nextId": 40053,
+      "reference": "assets/generated/icon_p40052.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40053,
+      "name": "草药香囊",
+      "nextId": 40054,
+      "reference": "assets/generated/icon_p40053.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40054,
+      "name": "精选药材",
+      "nextId": 40055,
+      "reference": "assets/generated/icon_p40054.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40055,
+      "name": "捆装药材",
+      "nextId": 40056,
+      "reference": "assets/generated/icon_p40055.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 40056,
+      "name": "急救药箱",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p40056.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50001,
+      "name": "电池",
+      "nextId": 50002,
+      "reference": "assets/generated/icon_p50001.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50002,
+      "name": "加强电池",
+      "nextId": 50003,
+      "reference": "assets/generated/icon_p50002.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50003,
+      "name": "CPU",
+      "nextId": 50004,
+      "reference": "assets/generated/icon_p50003.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50004,
+      "name": "芯片板",
+      "nextId": 50005,
+      "reference": "assets/generated/icon_p50004.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50005,
+      "name": "陈旧机器人",
+      "nextId": 50006,
+      "reference": "assets/generated/icon_p50005.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50006,
+      "name": "扫地机器人",
+      "nextId": 50007,
+      "reference": "assets/generated/icon_p50006.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50007,
+      "name": "维修机器人",
+      "nextId": 50008,
+      "reference": "assets/generated/icon_p50007.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50008,
+      "name": "焊接机器人",
+      "nextId": 50009,
+      "reference": "assets/generated/icon_p50008.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50009,
+      "name": "巡逻机器人",
+      "nextId": 50010,
+      "reference": "assets/generated/icon_p50009.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50010,
+      "name": "哨卫机器人",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p50010.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50011,
+      "name": "破包装纸",
+      "nextId": 50012,
+      "reference": "assets/generated/icon_p50011.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50012,
+      "name": "鱼骨头",
+      "nextId": 50013,
+      "reference": "assets/generated/icon_p50012.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50013,
+      "name": "饮料杯",
+      "nextId": 50014,
+      "reference": "assets/generated/icon_p50013.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50014,
+      "name": "快餐盒",
+      "nextId": 50015,
+      "reference": "assets/generated/icon_p50014.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50015,
+      "name": "废料箱",
+      "nextId": 50016,
+      "reference": "assets/generated/icon_p50015.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50016,
+      "name": "大废料袋",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p50016.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50017,
+      "name": "变异幼鼠",
+      "nextId": 50018,
+      "reference": "assets/generated/icon_p50017.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50018,
+      "name": "变异大鼠",
+      "nextId": 50019,
+      "reference": "assets/generated/icon_p50018.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50019,
+      "name": "变异肥鼠",
+      "nextId": 50020,
+      "reference": "assets/generated/icon_p50019.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50020,
+      "name": "变异双鼠",
+      "nextId": 50021,
+      "reference": "assets/generated/icon_p50020.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50021,
+      "name": "变异鼠群",
+      "nextId": 50036,
+      "reference": "assets/generated/icon_p50021.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50022,
+      "name": "猫窝",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p50022.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50036,
+      "name": "实验鼠笼",
+      "nextId": 0,
+      "reference": "assets/generated/icon_ob1.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50023,
+      "name": "小猫窝",
+      "nextId": 50024,
+      "reference": "assets/generated/icon_oc1.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50024,
+      "name": "田园猫",
+      "nextId": 50025,
+      "reference": "assets/generated/icon_p50024.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50025,
+      "name": "小灰猫",
+      "nextId": 50026,
+      "reference": "assets/generated/icon_p50025.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50026,
+      "name": "时髦猫",
+      "nextId": 50027,
+      "reference": "assets/generated/icon_p50026.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50027,
+      "name": "小黄猫",
+      "nextId": 50028,
+      "reference": "assets/generated/icon_p50027.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50028,
+      "name": "大白猫",
+      "nextId": 50029,
+      "reference": "assets/generated/icon_p50028.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50029,
+      "name": "小黑猫",
+      "nextId": 50030,
+      "reference": "assets/generated/icon_p50029.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50030,
+      "name": "大灰猫",
+      "nextId": 50031,
+      "reference": "assets/generated/icon_p50030.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50031,
+      "name": "大肥猫",
+      "nextId": 50032,
+      "reference": "assets/generated/icon_p50031.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50032,
+      "name": "叮当猫",
+      "nextId": 50033,
+      "reference": "assets/generated/icon_p50032.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50033,
+      "name": "老虎猫",
+      "nextId": 50034,
+      "reference": "assets/generated/icon_p50033.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50034,
+      "name": "小花猫",
+      "nextId": 50035,
+      "reference": "assets/generated/icon_p50034.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 50035,
+      "name": "小猫猫",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p50035.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60001,
+      "name": "小型应急电源",
+      "nextId": 60002,
+      "reference": "assets/generated/icon_p60001.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60002,
+      "name": "中型应急电源",
+      "nextId": 60003,
+      "reference": "assets/generated/icon_p60002.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60003,
+      "name": "大型应急电源",
+      "nextId": 60004,
+      "reference": "assets/generated/icon_p60003.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60004,
+      "name": "超量应急电源",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p60004.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60005,
+      "name": "小型充电桩",
+      "nextId": 60006,
+      "reference": "assets/generated/icon_p60005.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60006,
+      "name": "中型充电桩",
+      "nextId": 60007,
+      "reference": "assets/generated/icon_p60006.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60007,
+      "name": "大型充电桩",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p60007.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60008,
+      "name": "小型拆解器",
+      "nextId": 60009,
+      "reference": "assets/generated/icon_p60008.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60009,
+      "name": "中型拆解器",
+      "nextId": 60010,
+      "reference": "assets/generated/icon_p60009.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60010,
+      "name": "大型拆解器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p60010.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60011,
+      "name": "小型超频器",
+      "nextId": 60012,
+      "reference": "assets/generated/icon_p60011.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60012,
+      "name": "中型超频器",
+      "nextId": 60013,
+      "reference": "assets/generated/icon_p60012.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60013,
+      "name": "大型超频器",
+      "nextId": 60014,
+      "reference": "assets/generated/icon_p60013.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60014,
+      "name": "重型超频器",
+      "nextId": 60015,
+      "reference": "assets/generated/icon_p60014.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60015,
+      "name": "极限超频器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p60015.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60016,
+      "name": "工具强化芯片",
+      "nextId": 0,
+      "reference": "assets/generated/icon_60016.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60017,
+      "name": "冷藏强化芯片",
+      "nextId": 0,
+      "reference": "assets/generated/icon_60017.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60018,
+      "name": "装备强化芯片",
+      "nextId": 0,
+      "reference": "assets/generated/icon_60018.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60019,
+      "name": "超级强化芯片",
+      "nextId": 0,
+      "reference": "assets/generated/icon_60019.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60020,
+      "name": "全能强化芯片",
+      "nextId": 0,
+      "reference": "assets/generated/icon_60020.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60021,
+      "name": "战术背包",
+      "nextId": 0,
+      "reference": "assets/generated/prop_bag.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60022,
+      "name": "老式怀表",
+      "nextId": 0,
+      "reference": "assets/generated/icon_60022.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60023,
+      "name": "强力清洁剂",
+      "nextId": 0,
+      "reference": "assets/generated/icon_60023.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60024,
+      "name": "神秘零件",
+      "nextId": 60025,
+      "reference": "assets/generated/icon_p60024.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60025,
+      "name": "核心残片",
+      "nextId": 60026,
+      "reference": "assets/generated/icon_p60025.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60026,
+      "name": "核心基座",
+      "nextId": 60027,
+      "reference": "assets/generated/icon_p60026.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60027,
+      "name": "合成核心原型",
+      "nextId": 60028,
+      "reference": "assets/generated/icon_p60027.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60028,
+      "name": "TG-I型核心",
+      "nextId": 60029,
+      "reference": "assets/generated/icon_p60028.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60029,
+      "name": "合成核心·二型",
+      "nextId": 60030,
+      "reference": "assets/generated/icon_p60029.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60030,
+      "name": "合成核心·三型",
+      "nextId": 60031,
+      "reference": "assets/generated/icon_p60030.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 60031,
+      "name": "完整合成核心",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p60031.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70001,
+      "name": "箭塔蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70001.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70101,
+      "name": "箭塔蓝图碎片",
+      "nextId": 70102,
+      "reference": "assets/generated/icon_p70101.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70102,
+      "name": "箭塔图纸",
+      "nextId": 70103,
+      "reference": "assets/generated/icon_p70102.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70103,
+      "name": "箭塔设计图",
+      "nextId": 70104,
+      "reference": "assets/generated/icon_p70103.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70104,
+      "name": "箭塔蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70104.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70002,
+      "name": "炮塔蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70002.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70105,
+      "name": "炮塔蓝图碎片",
+      "nextId": 70106,
+      "reference": "assets/generated/icon_p70105.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70106,
+      "name": "炮塔图纸",
+      "nextId": 70107,
+      "reference": "assets/generated/icon_p70106.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70107,
+      "name": "炮塔设计图",
+      "nextId": 70108,
+      "reference": "assets/generated/icon_p70107.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70108,
+      "name": "炮塔蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70108.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70003,
+      "name": "电磁塔蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70003.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70109,
+      "name": "电磁塔蓝图碎片",
+      "nextId": 70110,
+      "reference": "assets/generated/icon_p70109.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70110,
+      "name": "电磁塔图纸",
+      "nextId": 70111,
+      "reference": "assets/generated/icon_p70110.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70111,
+      "name": "电磁塔设计图",
+      "nextId": 70112,
+      "reference": "assets/generated/icon_p70111.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70112,
+      "name": "电磁塔蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70112.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70004,
+      "name": "冰冻塔蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70004.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70113,
+      "name": "冰冻塔蓝图碎片",
+      "nextId": 70114,
+      "reference": "assets/generated/icon_p70113.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70114,
+      "name": "冰冻塔图纸",
+      "nextId": 70115,
+      "reference": "assets/generated/icon_p70114.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70115,
+      "name": "冰冻塔设计图",
+      "nextId": 70116,
+      "reference": "assets/generated/icon_p70115.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70116,
+      "name": "冰冻塔蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70116.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70005,
+      "name": "农场蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70005.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70117,
+      "name": "农场蓝图碎片",
+      "nextId": 70118,
+      "reference": "assets/generated/icon_p70117.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70118,
+      "name": "农场图纸",
+      "nextId": 70119,
+      "reference": "assets/generated/icon_p70118.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70119,
+      "name": "农场设计图",
+      "nextId": 70120,
+      "reference": "assets/generated/icon_p70119.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70120,
+      "name": "农场蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70120.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70006,
+      "name": "医疗站蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70006.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70121,
+      "name": "医疗站蓝图碎片",
+      "nextId": 70122,
+      "reference": "assets/generated/icon_p70121.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70122,
+      "name": "医疗站图纸",
+      "nextId": 70123,
+      "reference": "assets/generated/icon_p70122.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70123,
+      "name": "医疗站设计图",
+      "nextId": 70124,
+      "reference": "assets/generated/icon_p70123.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70124,
+      "name": "医疗站蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70124.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70007,
+      "name": "电站蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70007.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70125,
+      "name": "电站蓝图碎片",
+      "nextId": 70126,
+      "reference": "assets/generated/icon_p70125.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70126,
+      "name": "电站图纸",
+      "nextId": 70127,
+      "reference": "assets/generated/icon_p70126.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70127,
+      "name": "电站设计图",
+      "nextId": 70128,
+      "reference": "assets/generated/icon_p70127.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70128,
+      "name": "电站蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70128.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70008,
+      "name": "住房蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70008.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70129,
+      "name": "住房蓝图碎片",
+      "nextId": 70130,
+      "reference": "assets/generated/icon_p70129.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70130,
+      "name": "住房图纸",
+      "nextId": 70131,
+      "reference": "assets/generated/icon_p70130.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70131,
+      "name": "住房设计图",
+      "nextId": 70132,
+      "reference": "assets/generated/icon_p70131.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70132,
+      "name": "住房蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70132.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70009,
+      "name": "仓库蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70009.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70133,
+      "name": "仓库蓝图碎片",
+      "nextId": 70134,
+      "reference": "assets/generated/icon_p70133.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70134,
+      "name": "仓库图纸",
+      "nextId": 70135,
+      "reference": "assets/generated/icon_p70134.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70135,
+      "name": "仓库设计图",
+      "nextId": 70136,
+      "reference": "assets/generated/icon_p70135.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70136,
+      "name": "仓库蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70136.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70010,
+      "name": "工坊蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70010.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70137,
+      "name": "工坊蓝图碎片",
+      "nextId": 70138,
+      "reference": "assets/generated/icon_p70137.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70138,
+      "name": "工坊图纸",
+      "nextId": 70139,
+      "reference": "assets/generated/icon_p70138.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70139,
+      "name": "工坊设计图",
+      "nextId": 70140,
+      "reference": "assets/generated/icon_p70139.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70140,
+      "name": "工坊蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70140.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70011,
+      "name": "收集站蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70011.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70141,
+      "name": "收集站蓝图碎片",
+      "nextId": 70142,
+      "reference": "assets/generated/icon_p70141.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70142,
+      "name": "收集站图纸",
+      "nextId": 70143,
+      "reference": "assets/generated/icon_p70142.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70143,
+      "name": "收集站设计图",
+      "nextId": 70144,
+      "reference": "assets/generated/icon_p70143.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70144,
+      "name": "收集站蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70144.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70012,
+      "name": "地刺蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70012.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70145,
+      "name": "地刺蓝图碎片",
+      "nextId": 70146,
+      "reference": "assets/generated/icon_p70145.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70146,
+      "name": "地刺图纸",
+      "nextId": 70147,
+      "reference": "assets/generated/icon_p70146.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70147,
+      "name": "地刺设计图",
+      "nextId": 70148,
+      "reference": "assets/generated/icon_p70147.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70148,
+      "name": "地刺蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70148.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70013,
+      "name": "地雷蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70013.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70149,
+      "name": "地雷蓝图碎片",
+      "nextId": 70150,
+      "reference": "assets/generated/icon_p70149.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70150,
+      "name": "地雷图纸",
+      "nextId": 70151,
+      "reference": "assets/generated/icon_p70150.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70151,
+      "name": "地雷设计图",
+      "nextId": 70152,
+      "reference": "assets/generated/icon_p70151.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70152,
+      "name": "地雷蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70152.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70014,
+      "name": "减速沼泽蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70014.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70153,
+      "name": "减速沼泽蓝图碎片",
+      "nextId": 70154,
+      "reference": "assets/generated/icon_p70153.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70154,
+      "name": "减速沼泽图纸",
+      "nextId": 70155,
+      "reference": "assets/generated/icon_p70154.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70155,
+      "name": "减速沼泽设计图",
+      "nextId": 70156,
+      "reference": "assets/generated/icon_p70155.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70156,
+      "name": "减速沼泽蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70156.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70015,
+      "name": "木墙蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70015.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70157,
+      "name": "木墙蓝图碎片",
+      "nextId": 70158,
+      "reference": "assets/generated/icon_p70157.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70158,
+      "name": "木墙图纸",
+      "nextId": 70159,
+      "reference": "assets/generated/icon_p70158.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70159,
+      "name": "木墙设计图",
+      "nextId": 70160,
+      "reference": "assets/generated/icon_p70159.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70160,
+      "name": "木墙蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70160.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70016,
+      "name": "石墙蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70016.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70161,
+      "name": "石墙蓝图碎片",
+      "nextId": 70162,
+      "reference": "assets/generated/icon_p70161.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70162,
+      "name": "石墙图纸",
+      "nextId": 70163,
+      "reference": "assets/generated/icon_p70162.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70163,
+      "name": "石墙设计图",
+      "nextId": 70164,
+      "reference": "assets/generated/icon_p70163.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70164,
+      "name": "石墙蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70164.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70017,
+      "name": "铁墙蓝图发射器",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70017.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70165,
+      "name": "铁墙蓝图碎片",
+      "nextId": 70166,
+      "reference": "assets/generated/icon_p70165.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70166,
+      "name": "铁墙图纸",
+      "nextId": 70167,
+      "reference": "assets/generated/icon_p70166.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70167,
+      "name": "铁墙设计图",
+      "nextId": 70168,
+      "reference": "assets/generated/icon_p70167.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70168,
+      "name": "铁墙蓝图",
+      "nextId": 0,
+      "reference": "assets/generated/icon_p70168.png",
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70169,
+      "name": "弹药库蓝图",
+      "nextId": 0,
+      "reference": null,
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70170,
+      "name": "雷达站蓝图",
+      "nextId": 0,
+      "reference": null,
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70171,
+      "name": "维修站蓝图",
+      "nextId": 0,
+      "reference": null,
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70201,
+      "name": "弹药库蓝图碎片",
+      "nextId": 70202,
+      "reference": null,
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70202,
+      "name": "弹药库蓝图",
+      "nextId": 70203,
+      "reference": null,
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70203,
+      "name": "弹药库蓝图",
+      "nextId": 70169,
+      "reference": null,
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70205,
+      "name": "雷达站蓝图碎片",
+      "nextId": 70206,
+      "reference": null,
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70206,
+      "name": "雷达站蓝图",
+      "nextId": 70207,
+      "reference": null,
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70207,
+      "name": "雷达站蓝图",
+      "nextId": 70170,
+      "reference": null,
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70209,
+      "name": "维修站蓝图碎片",
+      "nextId": 70210,
+      "reference": null,
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70210,
+      "name": "维修站蓝图",
+      "nextId": 70211,
+      "reference": null,
+      "status": "prototype-exported"
+    },
+    {
+      "id": 70211,
+      "name": "维修站蓝图",
+      "nextId": 70171,
+      "reference": null,
+      "status": "prototype-exported"
+    }
+  ],
+  "buildings": [
+    {
+      "id": 1,
+      "name": "核心基地",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 101,
+      "name": "箭塔",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 102,
+      "name": "炮塔",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 103,
+      "name": "电磁塔",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 104,
+      "name": "冰冻塔",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 202,
+      "name": "医疗站",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 203,
+      "name": "风力发电站",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 204,
+      "name": "前哨站",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 205,
+      "name": "仓库",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 206,
+      "name": "工坊",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 207,
+      "name": "收集站",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 208,
+      "name": "弹药库",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 209,
+      "name": "雷达站",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 210,
+      "name": "维修站",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 301,
+      "name": "地刺",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 302,
+      "name": "地雷",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 303,
+      "name": "减速沼泽",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 401,
+      "name": "木墙",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 402,
+      "name": "石墙",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 403,
+      "name": "铁墙",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 901,
+      "name": "废墟",
+      "status": "out-of-this-prop-batch"
+    }
+  ],
+  "heroes": [
+    {
+      "key": "xiaoman",
+      "name": "小满",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "key": "laoqiang",
+      "name": "老枪",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "key": "pangshen",
+      "name": "胖婶",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "key": "doctor",
+      "name": "白医生",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "key": "xiaodian",
+      "name": "小电",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "key": "douzi",
+      "name": "豆子",
+      "status": "out-of-this-prop-batch"
+    }
+  ],
+  "zombies": [
+    {
+      "id": 1,
+      "name": "普通僵尸",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 2,
+      "name": "快速僵尸",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 3,
+      "name": "坦克僵尸",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 4,
+      "name": "自爆僵尸",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 5,
+      "name": "精英僵尸",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 6,
+      "name": "Boss僵尸",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 7,
+      "name": "飞行僵尸",
+      "status": "out-of-this-prop-batch"
+    },
+    {
+      "id": 8,
+      "name": "钻地僵尸",
+      "status": "out-of-this-prop-batch"
+    }
+  ]
+}

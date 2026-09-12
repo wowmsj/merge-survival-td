@@ -1,0 +1,57 @@
+[
+  {
+    "id": 30008,
+    "name": "储物篮",
+    "triangles": 296
+  },
+  {
+    "id": 30009,
+    "name": "抽屉零件",
+    "triangles": 92
+  },
+  {
+    "id": 30010,
+    "name": "抽屉雏形",
+    "triangles": 60
+  },
+  {
+    "id": 30011,
+    "name": "破损抽屉",
+    "triangles": 162
+  },
+  {
+    "id": 30012,
+    "name": "储物抽屉",
+    "triangles": 122
+  },
+  {
+    "id": 30013,
+    "name": "双层储物柜",
+    "triangles": 292
+  },
+  {
+    "id": 30014,
+    "name": "双排储物柜",
+    "triangles": 484
+  },
+  {
+    "id": 30015,
+    "name": "高级储物柜",
+    "triangles": 190
+  },
+  {
+    "id": 30016,
+    "name": "豪华储物柜",
+    "triangles": 494
+  },
+  {
+    "id": 30017,
+    "name": "防盗储物柜",
+    "triangles": 586
+  },
+  {
+    "id": 30018,
+    "name": "密封储物柜",
+    "triangles": 488
+  }
+]

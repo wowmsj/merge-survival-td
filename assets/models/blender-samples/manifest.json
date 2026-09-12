@@ -1,0 +1,23 @@
+[
+  {
+    "id": 10005,
+    "file": "prop_10005.glb",
+    "preview": "prop_10005.png",
+    "status": "Blender sample",
+    "bytes": 2065728
+  },
+  {
+    "id": 10028,
+    "file": "prop_10028.glb",
+    "preview": "prop_10028.png",
+    "status": "Blender sample",
+    "bytes": 8165764
+  },
+  {
+    "id": 50025,
+    "file": "prop_50025.glb",
+    "preview": "prop_50025.png",
+    "status": "Blender sample",
+    "bytes": 3392636
+  }
+]

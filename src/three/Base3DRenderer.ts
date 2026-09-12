@@ -50,8 +50,8 @@ interface IWarmLayout {
 /** 建筑 kind → GLB（cfgId 细分差异由配置驱动逻辑，模型只做视觉） */
 const BUILDING_GLB: Record<string, string> = {
   core: 'warm_core.glb',
-  tower: 'warm_building_tower.glb',
-  resource: 'warm_building_resource.glb',
+  tower: 'arrow_tower_v6.glb',
+  resource: 'reference_house.glb',
   trap: 'warm_building_trap.glb',
   wall: 'warm_building_wall.glb'
 };

@@ -1,0 +1,52 @@
+[
+  {
+    "id": 20011,
+    "name": "脏水",
+    "triangles": 486
+  },
+  {
+    "id": 20012,
+    "name": "沉淀水",
+    "triangles": 466
+  },
+  {
+    "id": 20013,
+    "name": "煮沸水",
+    "triangles": 744
+  },
+  {
+    "id": 20014,
+    "name": "过滤水",
+    "triangles": 1170
+  },
+  {
+    "id": 20015,
+    "name": "蒸馏水",
+    "triangles": 1006
+  },
+  {
+    "id": 20016,
+    "name": "纯净水",
+    "triangles": 544
+  },
+  {
+    "id": 20017,
+    "name": "瓶装净水",
+    "triangles": 972
+  },
+  {
+    "id": 20018,
+    "name": "电解质水",
+    "triangles": 526
+  },
+  {
+    "id": 20019,
+    "name": "营养冲剂",
+    "triangles": 832
+  },
+  {
+    "id": 20020,
+    "name": "行军水壶",
+    "triangles": 742
+  }
+]

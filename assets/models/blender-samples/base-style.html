@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>暖土色基地 · 完整布局</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#d3c2a6;color:#443d32;font:15px system-ui}header,footer{padding:16px 24px}h1{font-size:21px;margin:0 0 8px}p{margin:8px 0;line-height:1.6}nav{display:flex;gap:12px;flex-wrap:wrap;align-items:center}select{padding:8px;border:1px solid #9c896c;border-radius:5px;background:#e9deca;color:#443d32;font:inherit}a{color:#684f31}#stage{height:72vh;min-height:340px}canvas{display:block;touch-action:none}label{display:flex;align-items:center;gap:6px}#status{font-size:13px}
+</style>
+<script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script>
+<header><h1>暖土色基地 · 13×13 独立地块</h1><nav>
+<select id="asset" aria-label="查看模型"><option value="warm_base_13x13">13×13 正式初始布局</option><option value="sample_diorama">保留的3×3美术样板</option><option value="sample_core">基地核心</option><option value="sample_ground_0">土地模块</option><option value="sample_wall">围墙模块</option><option value="warm_grass">枯草</option><option value="warm_woods">树林</option><option value="warm_rubble">瓦砾</option><option value="warm_shack">破屋</option><option value="warm_pond">水池</option><option value="warm_ruin">外围废墟</option><option value="warm_ruin_1">外围废墟2</option><option value="warm_ruin_2">外围废墟3</option><option value="base_core">旧核心 · 同光照对比</option></select>
+<label><input type="checkbox" id="shadows" checked>柔和阴影</label>
+<a href="base.html">原13×13布局</a></nav></header>
+<div id="stage"></div>
+<footer><div id="status">加载中…</div><p>拖动旋转，滚轮 / 双指缩放。完整基地采用正式初始配置；3×3仍为美术样板。格距1，地块宽0.925，建筑单格占地。</p>
+<nav><a id="download" href="warm_base_13x13.glb" download>下载当前GLB</a><a id="source" href="warm_base_13x13.blend">Blender源文件</a><a href="warm-base-layout.json">新版布局JSON</a></nav></footer>
+<script type="module">
+import * as T from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const stage=document.querySelector('#stage'),select=document.querySelector('#asset'),status=document.querySelector('#status');
+const scene=new T.Scene();scene.background=new T.Color('#78999a');
+const renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;stage.append(renderer.domElement);
+scene.add(new T.HemisphereLight(0xfff4df,0x8a745b,2));
+const sun=new T.DirectionalLight(0xffefda,3.2);sun.position.set(-3,7,-4);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-3,right:3,top:3,bottom:-3,near:.1,far:20});sun.shadow.bias=-.00015;sun.shadow.normalBias=.015;scene.add(sun);
+const backdrop=new T.Mesh(new T.PlaneGeometry(200,200),new T.MeshStandardMaterial({color:'#b3a276',roughness:1}));backdrop.rotation.x=-Math.PI/2;backdrop.position.y=-.29;backdrop.receiveShadow=true;scene.add(backdrop);
+const camera=new T.OrthographicCamera(-3,3,3,-3,.1,100),controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.maxPolarAngle=Math.PI*.47;controls.minDistance=2;
+let model,span=2.35,serial=0;const loader=new GLTFLoader(),cache=new Map();
+function resize(){const w=stage.clientWidth,h=stage.clientHeight,a=w/h;camera.left=-span*Math.max(1,a);camera.right=-camera.left;camera.top=span*Math.max(1,1/a);camera.bottom=-camera.top;camera.updateProjectionMatrix();renderer.setSize(w,h)}
+async function show(){const key=select.value,token=++serial;window.baseReady=false;status.textContent='加载中…';try{
+if(!cache.has(key))cache.set(key,loader.loadAsync(key+'.glb'));const gltf=await cache.get(key);if(token!==serial)return;
+if(model)scene.remove(model);model=gltf.scene;model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(model);
+const full=key==='warm_base_13x13',small=key==='sample_diorama';span=full?9.1:small?2.2:.80;controls.target.set(0,full||small?.12:.33,0);camera.position.set(-12,14,-12).add(controls.target);camera.zoom=1;controls.update();resize();
+const shadowSize=full?10:3;Object.assign(sun.shadow.camera,{left:-shadowSize,right:shadowSize,top:shadowSize,bottom:-shadowSize,far:full?60:20});sun.position.set(-3,7,-4).multiplyScalar(full?3:1);sun.shadow.camera.updateProjectionMatrix();
+backdrop.position.y=full||small||key==='sample_ground_0'?-.29:-.005;
+document.querySelector('#source').href=full||key.startsWith('warm_')?'warm_base_13x13.blend':'sample_diorama.blend';
+document.querySelector('#download').href=key+'.glb';status.textContent='Blender GLB · 暖土褐色 / 哑光材质 / 实体结构 · '+key;
+window.basePreview={scene,model,camera,renderer};window.baseReady=true;
+}catch(error){status.textContent='加载失败：'+error.message;console.error(error)}}
+select.onchange=show;document.querySelector('#shadows').onchange=e=>{sun.castShadow=e.target.checked;scene.traverse(o=>{if(o.isMesh)o.material.needsUpdate=true})};
+new ResizeObserver(resize).observe(stage);renderer.setAnimationLoop(()=>{controls.update();renderer.render(scene,camera)});await show();
+</script></html>
+

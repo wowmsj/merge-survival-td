@@ -1,0 +1,27 @@
+[
+  {
+    "id": 30072,
+    "name": "弹弓",
+    "triangles": 482
+  },
+  {
+    "id": 30073,
+    "name": "猎弓",
+    "triangles": 714
+  },
+  {
+    "id": 30074,
+    "name": "劲弩",
+    "triangles": 552
+  },
+  {
+    "id": 30075,
+    "name": "猎枪",
+    "triangles": 238
+  },
+  {
+    "id": 30076,
+    "name": "军用步枪",
+    "triangles": 532
+  }
+]

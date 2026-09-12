@@ -1,0 +1,1561 @@
+{
+  "rows": 13,
+  "cols": 13,
+  "cellPitch": 1,
+  "tileSize": 0.925,
+  "surfaceY": 0,
+  "modules": {
+    "core": "warm_core.glb",
+    "ground_0": "warm_ground_0.glb",
+    "ground_1": "warm_ground_1.glb",
+    "ground_2": "warm_ground_2.glb",
+    "grass": "warm_grass.glb",
+    "woods": "warm_woods.glb",
+    "rubble": "warm_rubble.glb",
+    "shack": "warm_shack.glb",
+    "pond": "warm_pond.glb",
+    "ruin": "warm_ruin.glb",
+    "ruin_1": "warm_ruin_1.glb",
+    "ruin_2": "warm_ruin_2.glb"
+  },
+  "tiles": [
+    {
+      "row": 0,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 0,
+      "col": 1,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 0,
+      "col": 4,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 0,
+      "col": 5,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 0,
+      "col": 6,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 0,
+      "col": 7,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 0,
+      "col": 8,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 0,
+      "col": 9,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 0,
+      "col": 10,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 0,
+      "col": 11,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 0,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 1,
+      "col": 2,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 1,
+      "col": 5,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 1,
+      "col": 6,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 1,
+      "col": 7,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 1,
+      "col": 8,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 1,
+      "col": 9,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 1,
+      "col": 10,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 1,
+      "col": 11,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 1,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 2,
+      "col": 5,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 2,
+      "col": 6,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 2,
+      "col": 7,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 2,
+      "col": 8,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 2,
+      "col": 9,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 2,
+      "col": 10,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 2,
+      "col": 11,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 2,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "claimed": false,
+      "terrain": "woods",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "claimed": false,
+      "terrain": "woods",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 3,
+      "col": 4,
+      "claimed": true,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 3,
+      "col": 5,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 3,
+      "col": 6,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 3,
+      "col": 7,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 3,
+      "col": 8,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 3,
+      "col": 9,
+      "claimed": true,
+      "terrain": "rubble",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 3,
+      "col": 10,
+      "claimed": false,
+      "terrain": "grass",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 3,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 3,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "claimed": false,
+      "terrain": "woods",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "claimed": true,
+      "terrain": "rubble",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 4,
+      "col": 5,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 4,
+      "col": 6,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 4,
+      "col": 7,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 4,
+      "col": 8,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 4,
+      "col": 9,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 4,
+      "col": 10,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 4,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 4,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 5,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 5,
+      "col": 1,
+      "claimed": false,
+      "terrain": "woods",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 5,
+      "col": 2,
+      "claimed": false,
+      "terrain": "woods",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 5,
+      "col": 3,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 5,
+      "col": 4,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 5,
+      "col": 5,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 5,
+      "col": 6,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 5,
+      "col": 7,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 5,
+      "col": 8,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 5,
+      "col": 9,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 5,
+      "col": 10,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 5,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 5,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 6,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 6,
+      "col": 1,
+      "claimed": false,
+      "terrain": "woods",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 6,
+      "col": 2,
+      "claimed": false,
+      "terrain": "woods",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 6,
+      "col": 3,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 6,
+      "col": 4,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 6,
+      "col": 5,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 6,
+      "col": 6,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 6,
+      "col": 7,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 6,
+      "col": 8,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 6,
+      "col": 9,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 6,
+      "col": 10,
+      "claimed": false,
+      "terrain": "grass",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 6,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 6,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 7,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 7,
+      "col": 1,
+      "claimed": false,
+      "terrain": "woods",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 7,
+      "col": 2,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 7,
+      "col": 3,
+      "claimed": true,
+      "terrain": "grass",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 7,
+      "col": 4,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 7,
+      "col": 5,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 7,
+      "col": 6,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 7,
+      "col": 7,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 7,
+      "col": 8,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 7,
+      "col": 9,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 7,
+      "col": 10,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 7,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 7,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 8,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 8,
+      "col": 1,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 8,
+      "col": 2,
+      "claimed": false,
+      "terrain": "woods",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 8,
+      "col": 3,
+      "claimed": true,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 8,
+      "col": 4,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 8,
+      "col": 5,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 8,
+      "col": 6,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 8,
+      "col": 7,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 8,
+      "col": 8,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 8,
+      "col": 9,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 8,
+      "col": 10,
+      "claimed": false,
+      "terrain": "grass",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 8,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 8,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 9,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 9,
+      "col": 1,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 9,
+      "col": 2,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 9,
+      "col": 3,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 9,
+      "col": 4,
+      "claimed": true,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 9,
+      "col": 5,
+      "claimed": true,
+      "terrain": "rubble",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 9,
+      "col": 6,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 9,
+      "col": 7,
+      "claimed": true,
+      "terrain": "grass",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 9,
+      "col": 8,
+      "claimed": true,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 9,
+      "col": 9,
+      "claimed": true,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 9,
+      "col": 10,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 9,
+      "col": 11,
+      "claimed": false,
+      "terrain": "grass",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 9,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 10,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 10,
+      "col": 1,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 10,
+      "col": 2,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 10,
+      "col": 3,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 10,
+      "col": 4,
+      "claimed": false,
+      "terrain": "shack",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 10,
+      "col": 5,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 10,
+      "col": 6,
+      "claimed": false,
+      "terrain": "pond",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 10,
+      "col": 7,
+      "claimed": false,
+      "terrain": "pond",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 10,
+      "col": 8,
+      "claimed": false,
+      "terrain": "pond",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 10,
+      "col": 9,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 10,
+      "col": 10,
+      "claimed": false,
+      "terrain": "grass",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 10,
+      "col": 11,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 10,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 11,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 11,
+      "col": 1,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 11,
+      "col": 2,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 11,
+      "col": 3,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 11,
+      "col": 4,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 11,
+      "col": 5,
+      "claimed": false,
+      "terrain": "pond",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 11,
+      "col": 6,
+      "claimed": false,
+      "terrain": "pond",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 11,
+      "col": 7,
+      "claimed": false,
+      "terrain": "pond",
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 11,
+      "col": 8,
+      "claimed": false,
+      "terrain": "pond",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 11,
+      "col": 9,
+      "claimed": false,
+      "terrain": "rubble",
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 11,
+      "col": 10,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 11,
+      "col": 11,
+      "claimed": false,
+      "terrain": "pond",
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 11,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 12,
+      "col": 0,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 12,
+      "col": 1,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 12,
+      "col": 2,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 12,
+      "col": 3,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 12,
+      "col": 4,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 12,
+      "col": 5,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 12,
+      "col": 6,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 12,
+      "col": 7,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 12,
+      "col": 8,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 12,
+      "col": 9,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    },
+    {
+      "row": 12,
+      "col": 10,
+      "claimed": false,
+      "model": "warm_ground_2.glb"
+    },
+    {
+      "row": 12,
+      "col": 11,
+      "claimed": false,
+      "model": "warm_ground_1.glb"
+    },
+    {
+      "row": 12,
+      "col": 12,
+      "claimed": false,
+      "model": "warm_ground_0.glb"
+    }
+  ],
+  "buildings": [
+    {
+      "cfgId": 1,
+      "level": 1,
+      "hp": 1000,
+      "maxHp": 1000,
+      "row": 6,
+      "col": 6,
+      "model": "warm_core.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 0,
+      "model": "warm_ruin.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 1,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 2,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 3,
+      "model": "warm_ruin.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 4,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 5,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 6,
+      "model": "warm_ruin.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 7,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 8,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 9,
+      "model": "warm_ruin.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 10,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 11,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 0,
+      "col": 12,
+      "model": "warm_ruin.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 1,
+      "col": 0,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 2,
+      "col": 0,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 3,
+      "col": 0,
+      "model": "warm_ruin.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 4,
+      "col": 0,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 5,
+      "col": 0,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 6,
+      "col": 0,
+      "model": "warm_ruin.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 7,
+      "col": 0,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 8,
+      "col": 0,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 9,
+      "col": 0,
+      "model": "warm_ruin.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 10,
+      "col": 0,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 11,
+      "col": 0,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 0,
+      "model": "warm_ruin.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 1,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 2,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 3,
+      "model": "warm_ruin.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 4,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 5,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 6,
+      "model": "warm_ruin.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 7,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 8,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 9,
+      "model": "warm_ruin.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 10,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 11,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 0
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 12,
+      "col": 12,
+      "model": "warm_ruin.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 1,
+      "col": 12,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 2,
+      "col": 12,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 3,
+      "col": 12,
+      "model": "warm_ruin.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 7,
+      "col": 12,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 8,
+      "col": 12,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 9,
+      "col": 12,
+      "model": "warm_ruin.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 10,
+      "col": 12,
+      "model": "warm_ruin_1.glb",
+      "rotationY": 1.5707963267948966
+    },
+    {
+      "cfgId": 901,
+      "level": 1,
+      "hp": 80,
+      "maxHp": 80,
+      "row": 11,
+      "col": 12,
+      "model": "warm_ruin_2.glb",
+      "rotationY": 1.5707963267948966
+    }
+  ]
+}

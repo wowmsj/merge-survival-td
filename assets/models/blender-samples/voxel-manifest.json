@@ -1,0 +1,14 @@
+[
+  {
+    "resolution": 16,
+    "occupiedCells": 1408,
+    "exposedQuads": 900,
+    "triangles": 1800
+  },
+  {
+    "resolution": 32,
+    "occupiedCells": 11304,
+    "exposedQuads": 3680,
+    "triangles": 7360
+  }
+]

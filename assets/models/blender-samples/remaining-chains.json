@@ -1,0 +1,1618 @@
+[
+  {
+    "seq": 31,
+    "key": "chain31",
+    "title": "花篮",
+    "ids": [
+      40039,
+      40040,
+      40041,
+      40042,
+      40043,
+      40044,
+      40045,
+      40046,
+      40047
+    ],
+    "items": [
+      {
+        "id": 40039,
+        "name": "藤绳",
+        "next": 40040,
+        "reference": "assets/generated/icon_p40039.png"
+      },
+      {
+        "id": 40040,
+        "name": "破草篮",
+        "next": 40041,
+        "reference": "assets/generated/icon_p40040.png"
+      },
+      {
+        "id": 40041,
+        "name": "编织篮",
+        "next": 40042,
+        "reference": "assets/generated/icon_p40041.png"
+      },
+      {
+        "id": 40042,
+        "name": "藤编篮",
+        "next": 40043,
+        "reference": "assets/generated/icon_p40042.png"
+      },
+      {
+        "id": 40043,
+        "name": "小药篮",
+        "next": 40044,
+        "reference": "assets/generated/icon_p40043.png"
+      },
+      {
+        "id": 40044,
+        "name": "大药篮",
+        "next": 40045,
+        "reference": "assets/generated/icon_p40044.png"
+      },
+      {
+        "id": 40045,
+        "name": "庆功药篮",
+        "next": 40046,
+        "reference": "assets/generated/icon_p40045.png"
+      },
+      {
+        "id": 40046,
+        "name": "精制药篮",
+        "next": 40047,
+        "reference": "assets/generated/icon_p40046.png"
+      },
+      {
+        "id": 40047,
+        "name": "豪华药篮",
+        "next": 0,
+        "reference": "assets/generated/icon_p40047.png"
+      }
+    ]
+  },
+  {
+    "seq": 32,
+    "key": "chain32",
+    "title": "花艺",
+    "ids": [
+      40048,
+      40049,
+      40050,
+      40051,
+      40052,
+      40053,
+      40054,
+      40055,
+      40056
+    ],
+    "items": [
+      {
+        "id": 40048,
+        "name": "野生艾草",
+        "next": 40049,
+        "reference": "assets/generated/icon_p40048.png"
+      },
+      {
+        "id": 40049,
+        "name": "瓶装艾草",
+        "next": 40050,
+        "reference": "assets/generated/icon_p40049.png"
+      },
+      {
+        "id": 40050,
+        "name": "干薄荷",
+        "next": 40051,
+        "reference": "assets/generated/icon_p40050.png"
+      },
+      {
+        "id": 40051,
+        "name": "薄荷药罐",
+        "next": 40052,
+        "reference": "assets/generated/icon_p40051.png"
+      },
+      {
+        "id": 40052,
+        "name": "散装草药",
+        "next": 40053,
+        "reference": "assets/generated/icon_p40052.png"
+      },
+      {
+        "id": 40053,
+        "name": "草药香囊",
+        "next": 40054,
+        "reference": "assets/generated/icon_p40053.png"
+      },
+      {
+        "id": 40054,
+        "name": "精选药材",
+        "next": 40055,
+        "reference": "assets/generated/icon_p40054.png"
+      },
+      {
+        "id": 40055,
+        "name": "捆装药材",
+        "next": 40056,
+        "reference": "assets/generated/icon_p40055.png"
+      },
+      {
+        "id": 40056,
+        "name": "急救药箱",
+        "next": 0,
+        "reference": "assets/generated/icon_p40056.png"
+      }
+    ]
+  },
+  {
+    "seq": 33,
+    "key": "chain33",
+    "title": "扫地机器人",
+    "ids": [
+      50001,
+      50002,
+      50003,
+      50004,
+      50005,
+      50006,
+      50007,
+      50008,
+      50009,
+      50010
+    ],
+    "items": [
+      {
+        "id": 50001,
+        "name": "电池",
+        "next": 50002,
+        "reference": "assets/generated/icon_p50001.png"
+      },
+      {
+        "id": 50002,
+        "name": "加强电池",
+        "next": 50003,
+        "reference": "assets/generated/icon_p50002.png"
+      },
+      {
+        "id": 50003,
+        "name": "CPU",
+        "next": 50004,
+        "reference": "assets/generated/icon_p50003.png"
+      },
+      {
+        "id": 50004,
+        "name": "芯片板",
+        "next": 50005,
+        "reference": "assets/generated/icon_p50004.png"
+      },
+      {
+        "id": 50005,
+        "name": "陈旧机器人",
+        "next": 50006,
+        "reference": "assets/generated/icon_p50005.png"
+      },
+      {
+        "id": 50006,
+        "name": "扫地机器人",
+        "next": 50007,
+        "reference": "assets/generated/icon_p50006.png"
+      },
+      {
+        "id": 50007,
+        "name": "维修机器人",
+        "next": 50008,
+        "reference": "assets/generated/icon_p50007.png"
+      },
+      {
+        "id": 50008,
+        "name": "焊接机器人",
+        "next": 50009,
+        "reference": "assets/generated/icon_p50008.png"
+      },
+      {
+        "id": 50009,
+        "name": "巡逻机器人",
+        "next": 50010,
+        "reference": "assets/generated/icon_p50009.png"
+      },
+      {
+        "id": 50010,
+        "name": "哨卫机器人",
+        "next": 0,
+        "reference": "assets/generated/icon_p50010.png"
+      }
+    ]
+  },
+  {
+    "seq": 34,
+    "key": "chain34",
+    "title": "垃圾",
+    "ids": [
+      50011,
+      50012,
+      50013,
+      50014,
+      50015,
+      50016
+    ],
+    "items": [
+      {
+        "id": 50011,
+        "name": "破包装纸",
+        "next": 50012,
+        "reference": "assets/generated/icon_p50011.png"
+      },
+      {
+        "id": 50012,
+        "name": "鱼骨头",
+        "next": 50013,
+        "reference": "assets/generated/icon_p50012.png"
+      },
+      {
+        "id": 50013,
+        "name": "饮料杯",
+        "next": 50014,
+        "reference": "assets/generated/icon_p50013.png"
+      },
+      {
+        "id": 50014,
+        "name": "快餐盒",
+        "next": 50015,
+        "reference": "assets/generated/icon_p50014.png"
+      },
+      {
+        "id": 50015,
+        "name": "废料箱",
+        "next": 50016,
+        "reference": "assets/generated/icon_p50015.png"
+      },
+      {
+        "id": 50016,
+        "name": "大废料袋",
+        "next": 0,
+        "reference": "assets/generated/icon_p50016.png"
+      }
+    ]
+  },
+  {
+    "seq": 35,
+    "key": "chain35",
+    "title": "老鼠",
+    "ids": [
+      50017,
+      50018,
+      50019,
+      50020,
+      50021,
+      50022,
+      50036
+    ],
+    "items": [
+      {
+        "id": 50017,
+        "name": "变异幼鼠",
+        "next": 50018,
+        "reference": "assets/generated/icon_p50017.png"
+      },
+      {
+        "id": 50018,
+        "name": "变异大鼠",
+        "next": 50019,
+        "reference": "assets/generated/icon_p50018.png"
+      },
+      {
+        "id": 50019,
+        "name": "变异肥鼠",
+        "next": 50020,
+        "reference": "assets/generated/icon_p50019.png"
+      },
+      {
+        "id": 50020,
+        "name": "变异双鼠",
+        "next": 50021,
+        "reference": "assets/generated/icon_p50020.png"
+      },
+      {
+        "id": 50021,
+        "name": "变异鼠群",
+        "next": 50036,
+        "reference": "assets/generated/icon_p50021.png"
+      },
+      {
+        "id": 50022,
+        "name": "猫窝",
+        "next": 0,
+        "reference": "assets/generated/icon_p50022.png"
+      },
+      {
+        "id": 50036,
+        "name": "实验鼠笼",
+        "next": 0,
+        "reference": "assets/generated/icon_ob1.png"
+      }
+    ]
+  },
+  {
+    "seq": 36,
+    "key": "chain36",
+    "title": "小猫窝",
+    "ids": [
+      50023
+    ],
+    "items": [
+      {
+        "id": 50023,
+        "name": "小猫窝",
+        "next": 50024,
+        "reference": "assets/generated/icon_oc1.png"
+      }
+    ]
+  },
+  {
+    "seq": 37,
+    "key": "chain37",
+    "title": "猫",
+    "ids": [
+      50024,
+      50025,
+      50026,
+      50027,
+      50028,
+      50029,
+      50030,
+      50031,
+      50032,
+      50033,
+      50034,
+      50035
+    ],
+    "items": [
+      {
+        "id": 50024,
+        "name": "田园猫",
+        "next": 50025,
+        "reference": "assets/generated/icon_p50024.png"
+      },
+      {
+        "id": 50025,
+        "name": "小灰猫",
+        "next": 50026,
+        "reference": "assets/generated/icon_p50025.png"
+      },
+      {
+        "id": 50026,
+        "name": "时髦猫",
+        "next": 50027,
+        "reference": "assets/generated/icon_p50026.png"
+      },
+      {
+        "id": 50027,
+        "name": "小黄猫",
+        "next": 50028,
+        "reference": "assets/generated/icon_p50027.png"
+      },
+      {
+        "id": 50028,
+        "name": "大白猫",
+        "next": 50029,
+        "reference": "assets/generated/icon_p50028.png"
+      },
+      {
+        "id": 50029,
+        "name": "小黑猫",
+        "next": 50030,
+        "reference": "assets/generated/icon_p50029.png"
+      },
+      {
+        "id": 50030,
+        "name": "大灰猫",
+        "next": 50031,
+        "reference": "assets/generated/icon_p50030.png"
+      },
+      {
+        "id": 50031,
+        "name": "大肥猫",
+        "next": 50032,
+        "reference": "assets/generated/icon_p50031.png"
+      },
+      {
+        "id": 50032,
+        "name": "叮当猫",
+        "next": 50033,
+        "reference": "assets/generated/icon_p50032.png"
+      },
+      {
+        "id": 50033,
+        "name": "老虎猫",
+        "next": 50034,
+        "reference": "assets/generated/icon_p50033.png"
+      },
+      {
+        "id": 50034,
+        "name": "小花猫",
+        "next": 50035,
+        "reference": "assets/generated/icon_p50034.png"
+      },
+      {
+        "id": 50035,
+        "name": "小猫猫",
+        "next": 0,
+        "reference": "assets/generated/icon_p50035.png"
+      }
+    ]
+  },
+  {
+    "seq": 38,
+    "key": "chain38",
+    "title": "无限能量",
+    "ids": [
+      60001,
+      60002,
+      60003,
+      60004
+    ],
+    "items": [
+      {
+        "id": 60001,
+        "name": "小型应急电源",
+        "next": 60002,
+        "reference": "assets/generated/icon_p60001.png"
+      },
+      {
+        "id": 60002,
+        "name": "中型应急电源",
+        "next": 60003,
+        "reference": "assets/generated/icon_p60002.png"
+      },
+      {
+        "id": 60003,
+        "name": "大型应急电源",
+        "next": 60004,
+        "reference": "assets/generated/icon_p60003.png"
+      },
+      {
+        "id": 60004,
+        "name": "超量应急电源",
+        "next": 0,
+        "reference": "assets/generated/icon_p60004.png"
+      }
+    ]
+  },
+  {
+    "seq": 39,
+    "key": "chain39",
+    "title": "充能器",
+    "ids": [
+      60005,
+      60006,
+      60007
+    ],
+    "items": [
+      {
+        "id": 60005,
+        "name": "小型充电桩",
+        "next": 60006,
+        "reference": "assets/generated/icon_p60005.png"
+      },
+      {
+        "id": 60006,
+        "name": "中型充电桩",
+        "next": 60007,
+        "reference": "assets/generated/icon_p60006.png"
+      },
+      {
+        "id": 60007,
+        "name": "大型充电桩",
+        "next": 0,
+        "reference": "assets/generated/icon_p60007.png"
+      }
+    ]
+  },
+  {
+    "seq": 40,
+    "key": "chain40",
+    "title": "拆分器",
+    "ids": [
+      60008,
+      60009,
+      60010
+    ],
+    "items": [
+      {
+        "id": 60008,
+        "name": "小型拆解器",
+        "next": 60009,
+        "reference": "assets/generated/icon_p60008.png"
+      },
+      {
+        "id": 60009,
+        "name": "中型拆解器",
+        "next": 60010,
+        "reference": "assets/generated/icon_p60009.png"
+      },
+      {
+        "id": 60010,
+        "name": "大型拆解器",
+        "next": 0,
+        "reference": "assets/generated/icon_p60010.png"
+      }
+    ]
+  },
+  {
+    "seq": 41,
+    "key": "chain41",
+    "title": "加速器",
+    "ids": [
+      60011,
+      60012,
+      60013,
+      60014,
+      60015
+    ],
+    "items": [
+      {
+        "id": 60011,
+        "name": "小型超频器",
+        "next": 60012,
+        "reference": "assets/generated/icon_p60011.png"
+      },
+      {
+        "id": 60012,
+        "name": "中型超频器",
+        "next": 60013,
+        "reference": "assets/generated/icon_p60012.png"
+      },
+      {
+        "id": 60013,
+        "name": "大型超频器",
+        "next": 60014,
+        "reference": "assets/generated/icon_p60013.png"
+      },
+      {
+        "id": 60014,
+        "name": "重型超频器",
+        "next": 60015,
+        "reference": "assets/generated/icon_p60014.png"
+      },
+      {
+        "id": 60015,
+        "name": "极限超频器",
+        "next": 0,
+        "reference": "assets/generated/icon_p60015.png"
+      }
+    ]
+  },
+  {
+    "seq": 42,
+    "key": "chain42",
+    "title": "系列升级卡",
+    "ids": [
+      60016,
+      60017,
+      60018
+    ],
+    "items": [
+      {
+        "id": 60016,
+        "name": "工具强化芯片",
+        "next": 0,
+        "reference": "assets/generated/icon_60016.png"
+      },
+      {
+        "id": 60017,
+        "name": "冷藏强化芯片",
+        "next": 0,
+        "reference": "assets/generated/icon_60017.png"
+      },
+      {
+        "id": 60018,
+        "name": "装备强化芯片",
+        "next": 0,
+        "reference": "assets/generated/icon_60018.png"
+      }
+    ]
+  },
+  {
+    "seq": 43,
+    "key": "chain43",
+    "title": "超级升级卡",
+    "ids": [
+      60019
+    ],
+    "items": [
+      {
+        "id": 60019,
+        "name": "超级强化芯片",
+        "next": 0,
+        "reference": "assets/generated/icon_60019.png"
+      }
+    ]
+  },
+  {
+    "seq": 44,
+    "key": "chain44",
+    "title": "全能升级卡",
+    "ids": [
+      60020
+    ],
+    "items": [
+      {
+        "id": 60020,
+        "name": "全能强化芯片",
+        "next": 0,
+        "reference": "assets/generated/icon_60020.png"
+      }
+    ]
+  },
+  {
+    "seq": 45,
+    "key": "chain45",
+    "title": "扩容背包",
+    "ids": [
+      60021
+    ],
+    "items": [
+      {
+        "id": 60021,
+        "name": "战术背包",
+        "next": 0,
+        "reference": "assets/generated/prop_bag.png"
+      }
+    ]
+  },
+  {
+    "seq": 46,
+    "key": "chain46",
+    "title": "怀表",
+    "ids": [
+      60022
+    ],
+    "items": [
+      {
+        "id": 60022,
+        "name": "老式怀表",
+        "next": 0,
+        "reference": "assets/generated/icon_60022.png"
+      }
+    ]
+  },
+  {
+    "seq": 47,
+    "key": "chain47",
+    "title": "柑橘香清洁剂",
+    "ids": [
+      60023
+    ],
+    "items": [
+      {
+        "id": 60023,
+        "name": "强力清洁剂",
+        "next": 0,
+        "reference": "assets/generated/icon_60023.png"
+      }
+    ]
+  },
+  {
+    "seq": 48,
+    "key": "chain48",
+    "title": "加速装置",
+    "ids": [
+      60024,
+      60025,
+      60026,
+      60027,
+      60028,
+      60029,
+      60030,
+      60031
+    ],
+    "items": [
+      {
+        "id": 60024,
+        "name": "神秘零件",
+        "next": 60025,
+        "reference": "assets/generated/icon_p60024.png"
+      },
+      {
+        "id": 60025,
+        "name": "核心残片",
+        "next": 60026,
+        "reference": "assets/generated/icon_p60025.png"
+      },
+      {
+        "id": 60026,
+        "name": "核心基座",
+        "next": 60027,
+        "reference": "assets/generated/icon_p60026.png"
+      },
+      {
+        "id": 60027,
+        "name": "合成核心原型",
+        "next": 60028,
+        "reference": "assets/generated/icon_p60027.png"
+      },
+      {
+        "id": 60028,
+        "name": "TG-I型核心",
+        "next": 60029,
+        "reference": "assets/generated/icon_p60028.png"
+      },
+      {
+        "id": 60029,
+        "name": "合成核心·二型",
+        "next": 60030,
+        "reference": "assets/generated/icon_p60029.png"
+      },
+      {
+        "id": 60030,
+        "name": "合成核心·三型",
+        "next": 60031,
+        "reference": "assets/generated/icon_p60030.png"
+      },
+      {
+        "id": 60031,
+        "name": "完整合成核心",
+        "next": 0,
+        "reference": "assets/generated/icon_p60031.png"
+      }
+    ]
+  },
+  {
+    "seq": 49,
+    "key": "chain49",
+    "title": "箭塔蓝图",
+    "ids": [
+      70001,
+      70101,
+      70102,
+      70103,
+      70104
+    ],
+    "items": [
+      {
+        "id": 70001,
+        "name": "箭塔蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70001.png"
+      },
+      {
+        "id": 70101,
+        "name": "箭塔蓝图碎片",
+        "next": 70102,
+        "reference": "assets/generated/icon_p70101.png"
+      },
+      {
+        "id": 70102,
+        "name": "箭塔图纸",
+        "next": 70103,
+        "reference": "assets/generated/icon_p70102.png"
+      },
+      {
+        "id": 70103,
+        "name": "箭塔设计图",
+        "next": 70104,
+        "reference": "assets/generated/icon_p70103.png"
+      },
+      {
+        "id": 70104,
+        "name": "箭塔蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70104.png"
+      }
+    ]
+  },
+  {
+    "seq": 50,
+    "key": "chain50",
+    "title": "炮塔蓝图",
+    "ids": [
+      70002,
+      70105,
+      70106,
+      70107,
+      70108
+    ],
+    "items": [
+      {
+        "id": 70002,
+        "name": "炮塔蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70002.png"
+      },
+      {
+        "id": 70105,
+        "name": "炮塔蓝图碎片",
+        "next": 70106,
+        "reference": "assets/generated/icon_p70105.png"
+      },
+      {
+        "id": 70106,
+        "name": "炮塔图纸",
+        "next": 70107,
+        "reference": "assets/generated/icon_p70106.png"
+      },
+      {
+        "id": 70107,
+        "name": "炮塔设计图",
+        "next": 70108,
+        "reference": "assets/generated/icon_p70107.png"
+      },
+      {
+        "id": 70108,
+        "name": "炮塔蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70108.png"
+      }
+    ]
+  },
+  {
+    "seq": 51,
+    "key": "chain51",
+    "title": "电磁塔蓝图",
+    "ids": [
+      70003,
+      70109,
+      70110,
+      70111,
+      70112
+    ],
+    "items": [
+      {
+        "id": 70003,
+        "name": "电磁塔蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70003.png"
+      },
+      {
+        "id": 70109,
+        "name": "电磁塔蓝图碎片",
+        "next": 70110,
+        "reference": "assets/generated/icon_p70109.png"
+      },
+      {
+        "id": 70110,
+        "name": "电磁塔图纸",
+        "next": 70111,
+        "reference": "assets/generated/icon_p70110.png"
+      },
+      {
+        "id": 70111,
+        "name": "电磁塔设计图",
+        "next": 70112,
+        "reference": "assets/generated/icon_p70111.png"
+      },
+      {
+        "id": 70112,
+        "name": "电磁塔蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70112.png"
+      }
+    ]
+  },
+  {
+    "seq": 52,
+    "key": "chain52",
+    "title": "冰冻塔蓝图",
+    "ids": [
+      70004,
+      70113,
+      70114,
+      70115,
+      70116
+    ],
+    "items": [
+      {
+        "id": 70004,
+        "name": "冰冻塔蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70004.png"
+      },
+      {
+        "id": 70113,
+        "name": "冰冻塔蓝图碎片",
+        "next": 70114,
+        "reference": "assets/generated/icon_p70113.png"
+      },
+      {
+        "id": 70114,
+        "name": "冰冻塔图纸",
+        "next": 70115,
+        "reference": "assets/generated/icon_p70114.png"
+      },
+      {
+        "id": 70115,
+        "name": "冰冻塔设计图",
+        "next": 70116,
+        "reference": "assets/generated/icon_p70115.png"
+      },
+      {
+        "id": 70116,
+        "name": "冰冻塔蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70116.png"
+      }
+    ]
+  },
+  {
+    "seq": 53,
+    "key": "chain53",
+    "title": "农场蓝图",
+    "ids": [
+      70005,
+      70117,
+      70118,
+      70119,
+      70120
+    ],
+    "items": [
+      {
+        "id": 70005,
+        "name": "农场蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70005.png"
+      },
+      {
+        "id": 70117,
+        "name": "农场蓝图碎片",
+        "next": 70118,
+        "reference": "assets/generated/icon_p70117.png"
+      },
+      {
+        "id": 70118,
+        "name": "农场图纸",
+        "next": 70119,
+        "reference": "assets/generated/icon_p70118.png"
+      },
+      {
+        "id": 70119,
+        "name": "农场设计图",
+        "next": 70120,
+        "reference": "assets/generated/icon_p70119.png"
+      },
+      {
+        "id": 70120,
+        "name": "农场蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70120.png"
+      }
+    ]
+  },
+  {
+    "seq": 54,
+    "key": "chain54",
+    "title": "医疗站蓝图",
+    "ids": [
+      70006,
+      70121,
+      70122,
+      70123,
+      70124
+    ],
+    "items": [
+      {
+        "id": 70006,
+        "name": "医疗站蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70006.png"
+      },
+      {
+        "id": 70121,
+        "name": "医疗站蓝图碎片",
+        "next": 70122,
+        "reference": "assets/generated/icon_p70121.png"
+      },
+      {
+        "id": 70122,
+        "name": "医疗站图纸",
+        "next": 70123,
+        "reference": "assets/generated/icon_p70122.png"
+      },
+      {
+        "id": 70123,
+        "name": "医疗站设计图",
+        "next": 70124,
+        "reference": "assets/generated/icon_p70123.png"
+      },
+      {
+        "id": 70124,
+        "name": "医疗站蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70124.png"
+      }
+    ]
+  },
+  {
+    "seq": 55,
+    "key": "chain55",
+    "title": "电站蓝图",
+    "ids": [
+      70007,
+      70125,
+      70126,
+      70127,
+      70128
+    ],
+    "items": [
+      {
+        "id": 70007,
+        "name": "电站蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70007.png"
+      },
+      {
+        "id": 70125,
+        "name": "电站蓝图碎片",
+        "next": 70126,
+        "reference": "assets/generated/icon_p70125.png"
+      },
+      {
+        "id": 70126,
+        "name": "电站图纸",
+        "next": 70127,
+        "reference": "assets/generated/icon_p70126.png"
+      },
+      {
+        "id": 70127,
+        "name": "电站设计图",
+        "next": 70128,
+        "reference": "assets/generated/icon_p70127.png"
+      },
+      {
+        "id": 70128,
+        "name": "电站蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70128.png"
+      }
+    ]
+  },
+  {
+    "seq": 56,
+    "key": "chain56",
+    "title": "住房蓝图",
+    "ids": [
+      70008,
+      70129,
+      70130,
+      70131,
+      70132
+    ],
+    "items": [
+      {
+        "id": 70008,
+        "name": "住房蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70008.png"
+      },
+      {
+        "id": 70129,
+        "name": "住房蓝图碎片",
+        "next": 70130,
+        "reference": "assets/generated/icon_p70129.png"
+      },
+      {
+        "id": 70130,
+        "name": "住房图纸",
+        "next": 70131,
+        "reference": "assets/generated/icon_p70130.png"
+      },
+      {
+        "id": 70131,
+        "name": "住房设计图",
+        "next": 70132,
+        "reference": "assets/generated/icon_p70131.png"
+      },
+      {
+        "id": 70132,
+        "name": "住房蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70132.png"
+      }
+    ]
+  },
+  {
+    "seq": 57,
+    "key": "chain57",
+    "title": "仓库蓝图",
+    "ids": [
+      70009,
+      70133,
+      70134,
+      70135,
+      70136
+    ],
+    "items": [
+      {
+        "id": 70009,
+        "name": "仓库蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70009.png"
+      },
+      {
+        "id": 70133,
+        "name": "仓库蓝图碎片",
+        "next": 70134,
+        "reference": "assets/generated/icon_p70133.png"
+      },
+      {
+        "id": 70134,
+        "name": "仓库图纸",
+        "next": 70135,
+        "reference": "assets/generated/icon_p70134.png"
+      },
+      {
+        "id": 70135,
+        "name": "仓库设计图",
+        "next": 70136,
+        "reference": "assets/generated/icon_p70135.png"
+      },
+      {
+        "id": 70136,
+        "name": "仓库蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70136.png"
+      }
+    ]
+  },
+  {
+    "seq": 58,
+    "key": "chain58",
+    "title": "工坊蓝图",
+    "ids": [
+      70010,
+      70137,
+      70138,
+      70139,
+      70140
+    ],
+    "items": [
+      {
+        "id": 70010,
+        "name": "工坊蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70010.png"
+      },
+      {
+        "id": 70137,
+        "name": "工坊蓝图碎片",
+        "next": 70138,
+        "reference": "assets/generated/icon_p70137.png"
+      },
+      {
+        "id": 70138,
+        "name": "工坊图纸",
+        "next": 70139,
+        "reference": "assets/generated/icon_p70138.png"
+      },
+      {
+        "id": 70139,
+        "name": "工坊设计图",
+        "next": 70140,
+        "reference": "assets/generated/icon_p70139.png"
+      },
+      {
+        "id": 70140,
+        "name": "工坊蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70140.png"
+      }
+    ]
+  },
+  {
+    "seq": 59,
+    "key": "chain59",
+    "title": "收集站蓝图",
+    "ids": [
+      70011,
+      70141,
+      70142,
+      70143,
+      70144
+    ],
+    "items": [
+      {
+        "id": 70011,
+        "name": "收集站蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70011.png"
+      },
+      {
+        "id": 70141,
+        "name": "收集站蓝图碎片",
+        "next": 70142,
+        "reference": "assets/generated/icon_p70141.png"
+      },
+      {
+        "id": 70142,
+        "name": "收集站图纸",
+        "next": 70143,
+        "reference": "assets/generated/icon_p70142.png"
+      },
+      {
+        "id": 70143,
+        "name": "收集站设计图",
+        "next": 70144,
+        "reference": "assets/generated/icon_p70143.png"
+      },
+      {
+        "id": 70144,
+        "name": "收集站蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70144.png"
+      }
+    ]
+  },
+  {
+    "seq": 60,
+    "key": "chain60",
+    "title": "地刺蓝图",
+    "ids": [
+      70012,
+      70145,
+      70146,
+      70147,
+      70148
+    ],
+    "items": [
+      {
+        "id": 70012,
+        "name": "地刺蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70012.png"
+      },
+      {
+        "id": 70145,
+        "name": "地刺蓝图碎片",
+        "next": 70146,
+        "reference": "assets/generated/icon_p70145.png"
+      },
+      {
+        "id": 70146,
+        "name": "地刺图纸",
+        "next": 70147,
+        "reference": "assets/generated/icon_p70146.png"
+      },
+      {
+        "id": 70147,
+        "name": "地刺设计图",
+        "next": 70148,
+        "reference": "assets/generated/icon_p70147.png"
+      },
+      {
+        "id": 70148,
+        "name": "地刺蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70148.png"
+      }
+    ]
+  },
+  {
+    "seq": 61,
+    "key": "chain61",
+    "title": "地雷蓝图",
+    "ids": [
+      70013,
+      70149,
+      70150,
+      70151,
+      70152
+    ],
+    "items": [
+      {
+        "id": 70013,
+        "name": "地雷蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70013.png"
+      },
+      {
+        "id": 70149,
+        "name": "地雷蓝图碎片",
+        "next": 70150,
+        "reference": "assets/generated/icon_p70149.png"
+      },
+      {
+        "id": 70150,
+        "name": "地雷图纸",
+        "next": 70151,
+        "reference": "assets/generated/icon_p70150.png"
+      },
+      {
+        "id": 70151,
+        "name": "地雷设计图",
+        "next": 70152,
+        "reference": "assets/generated/icon_p70151.png"
+      },
+      {
+        "id": 70152,
+        "name": "地雷蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70152.png"
+      }
+    ]
+  },
+  {
+    "seq": 62,
+    "key": "chain62",
+    "title": "减速沼泽蓝图",
+    "ids": [
+      70014,
+      70153,
+      70154,
+      70155,
+      70156
+    ],
+    "items": [
+      {
+        "id": 70014,
+        "name": "减速沼泽蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70014.png"
+      },
+      {
+        "id": 70153,
+        "name": "减速沼泽蓝图碎片",
+        "next": 70154,
+        "reference": "assets/generated/icon_p70153.png"
+      },
+      {
+        "id": 70154,
+        "name": "减速沼泽图纸",
+        "next": 70155,
+        "reference": "assets/generated/icon_p70154.png"
+      },
+      {
+        "id": 70155,
+        "name": "减速沼泽设计图",
+        "next": 70156,
+        "reference": "assets/generated/icon_p70155.png"
+      },
+      {
+        "id": 70156,
+        "name": "减速沼泽蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70156.png"
+      }
+    ]
+  },
+  {
+    "seq": 63,
+    "key": "chain63",
+    "title": "木墙蓝图",
+    "ids": [
+      70015,
+      70157,
+      70158,
+      70159,
+      70160
+    ],
+    "items": [
+      {
+        "id": 70015,
+        "name": "木墙蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70015.png"
+      },
+      {
+        "id": 70157,
+        "name": "木墙蓝图碎片",
+        "next": 70158,
+        "reference": "assets/generated/icon_p70157.png"
+      },
+      {
+        "id": 70158,
+        "name": "木墙图纸",
+        "next": 70159,
+        "reference": "assets/generated/icon_p70158.png"
+      },
+      {
+        "id": 70159,
+        "name": "木墙设计图",
+        "next": 70160,
+        "reference": "assets/generated/icon_p70159.png"
+      },
+      {
+        "id": 70160,
+        "name": "木墙蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70160.png"
+      }
+    ]
+  },
+  {
+    "seq": 64,
+    "key": "chain64",
+    "title": "石墙蓝图",
+    "ids": [
+      70016,
+      70161,
+      70162,
+      70163,
+      70164
+    ],
+    "items": [
+      {
+        "id": 70016,
+        "name": "石墙蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70016.png"
+      },
+      {
+        "id": 70161,
+        "name": "石墙蓝图碎片",
+        "next": 70162,
+        "reference": "assets/generated/icon_p70161.png"
+      },
+      {
+        "id": 70162,
+        "name": "石墙图纸",
+        "next": 70163,
+        "reference": "assets/generated/icon_p70162.png"
+      },
+      {
+        "id": 70163,
+        "name": "石墙设计图",
+        "next": 70164,
+        "reference": "assets/generated/icon_p70163.png"
+      },
+      {
+        "id": 70164,
+        "name": "石墙蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70164.png"
+      }
+    ]
+  },
+  {
+    "seq": 65,
+    "key": "chain65",
+    "title": "铁墙蓝图",
+    "ids": [
+      70017,
+      70165,
+      70166,
+      70167,
+      70168
+    ],
+    "items": [
+      {
+        "id": 70017,
+        "name": "铁墙蓝图发射器",
+        "next": 0,
+        "reference": "assets/generated/icon_p70017.png"
+      },
+      {
+        "id": 70165,
+        "name": "铁墙蓝图碎片",
+        "next": 70166,
+        "reference": "assets/generated/icon_p70165.png"
+      },
+      {
+        "id": 70166,
+        "name": "铁墙图纸",
+        "next": 70167,
+        "reference": "assets/generated/icon_p70166.png"
+      },
+      {
+        "id": 70167,
+        "name": "铁墙设计图",
+        "next": 70168,
+        "reference": "assets/generated/icon_p70167.png"
+      },
+      {
+        "id": 70168,
+        "name": "铁墙蓝图",
+        "next": 0,
+        "reference": "assets/generated/icon_p70168.png"
+      }
+    ]
+  },
+  {
+    "seq": 66,
+    "key": "chain66",
+    "title": "弹药库蓝图",
+    "ids": [
+      70169,
+      70201,
+      70202,
+      70203
+    ],
+    "items": [
+      {
+        "id": 70169,
+        "name": "弹药库蓝图",
+        "next": 0,
+        "reference": null
+      },
+      {
+        "id": 70201,
+        "name": "弹药库蓝图碎片",
+        "next": 70202,
+        "reference": null
+      },
+      {
+        "id": 70202,
+        "name": "弹药库蓝图",
+        "next": 70203,
+        "reference": null
+      },
+      {
+        "id": 70203,
+        "name": "弹药库蓝图",
+        "next": 70169,
+        "reference": null
+      }
+    ]
+  },
+  {
+    "seq": 67,
+    "key": "chain67",
+    "title": "雷达站蓝图",
+    "ids": [
+      70170,
+      70205,
+      70206,
+      70207
+    ],
+    "items": [
+      {
+        "id": 70170,
+        "name": "雷达站蓝图",
+        "next": 0,
+        "reference": null
+      },
+      {
+        "id": 70205,
+        "name": "雷达站蓝图碎片",
+        "next": 70206,
+        "reference": null
+      },
+      {
+        "id": 70206,
+        "name": "雷达站蓝图",
+        "next": 70207,
+        "reference": null
+      },
+      {
+        "id": 70207,
+        "name": "雷达站蓝图",
+        "next": 70170,
+        "reference": null
+      }
+    ]
+  },
+  {
+    "seq": 68,
+    "key": "chain68",
+    "title": "维修站蓝图",
+    "ids": [
+      70171,
+      70209,
+      70210,
+      70211
+    ],
+    "items": [
+      {
+        "id": 70171,
+        "name": "维修站蓝图",
+        "next": 0,
+        "reference": null
+      },
+      {
+        "id": 70209,
+        "name": "维修站蓝图碎片",
+        "next": 70210,
+        "reference": null
+      },
+      {
+        "id": 70210,
+        "name": "维修站蓝图",
+        "next": 70211,
+        "reference": null
+      },
+      {
+        "id": 70211,
+        "name": "维修站蓝图",
+        "next": 70171,
+        "reference": null
+      }
+    ]
+  }
+]

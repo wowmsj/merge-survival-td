@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3×3 材质房屋棋盘 Demo</title>
+<style>
+*{box-sizing:border-box}html,body{overflow-x:hidden}body{margin:0;background:#c7b99b;color:#403a31;font:15px system-ui,sans-serif}header{padding:16px 22px}h1{font-size:21px;margin:0 0 6px}p{margin:0;line-height:1.5;color:#5d5142}#stage{height:78vh;min-height:420px}canvas{display:block;touch-action:none}.meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}a{color:#684f31}
+</style>
+<header>
+  <h1>3×3 材质房屋棋盘 · 精修规格 Demo</h1>
+  <p>9 个单格房屋，沿用参考房屋的砖红屋顶、木墙、石基座与内嵌纹理。拖动旋转，滚轮或双指缩放。</p>
+  <div class="meta"><a href="reference-house.html">查看单体房屋</a><a href="reference_house.glb?v=materials-20260911">下载房屋 GLB</a></div>
+</header>
+<div id="stage"></div>
+<script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script>
+<script type="module">
+import * as T from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const stage=document.querySelector('#stage');
+const scene=new T.Scene();scene.background=new T.Color('#c7b99b');
+const renderer=new T.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;stage.append(renderer.domElement);
+scene.add(new T.HemisphereLight(0xfff2dc,0x53606a,1.8));
+const sun=new T.DirectionalLight(0xffe0b2,3.2);sun.position.set(-4,7,-5);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-3.8,right:3.8,top:3.8,bottom:-3.8,near:.1,far:30});sun.shadow.normalBias=.012;scene.add(sun);
+
+const board=new T.Group();scene.add(board);
+const tileMat=new T.MeshStandardMaterial({color:'#8f704d',roughness:.96});
+const seamMat=new T.MeshStandardMaterial({color:'#604a35',roughness:1});
+for(let z=0;z<3;z++)for(let x=0;x<3;x++){
+  const tile=new T.Mesh(new T.BoxGeometry(.98,.10,.98),tileMat);tile.position.set((x-1)*1.03,-.055,(z-1)*1.03);tile.receiveShadow=true;board.add(tile);
+  const seam=new T.LineSegments(new T.EdgesGeometry(new T.BoxGeometry(.985,.102,.985)),new T.LineBasicMaterial({color:'#4c3929',transparent:true,opacity:.42}));seam.position.copy(tile.position);board.add(seam);
+}
+const loader=new GLTFLoader();
+const camera=new T.OrthographicCamera(-2.5,2.5,2.5,-2.5,.1,50);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.target.set(0,.28,0);controls.maxPolarAngle=Math.PI*.47;controls.minZoom=1;controls.maxZoom=2.3;
+function resize(){const w=stage.clientWidth,h=stage.clientHeight,a=w/h;camera.left=-2.5*Math.max(1,a);camera.right=-camera.left;camera.top=2.5*Math.max(1,1/a);camera.bottom=-camera.top;camera.updateProjectionMatrix();renderer.setSize(w,h)}
+new ResizeObserver(resize).observe(stage);resize();
+
+const {scene:source}=await loader.loadAsync('reference_house.glb?v=materials-20260911');
+for(let z=0;z<3;z++)for(let x=0;x<3;x++){
+  const house=source.clone(true);house.position.set((x-1)*1.03,0,(z-1)*1.03);house.rotation.y=((x+z)%2)*Math.PI*.035;
+  house.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});board.add(house);
+}
+camera.position.set(-4.8,4.5,-5.2);camera.lookAt(0,.28,0);controls.update();window.ready=true;
+renderer.setAnimationLoop(()=>{controls.update();renderer.render(scene,camera)});
+</script>
+</html>
+

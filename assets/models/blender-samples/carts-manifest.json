@@ -1,0 +1,57 @@
+[
+  {
+    "id": 20030,
+    "name": "废塑料板",
+    "triangles": 116
+  },
+  {
+    "id": 20031,
+    "name": "一捆塑料板",
+    "triangles": 346
+  },
+  {
+    "id": 20032,
+    "name": "旧塑料篮",
+    "triangles": 204
+  },
+  {
+    "id": 20033,
+    "name": "杂物盒",
+    "triangles": 228
+  },
+  {
+    "id": 20034,
+    "name": "拾荒篮",
+    "triangles": 502
+  },
+  {
+    "id": 20035,
+    "name": "物资推车",
+    "triangles": 644
+  },
+  {
+    "id": 20036,
+    "name": "轻便推车",
+    "triangles": 622
+  },
+  {
+    "id": 20037,
+    "name": "建材推车",
+    "triangles": 762
+  },
+  {
+    "id": 20038,
+    "name": "运货推车",
+    "triangles": 570
+  },
+  {
+    "id": 20039,
+    "name": "满载推车",
+    "triangles": 828
+  },
+  {
+    "id": 20040,
+    "name": "改装铲车",
+    "triangles": 884
+  }
+]

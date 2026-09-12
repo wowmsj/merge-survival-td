@@ -1,0 +1,11 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>低多边形树木造型试作</title><style>*{box-sizing:border-box}html,body{margin:0;overflow-x:hidden;background:#c7b99b;color:#403a31;font:16px system-ui,sans-serif}header{padding:18px}canvas{display:block}a{color:#684f31}</style><header>单格低多边形树木 · 参考图风格试作　<a href="tree_lowpoly_v3.glb?v=20260911-01">GLB</a>　<a href="tree_lowpoly_v3.blend">Blender源文件</a></header><script type="importmap">{"imports":{"three":"/vendor/three.module.js","three/addons/":"/vendor/addons/"}}</script><script type="module">
+import * as T from 'three';import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';import {OrbitControls} from 'three/addons/controls/OrbitControls.js';const scene=new T.Scene();window.addEventListener('error',e=>document.querySelector('header').textContent='加载失败：'+e.message);scene.background=new T.Color('#c7b99b');const r=new T.WebGLRenderer({antialias:true});r.setPixelRatio(Math.min(devicePixelRatio,2));r.toneMapping=T.ACESFilmicToneMapping;r.shadowMap.enabled=true;document.body.append(r.domElement);scene.add(new T.HemisphereLight(0xfff2dc,0x53606a,1.8));const sun=new T.DirectionalLight(0xffe0b2,3.2);sun.position.set(-3,6,-4);sun.castShadow=true;scene.add(sun);const g=new T.Mesh(new T.BoxGeometry(1.02,.1,1.02),new T.MeshStandardMaterial({color:'#8f704d',roughness:.96}));g.position.y=-.05;g.receiveShadow=true;scene.add(g);const c=new T.OrthographicCamera(-1.35,1.35,1.35,-1.35,.1,30),ctl=new OrbitControls(c,r.domElement);ctl.target.set(0,.48,0);ctl.enableDamping=true;ctl.maxPolarAngle=Math.PI*.47;function resize(){const w=innerWidth,h=Math.max(280,innerHeight-document.querySelector('header').offsetHeight),a=w/h;c.left=-1.35*Math.max(1,a);c.right=-c.left;c.top=1.35*Math.max(1,1/a);c.bottom=-c.top;c.updateProjectionMatrix();r.setSize(w,h)}addEventListener('resize',resize);resize();const {scene:m}=await new GLTFLoader().loadAsync('tree_lowpoly_v3.glb?v=20260911-01');m.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(m);c.position.set(-2.4,2.1,-2.5);ctl.update();window.ready=true;r.setAnimationLoop(()=>{ctl.update();r.render(scene,c)});
+</script></html>
+
+
+
+
+
+
+
+

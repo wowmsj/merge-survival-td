@@ -1,0 +1,72 @@
+[
+  {
+    "id": 10012,
+    "name": "螺丝刀",
+    "triangles": 1136
+  },
+  {
+    "id": 10013,
+    "name": "锤子",
+    "triangles": 2416
+  },
+  {
+    "id": 10014,
+    "name": "六角扳手",
+    "triangles": 1752
+  },
+  {
+    "id": 10015,
+    "name": "起钉器",
+    "triangles": 1520
+  },
+  {
+    "id": 10016,
+    "name": "夹子",
+    "triangles": 2888
+  },
+  {
+    "id": 10017,
+    "name": "木工锯",
+    "triangles": 2048
+  },
+  {
+    "id": 10018,
+    "name": "电工钳",
+    "triangles": 2684
+  },
+  {
+    "id": 10019,
+    "name": "电钻",
+    "triangles": 2964
+  },
+  {
+    "id": 10020,
+    "name": "抛光机",
+    "triangles": 3508
+  },
+  {
+    "id": 10021,
+    "name": "铆钉枪",
+    "triangles": 2452
+  },
+  {
+    "id": 10022,
+    "name": "木工电锯",
+    "triangles": 4000
+  },
+  {
+    "id": 10023,
+    "name": "管钳子",
+    "triangles": 2420
+  },
+  {
+    "id": 10024,
+    "name": "打磨机",
+    "triangles": 2320
+  },
+  {
+    "id": 10025,
+    "name": "气动枪",
+    "triangles": 3388
+  }
+]
