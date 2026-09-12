@@ -36,7 +36,13 @@ const BUILDING_GLB: Record<string, string> = {
 const BUILDING_GLB_BY_CFG: Record<number, string> = {
   202: 'medical_station.glb',
   203: 'power_station.glb',
-  206: 'workshop.glb'
+  204: 'outpost.glb',
+  205: 'warehouse.glb',
+  206: 'workshop.glb',
+  207: 'collection_station.glb',
+  208: 'ammo_depot.glb',
+  209: 'radar_station.glb',
+  210: 'repair_station.glb'
 };
 /** 废墟三种变体（布局未指定的运行时新增废墟按格哈希取变体） */
 const RUIN_GLBS = ['warm_ruin.glb', 'warm_ruin_1.glb', 'warm_ruin_2.glb'];
