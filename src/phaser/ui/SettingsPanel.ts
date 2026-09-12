@@ -7,11 +7,15 @@ import { createInitialGameState } from '../../core/model/GameState';
 import { BASE_CENTER } from '../../core/model/Base';
 import { getAllBuildingConfigs } from '../../core/config/BuildingConfig';
 import { PlayMode } from '../../core/types';
+import { getCurrentUser, isAuthEnabled, isLoggedIn } from '../../platform/common/Auth';
+import { AccountPanel, type IAccountContext } from './AccountPanel';
 
 declare const __DEV_FEATURES__: boolean;
 
 export type RenderMode = '2d' | '3d';
 const RENDER_MODE_KEY = 'merge_survival_td_render_mode';
+/** 白天基地网格 2D/3D 切换（实验，__DEV_FEATURES__ 下可见，切换后重开场景生效；默认 3D，显式 '0' 回退 2D） */
+const BASE_3D_KEY = 'merge_survival_td_base_3d';
 
 export class SettingsPanel extends BasePanel {
   private restartTimer: Phaser.Time.TimerEvent | null = null;
@@ -27,7 +31,8 @@ export class SettingsPanel extends BasePanel {
     private readonly onRestart: () => void,
     private readonly playMode: PlayMode = 'merge',
     private readonly onPlayModeChange?: (mode: PlayMode) => void,
-    private readonly onRenderModeChange?: (mode: RenderMode) => void
+    private readonly onRenderModeChange?: (mode: RenderMode) => void,
+    private readonly accountCtx?: IAccountContext
   ) {
     super(scene);
     const saved = localStorage.getItem(RENDER_MODE_KEY);
@@ -39,7 +44,10 @@ export class SettingsPanel extends BasePanel {
     if (!this.container) return;
     this.addMask(() => this.close());
     // 生产包隐藏玩法切换、夜战渲染切换和夜战测试入口，面板相应收矮、重开按钮上移
-    const { px, py } = this.addPanelChrome(getText('settings.title'), 620, __DEV_FEATURES__ ? 780 : 400, { dividerY: 88 });
+    // 配置了 Supabase 凭据时追加账号行（未配置则整个入口不显示，游戏保持纯游客模式）
+    const authEnabled = isAuthEnabled();
+    const rowShift = authEnabled ? 130 : 0;
+    const { px, py } = this.addPanelChrome(getText('settings.title'), 620, (__DEV_FEATURES__ ? 910 : 400) + rowShift, { dividerY: 88 });
     makeUiButton(this.scene, this.container, px + 175, py + 140, 230, 68, getText('settings.chinese'), {}, () => this.onLanguage('zh-CN'));
     makeUiButton(this.scene, this.container, px + 445, py + 140, 230, 68, getText('settings.english'), {}, () => this.onLanguage('en'));
 
@@ -67,13 +75,44 @@ export class SettingsPanel extends BasePanel {
         box: { fill: this.renderMode === '3d' ? 0x2b4a2b : undefined, stroke: this.renderMode === '3d' ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
       }, () => this.setRenderMode('3d'));
 
-      makeUiButton(this.scene, this.container, px + 310, py + 550, 300, 72, getText('settings.nightTest'), {
+      // 白天基地网格 2D/3D 切换（实验）：写 localStorage 后重开场景生效
+      const base3d = localStorage.getItem(BASE_3D_KEY) !== '0';
+      this.container.add(this.scene.add.text(px + 310, py + 540, `Base: ${base3d ? '3D' : '2D'}`, {
+        fontSize: '26px', color: '#ccccdd'
+      }).setOrigin(0.5));
+      makeUiButton(this.scene, this.container, px + 175, py + 600, 230, 68, getText('settings.renderMode.2d'), {
+        box: { fill: !base3d ? 0x2b4a2b : undefined, stroke: !base3d ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
+      }, () => this.setBase3d(false));
+      makeUiButton(this.scene, this.container, px + 445, py + 600, 230, 68, getText('settings.renderMode.3d'), {
+        box: { fill: base3d ? 0x2b4a2b : undefined, stroke: base3d ? 0x51cf66 : UI_STROKE, strokeAlpha: 0.8, radius: 14 }
+      }, () => this.setBase3d(true));
+
+      makeUiButton(this.scene, this.container, px + 310, py + 710, 300, 72, getText('settings.nightTest'), {
         box: { stroke: UI_GOLD, strokeAlpha: 0.8, radius: 14 }
       }, () => this.openNightTestDialog());
     }
-    this.restartButton = makeUiButton(this.scene, this.container, px + 310, py + (__DEV_FEATURES__ ? 660 : 300), 300, 72, getText('dialog.restart'), {
+    this.restartButton = makeUiButton(this.scene, this.container, px + 310, py + (__DEV_FEATURES__ ? 810 : 300) + rowShift, 300, 72, getText('dialog.restart'), {
       box: { stroke: UI_ORANGE, strokeAlpha: 0.7, radius: 14 }
     }, () => this.confirmRestart());
+    if (authEnabled) this.addAccountRow(px + 310, py + (__DEV_FEATURES__ ? 810 : 300));
+  }
+
+  /** 账号行：未登录显示游客入口，已登录显示邮箱；点击打开账号面板（登录/绑定/同步/退出） */
+  private addAccountRow(cx: number, cy: number): void {
+    if (!this.container) return;
+    const strip = this.scene.add.graphics();
+    drawUiBox(strip, cx, cy, 500, 84, { fill: 0x2a2f3e, fillAlpha: 0.9, stroke: UI_STROKE, strokeAlpha: 0.6, radius: 14 });
+    strip.setInteractive(new Phaser.Geom.Rectangle(cx - 250, cy - 42, 500, 84), Phaser.Geom.Rectangle.Contains);
+    strip.on('pointerup', () => {
+      if (!this.accountCtx) return;
+      const panel = new AccountPanel(this.scene, this.accountCtx);
+      panel.open();
+    });
+    this.container.add(strip);
+    const label = isLoggedIn() ? (getCurrentUser()?.email ?? '') : getText('account.guestRow');
+    this.container.add(this.scene.add.text(cx, cy, label, {
+      fontSize: '26px', color: '#ffe066'
+    }).setOrigin(0.5));
   }
 
   private setRenderMode(mode: RenderMode): void {
@@ -82,6 +121,15 @@ export class SettingsPanel extends BasePanel {
     this.onRenderModeChange?.(mode);
     this.close();
     this.open();
+  }
+
+  /** 白天基地网格 2D/3D：沿用夜战切换的保存链路（onRenderModeChange = save），随后重开场景生效；3D 写 '1'、2D 写 '0'（默认 3D） */
+  private setBase3d(on: boolean): void {
+    const current = localStorage.getItem(BASE_3D_KEY) !== '0';
+    if (current === on) return;
+    localStorage.setItem(BASE_3D_KEY, on ? '1' : '0');
+    this.onRenderModeChange?.(this.renderMode);
+    this.scene.scene.restart();
   }
 
   close(): void {

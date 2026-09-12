@@ -77,6 +77,11 @@ export class StorySystem {
     this.fire(state, getBeatsByTrigger('level', level, this.seen(state)));
   }
 
+  /** 基地核心（合成核心）等级变化：等级 >= value 的 beat 触发 */
+  checkCoreLevel(state: IGameState, level: number): void {
+    this.fire(state, getBeatsByTrigger('coreLevel', level, this.seen(state)));
+  }
+
   /** 建成建筑（cfgId 为建筑配置 id） */
   checkBuilding(state: IGameState, cfgId: number): void {
     this.fire(state, getBeatsByTrigger('building', cfgId, this.seen(state)));

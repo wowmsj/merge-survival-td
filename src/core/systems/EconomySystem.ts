@@ -5,6 +5,7 @@ import { findEmptyCell, getItem, setItem } from '../model/Grid';
 import { createItemFromConfig, itemIsNormal } from '../model/Item';
 import { getText } from '../i18n';
 import { getPowerMax } from '../config/TableConfig';
+import { canHostItem } from '../model/GameState';
 
 /**
  * 经济系统
@@ -143,7 +144,7 @@ export class EconomySystem {
       eventBus.emit(GameEvents.GRID_ITEM_CHANGED, { pos: sellData.pos, item: sellData.item });
       return sellData.pos;
     }
-    const emptyPos = findEmptyCell(state.grid);
+    const emptyPos = findEmptyCell(state.grid, (r, c) => canHostItem(state, r, c));
     if (emptyPos) {
       setItem(state.grid, emptyPos.row, emptyPos.col, sellData.item);
       eventBus.emit(GameEvents.GRID_ITEM_CHANGED, { pos: emptyPos, item: sellData.item });
@@ -158,7 +159,7 @@ export class EconomySystem {
    * 用于夜晚战利品、资源建筑产出等系统发放入口
    */
   giveItemToBoardOrCard(state: IGameState, propId: number): void {
-    const emptyPos = findEmptyCell(state.grid);
+    const emptyPos = findEmptyCell(state.grid, (r, c) => canHostItem(state, r, c));
     if (!emptyPos) {
       state.cardArr.push(propId);
       eventBus.emit(GameEvents.CARD_UPDATED, { cards: state.cardArr });
@@ -175,7 +176,7 @@ export class EconomySystem {
   useCard(state: IGameState, index: number = 0): IPoint | null {
     if (state.cardArr.length <= 0) return null;
 
-    const emptyPos = findEmptyCell(state.grid);
+    const emptyPos = findEmptyCell(state.grid, (r, c) => canHostItem(state, r, c));
     if (!emptyPos) {
       eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.boardFull'));
       return null;

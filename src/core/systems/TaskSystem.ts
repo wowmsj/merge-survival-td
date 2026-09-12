@@ -7,7 +7,7 @@ import { itemIsNormal } from '../model/Item';
 import { BagSystem } from './BagSystem';
 import { EconomySystem } from './EconomySystem';
 import { getRandomByWeight } from '../utils/Common';
-import { getCoreTier, getItemTier, isCoreChainItem } from '../config/MergeCoreConfig';
+import { getCoreTier, getItemTier } from '../config/MergeCoreConfig';
 import { DIAMOND_TO_COIN_RATE } from './BlackMarketSystem';
 import { getText } from '../i18n';
 
@@ -27,7 +27,7 @@ export const MAX_CONCURRENT_TASKS = 5;
  */
 const MERGE_LOOKAHEAD = 2;
 /** 订单候选豁免的物品 id：含这些 id 的整条链不进任务候选（同 type=7 蓝图豁免逻辑，防止剧情关键道具被订单抽走） */
-const ORDER_EXEMPT_ITEM_IDS = new Set([30048, 60024, 60025, 60026, 60027, 60028, 60029, 60030, 60031]); // 30048 病毒真相；60024~60031 合成核心链（夜战养成的永久装置）
+const ORDER_EXEMPT_ITEM_IDS = new Set([30048, 60024, 60025]); // 30048 病毒真相；60024/60025 核心升级材料（夜战养成的永久装置）
 
 /**
  * 目标合成工作量：N 级道具需要 2^(N-1) 个一级材料；多个目标与数量累加。
@@ -351,8 +351,8 @@ export class TaskSystem {
    * 闭包高度受限：不超过「种子产物等级、该链在棋盘上已拥有最高等级」+ MERGE_LOOKAHEAD，
    * 保证任务要求的物品是玩家短期内真能合出来的。
    * 被封印（纸箱/蜘蛛网）或气泡中的物品不参与：它们当前无法产出，否则任务会遥不可及。
-   * 合成核心（60026~60031）虽是发射器但只作「链首来源」，不作种子：
-   * 某条链的订单必须棋盘上真有该链自己的发射器才会出现。
+   * 基地核心（= 发射器）的产出不计入种子：它虽然能发各链链首，但订单仍要求
+   * 棋盘上真有该链自己的发射器（或链首本身是发射器）才出现。
    */
   collectReachableIds(state: IGameState): number[] {
     const reachable = new Set<number>();
@@ -367,10 +367,6 @@ export class TaskSystem {
       if (!prop) return;
       if (!itemIsNormal(item, state.timestamp)) return; // 封印/气泡中的不算可产出
       ownedLevel.set(item.id, prop.luna ?? 1);
-      // 核心发射器（60026~60031）是通用链首来源，不作任务种子：
-      // 否则它一上场就点亮全部 16 条链，订单会要求玩家尚未建起对应发射器的物品。
-      // 规则：某条链的订单，必须在棋盘上真有该链的发射器（或链首本身是发射器）才出现。
-      if (isCoreChainItem(item.id)) return;
       // 发射器产出
       if (prop.atom) {
         for (const idStr of String(prop.atom).split(',')) {

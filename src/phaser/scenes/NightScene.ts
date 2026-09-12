@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { IGameState } from '../../core/types';
 import { GameEvents, eventBus } from '../../core/events/EventBus';
 import { StorageSystem } from '../../core/systems/StorageSystem';
+import { flushCloudUpload } from '../../platform/common/CloudSave';
 import { NightSystem, IBattle } from '../../core/systems/NightSystem';
 import { StorySystem } from '../../core/systems/StorySystem';
 import { StoryDialog } from '../ui/StoryDialog';
@@ -518,6 +519,7 @@ export class NightScene extends Phaser.Scene {
         return;
       }
       this.storage.saveState(this.state);
+      void flushCloudUpload();
       this.scene.start('BaseScene', { state: this.state, nightEndStory: { won, day: this.state.day } });
     });
   }

@@ -17,7 +17,7 @@ const PANEL_H = 1240;
 /**
  * 角色图鉴面板：收录所有 NPC（含玩家自己）。
  * 已遇到（在已播剧情里说过话）→ 立绘 + 名字 + 称号，点开看背景故事；
- * 未遇到 → 黑色剪影 + ???。由 GameScene 的「角色」按钮打开。
+ * 未遇到 → 黑色剪影 + ???。由 BaseScene 的「角色」按钮打开。
  */
 export class CharacterPanel extends BasePanel {
   private state: IGameState;

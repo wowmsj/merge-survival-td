@@ -93,7 +93,7 @@ export type TerrainKind = 'rubble' | 'grass' | 'shack' | 'woods' | 'pond';
 export interface IBuilding {
   /** building.json 配置 id */
   cfgId: number;
-  /** 等级 1~3 */
+  /** 等级 1~3；基地核心（kind=core）为 1~6 的合成核心等级（见 CoreConfig） */
   level: number;
   hp: number;
   maxHp: number;
@@ -101,6 +101,12 @@ export interface IBuilding {
   col: number;
   /** 资源建筑上次产出结算时间戳（离线产出兼容） */
   lastProduceAt?: number;
+  /** 基地核心发射库存（仅 kind=core；0 = 点击冷却中等 CD 回满） */
+  times?: number;
+  /** 基地核心点击冷却到期时间戳（仅 kind=core） */
+  cd?: number;
+  /** 基地核心冷却总时长（ms，UI 进度条分母） */
+  cdSum?: number;
 }
 
 /** 基地单格状态；claimed=false 的区域只可探索，不能直接建造。 */
@@ -170,6 +176,8 @@ export interface IGameState {
   powerFreeUntil: number;
   /** 各发射器已生成次数（用于首次指定产出 clickPropId 注入） */
   propCounts: Record<number, number>;
+  /** 基地核心累计点击次数（前两发为新手引导指定产出，见 CoreConfig.CORE_GUIDE_HANDLES） */
+  coreClickCount?: number;
   /** 基地（生存建造） */
   base: IBaseState;
   /** 天数（生存建造），从 1 开始 */

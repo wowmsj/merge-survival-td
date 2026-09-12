@@ -1,6 +1,7 @@
 import { GameEvents, eventBus } from '../events/EventBus';
 import { IBaseState, IBuilding, IGameState } from '../types';
-import { buildingAt, distFromCenter, findPathToCore, RUIN_COLLAPSE_ORDER, ruinCellsOfSide, RuinSide } from '../model/Base';
+import { buildingAt, CellBlocker, distFromCenter, findPathToCore, RUIN_COLLAPSE_ORDER, ruinCellsOfSide, RuinSide } from '../model/Base';
+import { getItem } from '../model/Grid';
 import { terrainAt, isTerrainSpawnable, isTerrainWalkableForGround, isTerrainPassableForBurrow } from '../config/TerrainConfig';
 import { getBuildingConfig, attackAtLevel, MaterialCost, RUIN_ID } from '../config/BuildingConfig';
 import { getZombieConfig, genWaveZombies, getTotalWaves, getZombieLevel, getLevelHpScale, getLevelAttackScale, rollDrops } from '../config/ZombieConfig';
@@ -12,6 +13,11 @@ import { BagSystem } from './BagSystem';
 import { TaskSystem } from './TaskSystem';
 import { BaseSystem, formatGains, hasSupportCoverage, isBuildingPowered, isTowerPoweredAtNight } from './BaseSystem';
 import { getBuildingName, getPropName, getText, getZombieName } from '../i18n';
+
+/** 合成物品格对地面僵尸的阻挡谓词（基地地图直接合成：物品与建筑一样挡路） */
+function itemBlocker(state: IGameState): CellBlocker {
+  return (r, c) => !!getItem(state.grid, r, c);
+}
 
 /** 夜晚战斗中的僵尸实例 */
 export interface IZombie {
@@ -255,7 +261,7 @@ export class NightSystem {
     // （新开局北/西/南三边整排废墟 + 东边部分废墟 → 第一夜只从东边 3 格缺口进攻）
     // 同格不重叠：已被僵尸占住的格子不刷；全被占住时返回 false（调用方稍候重试）
     // 边缘格被瓦砾/破旧建筑/水池地形堵住时不刷（杂草/树林可以，从林中爬出）
-    const open = getOpenEdgeCells(state.base);
+    const open = getOpenEdgeCells(state.base, itemBlocker(state));
     const pool = (open.length > 0 ? open : allEdgeCells(state.base))
       .filter(c => {
         const terrain = terrainAt(state.base, c.row, c.col);
@@ -263,7 +269,7 @@ export class NightSystem {
       });
     // 只从能走到核心的格子刷怪：被瓦砾/破楼地形围死的口袋格（如西北角）刷出来
     // 会永远卡住——兜底直线移动不能进地形格，而地形又不是建筑、拆不了
-    const reachable = pool.filter(c => findPathToCore(state.base, c));
+    const reachable = pool.filter(c => findPathToCore(state.base, c, undefined, itemBlocker(state)));
     const spawnPool = reachable.length > 0 ? reachable : pool;
     if (spawnPool.length === 0) return false;
     const cell = spawnPool[Math.floor(Math.random() * spawnPool.length)];
@@ -313,7 +319,7 @@ export class NightSystem {
     // burrowed enemies retain their direct movement rules.
     const candidates: { row: number; col: number }[] = [];
     if (!flying && !burrowed) {
-      const path = findPathToCore(state.base, z);
+      const path = findPathToCore(state.base, z, undefined, itemBlocker(state));
       if (path && path.length > 1) candidates.push(path[1]);
     }
     if (candidates.length === 0) {
@@ -329,8 +335,10 @@ export class NightSystem {
     }
 
     // 地形通行判定：飞行无视地形；钻地不能穿水池；地面不能进瓦砾/破旧建筑/水池
+    // 合成物品格同样只挡地面僵尸（飞行越过、钻地穿过），且物品不是建筑、不可被攻击
     const passable = (r: number, c: number): boolean => {
       if (flying) return true;
+      if (!burrowed && getItem(state.grid, r, c)) return false;
       const terrain = terrainAt(state.base, r, c);
       if (!terrain) return true;
       return burrowed ? isTerrainPassableForBurrow(terrain) : isTerrainWalkableForGround(terrain);
@@ -637,9 +645,9 @@ function allEdgeCells(base: IBaseState): { row: number; col: number }[] {
   return cells;
 }
 
-/** 没有建筑的边缘格：僵尸今晚只会从这些格子刷出 */
-export function getOpenEdgeCells(base: IBaseState): { row: number; col: number }[] {
-  return allEdgeCells(base).filter(p => !buildingAt(base, p.row, p.col));
+/** 没有建筑（且无合成物品，itemBlocked 提供时）的边缘格：僵尸今晚只会从这些格子刷出 */
+export function getOpenEdgeCells(base: IBaseState, itemBlocked?: CellBlocker): { row: number; col: number }[] {
+  return allEdgeCells(base).filter(p => !buildingAt(base, p.row, p.col) && !(itemBlocked && itemBlocked(p.row, p.col)));
 }
 
 /**

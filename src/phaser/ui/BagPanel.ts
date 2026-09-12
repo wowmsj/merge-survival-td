@@ -1,8 +1,7 @@
 import * as Phaser from 'phaser';
 import { getProp } from '../../core/config/PropConfig';
 import { getBagGridPrice } from '../../core/config/TableConfig';
-import { colorFromId } from '../objects/ItemSprite';
-import { getItemIconKey } from '../config/ItemIconMap';
+import { getItemIconKey, colorFromId } from '../config/ItemIconMap';
 import { UI_FILL, UI_GREEN, UI_GREEN_FILL, UI_STROKE, drawUiBox } from './UiStyle';
 import { BasePanel } from './BasePanel';
 import { getLanguage, getPropName, getText } from '../../core/i18n';
@@ -12,7 +11,7 @@ import { getLanguage, getPropName, getText } from '../../core/i18n';
  * 底板与其他面板一致走 drawUiBox 代码绘制（panel-bg 贴图已弃用）
  */
 export class BagPanel extends BasePanel {
-  /** 由 GameScene 注入 */
+  /** 由 BaseScene 注入 */
   getBagSlots: () => ({ id: number } | null)[] = () => [];
   onTakeOut: (index: number) => void = () => {};
   onAddSlot: () => void = () => {};

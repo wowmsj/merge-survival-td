@@ -2,6 +2,9 @@ import * as Phaser from 'phaser';
 import { IUiBoxOpts, UI_CARD_FILL, UI_FILL, UI_STROKE, drawUiBox } from './UiStyle';
 import { makeUiButton } from './UiWidgets';
 
+/** 遮罩防误关窗口（ms）：开面板后这段时间内忽略遮罩抬手（长按/点击开面板的同一次手势） */
+const MASK_GUARD_MS = 250;
+
 export interface IBasePanelOpts {
   /** 容器 depth，默认 850（图鉴/剧情回顾档）；Bag=500、Spawner=600 */
   depth?: number;
@@ -51,6 +54,8 @@ export class BasePanel {
   private readonly persistent: boolean;
   /** 持久模式的可见标记（非持久模式看 container 是否为 null） */
   private shown = false;
+  /** 打开时刻：遮罩忽略「开面板的同一次手势」抬手，避免长按开面板又被立刻点关 */
+  private openedAt = 0;
 
   constructor(scene: Phaser.Scene, opts: IBasePanelOpts = {}) {
     this.scene = scene;
@@ -67,6 +72,7 @@ export class BasePanel {
 
   // 子类可用带参签名覆盖（如 SpawnerProductsPanel.open(spawnerId)）
   open(..._args: any[]): void {
+    this.openedAt = Date.now();
     if (this.persistent) {
       this.shown = true;
       this.container!.setVisible(true);
@@ -89,12 +95,18 @@ export class BasePanel {
   /**
    * 全屏半透明遮罩：setInteractive 阻断穿透点击到棋盘（所有面板都依赖这一点）。
    * 传 onClose 时点击遮罩关闭（Bag/Spawner 风格，alpha 0.6）；不传仅压暗（图鉴/剧情回顾风格，alpha 0.7）。
+   * 打开后 250ms 内的抬手不算「点击遮罩」——长按/点击开面板的同一次手势不应立刻把面板关掉。
    */
   protected addMask(onClose?: () => void, alpha = 0.7): void {
     if (!this.container) return;
     const { width, height } = this.scene.scale;
     const mask = this.scene.add.rectangle(0, 0, width, height, 0x000000, alpha).setOrigin(0).setInteractive();
-    if (onClose) mask.on('pointerup', onClose);
+    if (onClose) {
+      mask.on('pointerup', () => {
+        if (Date.now() - this.openedAt < MASK_GUARD_MS) return;
+        onClose();
+      });
+    }
     this.container.add(mask);
   }
 

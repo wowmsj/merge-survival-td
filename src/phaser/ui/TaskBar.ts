@@ -3,6 +3,7 @@ import { IGameState, ITask } from '../../core/types';
 import { MAX_CONCURRENT_TASKS, calcTaskGold } from '../../core/systems/TaskSystem';
 import { HUD_BOTTOM } from './HUD';
 import { getItemIconKey } from '../config/ItemIconMap';
+import { applyModelIcon } from '../../three/ModelIconRenderer';
 import { UI_GREEN, UI_GREEN_FILL, UI_SLOT_FILL, UI_STROKE, drawUiBox } from './UiStyle';
 
 /** 任务栏顶部 y：HUD 两排底之下留 12 间距 */
@@ -22,7 +23,7 @@ export class TaskBar {
   private state: IGameState;
   private container: Phaser.GameObjects.Container;
 
-  /** 由 GameScene 注入 */
+  /** 由 BaseScene 注入 */
   countItem: (id: number) => number = () => 0;
   canComplete: (task: ITask) => boolean = () => false;
   onSubmit: (task: ITask) => void = () => {};
@@ -71,6 +72,7 @@ export class TaskBar {
       if (iconKey) {
         const icon = this.scene.add.image(itemX, itemY, iconKey).setDisplaySize(52, 52);
         this.container.add(icon);
+        applyModelIcon(this.scene, icon, need.id, 52); // 3D 快照就绪后原位升级，失败保持 2D
       }
       const has = Math.min(this.countItem(need.id), need.num);
       const enough = has >= need.num;

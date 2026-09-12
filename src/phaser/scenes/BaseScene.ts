@@ -1,14 +1,26 @@
 import * as Phaser from 'phaser';
-import { IGameState, IBuilding, BuildingKind, TerrainKind } from '../../core/types';
+import { IGameState, IBuilding, IItemData, IPoint, ITask, BuildingKind, TerrainKind, ItemStatus } from '../../core/types';
 import { GameEvents, eventBus } from '../../core/events/EventBus';
+import { GameInitializer } from '../../core/init/GameInitializer';
 import { StorageSystem } from '../../core/systems/StorageSystem';
 import { EconomySystem } from '../../core/systems/EconomySystem';
+import { MergeSystem } from '../../core/systems/MergeSystem';
+import { SpawnSystem } from '../../core/systems/SpawnSystem';
+import { BagSystem } from '../../core/systems/BagSystem';
+import { SpecialItemSystem } from '../../core/systems/SpecialItemSystem';
+import { LevelSystem } from '../../core/systems/LevelSystem';
+import { TaskSystem } from '../../core/systems/TaskSystem';
 import { BaseSystem, canDefendFlyingEnemies, formatGains, formatResourceGains, getPowerInfo, hasSupportCoverage, isTowerPoweredAtNight } from '../../core/systems/BaseSystem';
-import { zoneOf, BaseZone, buildingAt, getShortestEntryPathLength } from '../../core/model/Base';
+import { CoreSystem } from '../../core/systems/CoreSystem';
+import { zoneOf, BaseZone, buildingAt, findCoreBuilding, getShortestEntryPathLength, BASE_COLS } from '../../core/model/Base';
+import { getItem } from '../../core/model/Grid';
+import { itemInCd, itemIsBubble } from '../../core/model/Item';
+import { getProp, isClickSpawner, PROP_IDS } from '../../core/config/PropConfig';
 import { TERRAIN_CLEAR_COST, terrainAt } from '../../core/config/TerrainConfig';
 import {
   getBuildingConfig, getBuildableList, getUpgradeCostCoin, getDemolishRefundCoin, getRepairCostCoin,
   attackAtLevel, outputIntervalAtLevel, outputAmountAtLevel, capResourceKeys, capAmountAtLevel, isBuildingUnlocked,
+  getBlueprintBuilding,
   BUILDING_MAX_LEVEL, IBuildingConfig, RESOURCE_NAME, formatUpgradeCost
 } from '../../core/config/BuildingConfig';
 import { getNightPreview, getZombieConfig } from '../../core/config/ZombieConfig';
@@ -16,35 +28,78 @@ import { getAttackSides } from '../../core/systems/NightSystem';
 import { HeroSystem } from '../../core/systems/HeroSystem';
 import { getHeroConfig } from '../../core/config/HeroConfig';
 import { IHeroState } from '../../core/types';
+import { useBlueprint } from '../../core/systems/UnlockSystem';
+import { hasTaskStoryBeat } from '../../core/config/StoryConfig';
 import { HUD, HUD_BOTTOM } from '../ui/HUD';
+import { TaskBar } from '../ui/TaskBar';
+import { TaskChainPanel } from '../ui/TaskChainPanel';
+import { CardBar } from '../ui/CardBar';
+import { InfoBar, buildInfoActions, ICoreCardInfo, IInfoAction } from '../ui/InfoBar';
+import { BagPanel } from '../ui/BagPanel';
+import { SpawnerProductsPanel } from '../ui/SpawnerProductsPanel';
+import { CoreIntroPanel } from '../ui/CoreIntroPanel';
+import { getCoreAuraChance } from '../../core/config/MergeCoreConfig';
+import { getCorePropId, getCoreTimesAt } from '../../core/config/CoreConfig';
+import { HandGuide } from '../ui/HandGuide';
+import { StoryArchivePanel } from '../ui/StoryArchivePanel';
+import { CharacterPanel } from '../ui/CharacterPanel';
+import { MonsterPanel } from '../ui/MonsterPanel';
+import { SettingsPanel } from '../ui/SettingsPanel';
 import { StoryDialog } from '../ui/StoryDialog';
 import { StorySystem } from '../../core/systems/StorySystem';
 import { UI_FILL, UI_GOLD, UI_ORANGE, UI_SLOT_FILL, UI_STROKE, drawUiBox } from '../ui/UiStyle';
 import { drawTerrainTile, terrainHasOverlayIcon } from '../ui/TerrainTiles';
-import { addFullscreenBg, showSceneToast } from '../ui/UiWidgets';
+import { addFullscreenBg, showSceneToast, makeUiButton } from '../ui/UiWidgets';
 import { KIND_COLORS, KIND_ICON_KEYS, buildingIconKey } from '../config/BuildingKindStyle';
-import { getBuildingName, getHeroDescription, getHeroName, getLanguage, getPropName, getText, getZombieName } from '../../core/i18n';
+import { getBuildingName, getHeroDescription, getHeroName, getLanguage, getPropName, getText, getZombieName, setLanguage, type Language } from '../../core/i18n';
 import { BLACK_MARKET_ITEMS, buyBlackMarketBlueprint, buyNeededMaterial, exchangeDiamondForCoins, getNeededMaterials, getRecommendedMarketItem } from '../../core/systems/BlackMarketSystem';
-import { getItemIconKey } from '../config/ItemIconMap';
-import { colorFromId } from '../objects/ItemSprite';
+import { getItemIconKey, colorFromId } from '../config/ItemIconMap';
+import { Base3DRenderer } from '../../three/Base3DRenderer';
 
-/** 顶栏（返回/天数/核心/迎接夜晚）中线 Y：压在 HUD 第二行胶囊之下 */
-const TOP_BAR_Y = HUD_BOTTOM + 40;
+/** webpack DefinePlugin 注入：开发专用功能开关（夜战测试、2D/3D 切换、e2e 调试钩子） */
+declare const __DEV_FEATURES__: boolean;
+
+/** 顶栏（天数/核心/迎接夜晚）中线 Y：压在任务条（HUD 下 98px）之下 */
+const TOP_BAR_Y = HUD_BOTTOM + 140;
 const GRID_TOP = TOP_BAR_Y + 40;
 const GRID_LEFT = 24;
-const CELL = 74;
+const CELL = 66;
 const GAP = 6;
-const TAB_BAR_TOP = 1294;
+const TAB_BAR_TOP = 1450;
+/** 右侧竖排菜单（剧情/角色/怪物/商店/设置）中心 x 与起始 y：网格矩形右侧竖条 */
+const MENU_X = 1020;
+const MENU_TOP = 402;
+const MENU_GAP = 104;
+
+/** 13×13 网格矩形（设计像素）；3D 渲染器画布对齐此矩形 */
+export const BASE_GRID_RECT = {
+  left: GRID_LEFT,
+  top: GRID_TOP,
+  size: BASE_COLS * (CELL + GAP) - GAP
+};
+
+const BASE_3D_STORAGE_KEY = 'merge_survival_td_base_3d';
+
+/** 核心格长按判定时长（ms）：短按=选中/发射，长按=打开核心面板 */
+const CORE_HOLD_MS = 480;
+
+/** 冷却剩余毫秒 → m:ss（核心信息卡/格子角标共用） */
+function formatCdRemain(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 
 /** 建造栏布局：每页 2 列 × 2 行共 4 张大卡片，超出分页（底部页码条） */
 const PALETTE_COLS = 2;
 const PALETTE_ROWS = 2;
 const CARD_W = 500;
-const CARD_H = 216;
+const CARD_H = 172;
 const CARD_GAP_X = 30;
-const CARD_GAP_Y = 12;
-const CARDS_TOP = 1380;
-const PAGE_BAR_Y = 1896;
+const CARD_GAP_Y = 8;
+const CARDS_TOP = 1532;
+const PAGE_BAR_Y = 1900;
 
 /** 建造栏页签：4 个建筑分类 + 英雄（hero 非建筑分类，单独处理） */
 type TabKey = Exclude<BuildingKind, 'core' | 'ruin'> | 'hero';
@@ -58,19 +113,49 @@ const TABS: { kind: TabKey; labelKey: string }[] = [
 ];
 
 /**
- * 基地场景：自由摆放防御塔/资源建筑/陷阱/城墙
- * 与 GameScene 共享同一份 state（通过 scene.start data 传递）
+ * 基地场景（唯一主场景）：自由摆放防御塔/资源建筑/陷阱/城墙 + 基地格上直接合成
+ * 启动流程：BootScene → BaseScene（无传入 state 时读档或新开局；剧情前置流程保留）
  */
 export class BaseScene extends Phaser.Scene {
   private state!: IGameState;
   private nightEndStory: { won: boolean; day: number } | null = null;
   private openMarketOnEnter = false;
+  /** 其他场景（夜战/夜战测试）带入的已有状态；为空时读档或新开局 */
+  private passedState: IGameState | null = null;
   private storage!: StorageSystem;
   private economy!: EconomySystem;
   private baseSystem!: BaseSystem;
   private heroSystem!: HeroSystem;
+  private taskSystem!: TaskSystem;
   private storySystem!: StorySystem;
   private storyDialog!: StoryDialog;
+  // 基地即合成场：物品层移动/合成/发射
+  private mergeSystem!: MergeSystem;
+  private spawnSystem!: SpawnSystem;
+  private bagSystem!: BagSystem;
+  private specialSystem!: SpecialItemSystem;
+  /** 基地核心（= 合成核心 = 发射器）：库存/CD/升级 */
+  private coreSystem!: CoreSystem;
+  /** 当前选中的物品格（3D 高亮 + 发射器二次点击判定） */
+  private selectedItem: IPoint | null = null;
+  /** 核心格长按计时（长按 = 打开核心面板，短按 = 发射） */
+  private coreHoldTimer: number | null = null;
+  private coreHoldFired = false;
+
+  private hud!: HUD;
+  private taskBar!: TaskBar;
+  private taskChainPanel: TaskChainPanel | null = null;
+  private cardBar!: CardBar;
+  private infoBar!: InfoBar;
+  private bagPanel!: BagPanel;
+  private spawnerPanel!: SpawnerProductsPanel;
+  private coreIntroPanel!: CoreIntroPanel;
+  /** 剧情回顾面板（每次打开新建实例，关闭后 isOpen 为 false） */
+  private storyPanel: StoryArchivePanel | null = null;
+  /** 角色图鉴面板（同上，用完即弃） */
+  private characterPanel: CharacterPanel | null = null;
+  private monsterPanel: MonsterPanel | null = null;
+  private settingsPanel: SettingsPanel | null = null;
 
   private gridLayer!: Phaser.GameObjects.Container;
   private paletteLayer!: Phaser.GameObjects.Container;
@@ -97,142 +182,465 @@ export class BaseScene extends Phaser.Scene {
   private rangeHint!: Phaser.GameObjects.Graphics;
   /** 选中建筑后显示的攻击范围（仅防御塔） */
   private selectedRangeHint!: Phaser.GameObjects.Graphics;
+  /** 3D 网格渲染器（默认开启；localStorage 显式 '0' 时回退 2D 调试网格，无物品层） */
+  private renderer3d: Base3DRenderer | null = null;
 
   constructor() {
     super({ key: 'BaseScene' });
   }
 
-  init(data: { state: IGameState; nightEndStory?: { won: boolean; day: number }; openBlackMarket?: boolean }): void {
-    this.state = data.state;
-    this.nightEndStory = data.nightEndStory ?? null;
-    this.openMarketOnEnter = data.openBlackMarket === true;
+  init(data?: { state?: IGameState; nightEndStory?: { won: boolean; day: number }; openBlackMarket?: boolean }): void {
+    this.passedState = data?.state ?? null;
+    this.nightEndStory = data?.nightEndStory ?? null;
+    this.openMarketOnEnter = data?.openBlackMarket === true;
   }
 
   create(): void {
-    this.storage = new StorageSystem();
-    this.economy = new EconomySystem();
-    this.economy.recoverPower(this.state);
-    this.baseSystem = new BaseSystem(this.economy);
-    this.heroSystem = new HeroSystem();
-    this.baseSystem.ensure(this.state);
-    // 夜晚中途退出（刷新/切后台被杀）重置为白天，视为未入夜
-    if (this.state.phase === 'night') this.state.phase = 'day';
+    try {
+      // 创建系统（装配顺序有依赖：背包/特殊道具/升级经验）
+      this.storage = new StorageSystem();
+      this.economy = new EconomySystem();
+      this.bagSystem = new BagSystem();
+      this.specialSystem = new SpecialItemSystem(this.economy);
+      this.baseSystem = new BaseSystem(this.economy);
+      const levelSystem = new LevelSystem(this.economy);
+      this.mergeSystem = new MergeSystem(this.bagSystem, this.specialSystem, levelSystem);
+      this.spawnSystem = new SpawnSystem();
+      this.coreSystem = new CoreSystem(this.economy);
+      this.taskSystem = new TaskSystem(this.bagSystem, this.economy);
+      this.heroSystem = new HeroSystem();
+      this.storySystem = new StorySystem();
 
-    // 剧情：对话浮层 + 已有建筑补播（老存档首次进基地也能看到对应剧情）
-    this.storySystem = new StorySystem();
-    this.storyDialog = new StoryDialog(this);
-    this.storyDialog.onBeatDone = () => {
-      this.storySystem.beatDone(this.state);
-      this.save();
-    };
-    for (const b of this.state.base.buildings) {
-      this.storySystem.checkBuilding(this.state, b.cfgId);
-    }
-    if (this.nightEndStory) {
-      this.storySystem.checkNightEnd(this.state, this.nightEndStory.won, this.nightEndStory.day);
-    }
+      // 夜战/夜战测试带回已有状态；否则读档或新开局
+      const saved = this.passedState ? null : this.storage.loadState();
+      const pendingMode = localStorage.getItem('merge_survival_td_pending_mode');
+      if (pendingMode === 'merge' || pendingMode === 'build') {
+        localStorage.removeItem('merge_survival_td_pending_mode');
+      }
+      const newGameMode = pendingMode === 'build' ? 'build' : 'merge';
+      this.state = this.passedState ?? ((saved && this.gridHasItem(saved)) ? saved : GameInitializer.initNewGame(this.taskSystem, newGameMode));
+      this.economy.recoverPower(this.state);
+      const isNewGame = !this.passedState && !(saved && this.gridHasItem(saved));
+      // 发布面向海外（itch.io）：新开局默认英文，不看浏览器语言；玩家可在设置里切中文
+      if (isNewGame) this.state.language = 'en';
+      setLanguage(this.state.language);
+      // 清理存档里按旧规则生成、当前不可能完成的任务（仅读档时跑一次）
+      if (saved && this.state === saved) {
+        this.taskSystem.pruneImpossibleTasks(this.state);
+      }
+      this.taskSystem.refreshTaskRewards(this.state);
+      this.baseSystem.ensure(this.state);
+      // 夜晚中途退出（刷新/切后台被杀）重置为白天，视为未入夜
+      if (this.state.phase === 'night') this.state.phase = 'day';
 
-    // 全屏主背景（缺失时保持纯色底）
-    addFullscreenBg(this);
+      // 剧情：对话浮层 + 触发（新开局播第一章，读档补播未看过的等级/物品剧情；
+      // 已有建筑补播——老存档首次进基地也能看到对应剧情）
+      this.storyDialog = new StoryDialog(this);
+      this.storyDialog.onBeatDone = () => {
+        this.storySystem.beatDone(this.state);
+        this.save();
+      };
+      for (const b of this.state.base.buildings) {
+        this.storySystem.checkBuilding(this.state, b.cfgId);
+      }
+      if (this.nightEndStory) {
+        this.storySystem.checkNightEnd(this.state, this.nightEndStory.won, this.nightEndStory.day);
+      }
+      if (isNewGame) {
+        this.storySystem.onNewGame(this.state);
+      }
+      this.storySystem.onGameReady(this.state);
+      // 已有存档的核心等级也补播 coreLevel 类剧情（旧档折算成高等级时不会漏）
+      this.storySystem.checkCoreLevel(this.state, this.coreSystem.getLevel(this.state));
 
-    // 进场景结算一次产出（含离线收益）
-    const gains = this.baseSystem.tickProduction(this.state);
+      // 全屏主背景（缺失时保持纯色底）
+      addFullscreenBg(this);
 
-    new HUD(this, this.state);
+      // 进场景结算一次产出（含离线收益）
+      const gains = this.baseSystem.tickProduction(this.state);
 
-    // 顶部：返回 + 天数/核心血量 + 迎接夜晚
-    const backBtn = this.add.graphics();
-    drawUiBox(backBtn, 90, TOP_BAR_Y, 140, 52, { radius: 12 });
-    backBtn.setInteractive(new Phaser.Geom.Rectangle(90 - 70, TOP_BAR_Y - 26, 140, 52), Phaser.Geom.Rectangle.Contains);
-    this.add.text(90, TOP_BAR_Y, getText('base.back'), { fontSize: '26px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-    backBtn.on('pointerdown', () => backBtn.setAlpha(0.7));
-    backBtn.on('pointerup', () => {
-      backBtn.setAlpha(1);
-      this.save();
-      this.scene.start('GameScene', { state: this.state });
-    });
-    backBtn.on('pointerout', () => backBtn.setAlpha(1));
+      this.hud = new HUD(this, this.state);
+      this.hud.getPowerFreeRemain = () => this.specialSystem.getPowerFreeRemain(this.state);
 
-    const core = this.baseSystem.getCore(this.state);
-    this.dayText = this.add.text(380, TOP_BAR_Y, getText('base.day', { day: this.state.day }), {
-      fontSize: '26px', color: '#ffffff', fontStyle: 'bold'
-    }).setOrigin(0.5);
-    this.coreText = this.add.text(610, TOP_BAR_Y, getText('base.coreHp', { hp: core.hp, maxHp: core.maxHp }), {
-      fontSize: '24px', color: '#ffd43b', fontStyle: 'bold'
-    }).setOrigin(0.5);
+      // 任务条 / 卡片栏 / 物品详情条（原 GameScene 迁移，复用组件）
+      this.taskBar = new TaskBar(this, this.state);
+      this.taskBar.countItem = (id) => this.taskSystem.countItem(this.state, id);
+      this.taskBar.canComplete = (task) => this.taskSystem.canCompleteTask(this.state, task);
+      this.taskBar.onSubmit = (task) => this.handleTaskSubmit(task);
+      this.taskBar.onViewChain = (task) => {
+        this.taskChainPanel = new TaskChainPanel(this);
+        this.taskChainPanel.onDiamondComplete = (t) => this.handleTaskDiamondComplete(t);
+        this.taskChainPanel.open(task);
+      };
 
-    const nightBtn = this.add.graphics();
-    // 保留橙色语义：暗橙底 + 橙描边
-    drawUiBox(nightBtn, 940, TOP_BAR_Y, 220, 52, {
-      fill: 0x33231a, fillAlpha: 0.92, stroke: UI_ORANGE, strokeAlpha: 0.8, radius: 12
-    });
-    nightBtn.setInteractive(new Phaser.Geom.Rectangle(940 - 110, TOP_BAR_Y - 26, 220, 52), Phaser.Geom.Rectangle.Contains);
-    this.add.text(940, TOP_BAR_Y, getText('base.night'), { fontSize: '26px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
-    nightBtn.on('pointerdown', () => nightBtn.setAlpha(0.7));
-    nightBtn.on('pointerup', () => {
-      nightBtn.setAlpha(1);
-      this.openNightConfirm();
-    });
-    nightBtn.on('pointerout', () => nightBtn.setAlpha(1));
+      this.cardBar = new CardBar(this, this.state);
+      this.cardBar.onUseCard = (index) => this.economy.useCard(this.state, index);
 
-    this.gridLayer = this.add.container(0, 0);
-    this.paletteLayer = this.add.container(0, 0);
-    this.dialogLayer = this.add.container(0, 0).setDepth(500);
+      this.infoBar = new InfoBar(this, this.state);
 
-    this.rangeHint = this.add.graphics().setDepth(40).setVisible(false);
-    this.selectedRangeHint = this.add.graphics().setDepth(40).setVisible(false);
+      this.bagPanel = new BagPanel(this);
+      this.bagPanel.getBagSlots = () => {
+        const bagItem = this.bagSystem.getBagItem(this.state);
+        return bagItem?.roomArr ?? [];
+      };
+      this.bagPanel.onTakeOut = (index) => this.bagSystem.takeOut(this.state, index);
+      this.bagPanel.onAddSlot = () => {
+        this.bagSystem.addSlot(this.state, (amount) => this.economy.subResource(this.state, 'coin', amount));
+      };
 
-    this.renderGrid();
-    this.renderPalette();
+      this.spawnerPanel = new SpawnerProductsPanel(this);
+      this.coreIntroPanel = new CoreIntroPanel(this, this.state, {
+        onUpgrade: () => {
+          const ok = this.coreSystem.upgrade(this.state);
+          if (ok) {
+            const level = this.coreSystem.getLevel(this.state);
+            this.storySystem.checkCoreLevel(this.state, level);
+            this.save();
+            this.renderGrid();
+            this.setItemSelection(this.selectedItem);
+          }
+          return ok;
+        },
+        onViewProducts: () => this.openCoreProducts(),
+        onRepair: () => {
+          const core = findCoreBuilding(this.state.base);
+          if (!core) return false;
+          const ok = this.baseSystem.repair(this.state, core.row, core.col);
+          if (ok) this.save();
+          return ok;
+        },
+        onSkipCd: () => {
+          const ok = this.coreSystem.skipCd(this.state);
+          if (ok) {
+            this.save();
+            this.renderGrid();
+            this.setItemSelection(this.selectedItem);
+          }
+          return ok;
+        }
+      }, this.coreSystem);
 
-    // 防御塔摆放时显示攻击范围圈
-    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      this.updateRangeHint(pointer);
-    });
+      // 右侧竖排菜单：剧情 / 角色 / 怪物 / 商店 / 设置
+      const menuButtons: { label: string; onTap: () => void }[] = [
+        // 剧情回顾：主线章节列表（已解锁可重播，未解锁显示条件）
+        { label: getText('menu.story'), onTap: () => {
+          const panel = new StoryArchivePanel(this, this.state);
+          this.storyPanel = panel;
+          panel.onReplay = (beat) => {
+            panel.close();
+            this.storySystem.replay(beat);
+          };
+          panel.open();
+        } },
+        // 角色图鉴：已遇到 NPC 的立绘与背景故事（含玩家自己）
+        { label: getText('menu.characters'), onTap: () => {
+          this.characterPanel = new CharacterPanel(this, this.state);
+          this.characterPanel.open();
+        } },
+        { label: getText('menu.monsters'), onTap: () => {
+          this.monsterPanel = new MonsterPanel(this);
+          this.monsterPanel.open();
+        } },
+        { label: getText('menu.shop'), onTap: () => this.openBlackMarket() },
+        { label: getText('menu.settings'), onTap: () => {
+          this.settingsPanel = new SettingsPanel(
+            this,
+            (language: Language) => this.changeLanguage(language),
+            () => this.resetGame(),
+            this.state.playMode ?? 'merge',
+            (mode) => this.changePlayMode(mode),
+            () => this.save(),
+            {
+              save: () => this.save(),
+              adoptCloudState: (state) => this.storage.adoptState(state),
+              reload: () => location.reload(),
+              toast: (msg) => this.showToast(msg)
+            }
+          );
+          this.settingsPanel.open();
+        } }
+      ];
+      menuButtons.forEach((m, i) => {
+        makeUiButton(this, null, MENU_X, MENU_TOP + i * MENU_GAP, 116, 80, m.label, { box: { radius: 14 }, fontSize: '22px', depth: 100 }, m.onTap);
+      });
 
-    const onBaseChanged = () => {
-      const c = this.baseSystem.getCore(this.state);
-      this.dayText.setText(getText('base.day', { day: this.state.day }));
-      this.coreText.setText(getText('base.coreHp', { hp: c.hp, maxHp: c.maxHp }));
+      new HandGuide(this, this.state);
+
+      // 顶部：天数/核心血量 + 迎接夜晚
+      const core = this.baseSystem.getCore(this.state);
+      this.dayText = this.add.text(380, TOP_BAR_Y, getText('base.day', { day: this.state.day }), {
+        fontSize: '26px', color: '#ffffff', fontStyle: 'bold'
+      }).setOrigin(0.5);
+      this.coreText = this.add.text(610, TOP_BAR_Y, getText('base.coreHp', { hp: core.hp, maxHp: core.maxHp }), {
+        fontSize: '24px', color: '#ffd43b', fontStyle: 'bold'
+      }).setOrigin(0.5);
+
+      const nightBtn = this.add.graphics();
+      // 保留橙色语义：暗橙底 + 橙描边
+      drawUiBox(nightBtn, 940, TOP_BAR_Y, 220, 52, {
+        fill: 0x33231a, fillAlpha: 0.92, stroke: UI_ORANGE, strokeAlpha: 0.8, radius: 12
+      });
+      nightBtn.setInteractive(new Phaser.Geom.Rectangle(940 - 110, TOP_BAR_Y - 26, 220, 52), Phaser.Geom.Rectangle.Contains);
+      this.add.text(940, TOP_BAR_Y, getText('base.night'), { fontSize: '26px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+      nightBtn.on('pointerdown', () => nightBtn.setAlpha(0.7));
+      nightBtn.on('pointerup', () => {
+        nightBtn.setAlpha(1);
+        this.openNightConfirm();
+      });
+      nightBtn.on('pointerout', () => nightBtn.setAlpha(1));
+
+      this.gridLayer = this.add.container(0, 0);
+      this.paletteLayer = this.add.container(0, 0);
+      this.dialogLayer = this.add.container(0, 0).setDepth(500);
+
+      this.rangeHint = this.add.graphics().setDepth(40).setVisible(false);
+      this.selectedRangeHint = this.add.graphics().setDepth(40).setVisible(false);
+
+      // 3D 网格（暖土 GLB）：画布只覆盖 13×13 网格矩形，默认开启（唯一主场景，物品层只存在于 3D）；
+      // localStorage 显式设 '0' 时回退 2D 调试网格（无物品层，仅排查用）
+      const use3d = localStorage.getItem(BASE_3D_STORAGE_KEY) !== '0';
+      if (use3d) {
+        this.renderer3d = new Base3DRenderer(this, this.state, {
+          // 弹层（剧情对话/回顾/图鉴/设置/背包等全屏 UI）打开时屏蔽棋盘输入并隐藏画布，防止点穿
+          inputBlocked: () =>
+            this.dialogLayer.list.length > 0 || this.storyDialog.isOpen ||
+            (this.storyPanel?.isOpen ?? false) || (this.characterPanel?.isOpen ?? false) || (this.monsterPanel?.isOpen ?? false) || (this.settingsPanel?.isOpen ?? false) || (this.taskChainPanel?.isOpen ?? false) || (this.cardBar?.isOpen ?? false) || (this.bagPanel?.isVisible() ?? false) || (this.spawnerPanel?.isVisible() ?? false) || (this.coreIntroPanel?.isOpen ?? false),
+          onCellTap: (row, col) => this.handleCellTap(row, col),
+          onCellLongPress: (row, col) => {
+            const core = findCoreBuilding(this.state.base);
+            if (core && core.row === row && core.col === col) this.openCorePanel();
+          },
+          onItemDrop: (src, target) => this.handleItemDrop(src, target),
+          taskNeeded: (id) => this.taskSystem.isTaskNeedWithId(this.state, id),
+          placingCfg: () => (this.placing !== null ? getBuildingConfig(this.placing) ?? null : null),
+          placingHero: () => this.placingHero !== null,
+          canPlaceAt: (row, col) => {
+            if (this.placingHero !== null) return this.heroSystem.canDeployAt(this.state, row, col).ok;
+            if (this.placing !== null) return this.baseSystem.canPlace(this.state, this.placing, row, col).ok;
+            return false;
+          },
+          decorate: (b) => {
+            const cfg = getBuildingConfig(b.cfgId);
+            const powered = cfg ? this.staffedForDisplay(b, cfg) : true;
+            return {
+              powered,
+              antiAir: b.cfgId === 101 && powered && hasSupportCoverage(this.state, 'radar', b.row, b.col, true)
+            };
+          }
+        }, BASE_GRID_RECT);
+        this.gridLayer.setVisible(false);
+        const onResize = () => this.renderer3d?.layoutRect(BASE_GRID_RECT);
+        window.addEventListener('resize', onResize);
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+          window.removeEventListener('resize', onResize);
+        });
+      }
+
       this.renderGrid();
       this.renderPalette();
-      this.save();
-    };
-    const onToast = (msg: string) => this.showToast(msg);
-    const onHeroJoined = (data: { key: string }) => this.playHeroJoined(data.key);
 
-    eventBus.on(GameEvents.BASE_CHANGED, onBaseChanged);
-    eventBus.on(GameEvents.TOAST_SHOW, onToast);
-    eventBus.on(GameEvents.HERO_JOINED, onHeroJoined);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      eventBus.off(GameEvents.BASE_CHANGED, onBaseChanged);
-      eventBus.off(GameEvents.TOAST_SHOW, onToast);
-      eventBus.off(GameEvents.HERO_JOINED, onHeroJoined);
-    });
-
-    // 周期产出 + 存档（供电状态随燃料到期变化，刷新网格上的缺电角标）
-    this.time.addEvent({
-      delay: 5000, loop: true, callback: () => {
-        this.baseSystem.tickProduction(this.state);
-        this.economy.recoverPower(this.state);
-        this.renderGrid();
-        this.save();
+      // 开发调试钩子（e2e 验收用），生产包不注入；2D 网格模式没有 Base3DRenderer 的 __base3d
+      if (__DEV_FEATURES__) {
+        (window as unknown as Record<string, unknown>).__basescene = this;
       }
-    });
 
-    const gainText = formatGains(gains.items);
-    const resourceGainText = formatResourceGains(gains.resources);
-    if (gainText !== getText('base.none')) this.showToast(getText('base.resourceGain', { gain: gainText }));
-    if (resourceGainText !== getText('base.none')) this.showToast(getText('base.resourceGain', { gain: resourceGainText }));
-    if (this.openMarketOnEnter) this.openBlackMarket();
+      // 防御塔摆放时显示攻击范围圈
+      this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+        this.updateRangeHint(pointer);
+      });
+
+      const onBaseChanged = () => {
+        const c = this.baseSystem.getCore(this.state);
+        this.dayText.setText(getText('base.day', { day: this.state.day }));
+        this.coreText.setText(getText('base.coreHp', { hp: c.hp, maxHp: c.maxHp }));
+        this.renderGrid();
+        this.renderPalette();
+        // 核心被选中时刷新信息卡（库存/冷却随时间变化）
+        if (this.selectedItem && this.selectedItem.row === c.row && this.selectedItem.col === c.col) {
+          this.infoBar.showCore(this.buildCoreCard());
+        }
+        this.save();
+      };
+      const onToast = (msg: string) => this.showToast(msg);
+      const onHeroJoined = (data: { key: string }) => this.playHeroJoined(data.key);
+
+      // 物品层事件 → 3D 棋子层局部刷新（摆放/部署模式下顺带全量同步，刷新合法格提示）
+      const afterItemChange = () => {
+        if (this.placing !== null || this.placingHero !== null) this.renderGrid();
+      };
+      const onItemChanged = (data: { pos: IPoint }) => {
+        this.renderer3d?.refreshCell(data.pos.row, data.pos.col);
+        this.taskBar.refresh();
+        afterItemChange();
+      };
+      const onItemMoved = (data: { src: IPoint; target: IPoint }) => {
+        this.renderer3d?.refreshCell(data.src.row, data.src.col);
+        this.renderer3d?.refreshCell(data.target.row, data.target.col);
+        afterItemChange();
+      };
+      const onItemMerged = (data: { src: IPoint; target: IPoint; cartonBreaks: IPoint[] }) => {
+        this.renderer3d?.refreshCell(data.src.row, data.src.col);
+        this.renderer3d?.refreshCell(data.target.row, data.target.col);
+        this.renderer3d?.playMergeEffect(data.target);
+        for (const pos of data.cartonBreaks || []) {
+          this.renderer3d?.refreshCell(pos.row, pos.col);
+        }
+        this.taskBar.refresh();
+        this.storySystem.checkMerge(this.state);
+        afterItemChange();
+      };
+      const onItemSpawned = (data: { newPositions: IPoint[] }) => {
+        const spawnedIds: number[] = [];
+        for (const pos of data.newPositions) {
+          this.renderer3d?.refreshCell(pos.row, pos.col);
+          this.renderer3d?.playSpawnEffect(pos);
+          const it = getItem(this.state.grid, pos.row, pos.col);
+          if (it) spawnedIds.push(it.id);
+        }
+        this.taskBar.refresh();
+        this.storySystem.checkItems(this.state, spawnedIds);
+        afterItemChange();
+      };
+      const onBubbleBomb = (data: { pos: IPoint }) => {
+        this.renderer3d?.refreshCell(data.pos.row, data.pos.col);
+        this.showToast(getText('game.bubblePopped'));
+      };
+      const onResourceChanged = (data: { type?: string; value?: number }) => {
+        if (data?.type === 'coin' && typeof data.value === 'number') {
+          this.storySystem.checkCoin(this.state, data.value);
+        }
+      };
+      const onLevelUp = (data: { level: number }) => {
+        this.showToast(getText('game.levelUp', { level: data.level }));
+        this.storySystem.checkLevel(this.state, data.level);
+      };
+      const onTaskUpdated = () => this.taskBar.refresh();
+      const onTaskDone = (data: { task: ITask }) => {
+        this.taskBar.refresh();
+        this.renderer3d?.refreshItems(); // 任务需求标记（棋子角标勾）随任务完成重算
+        this.storySystem.checkTaskDone(this.state, data?.task?.id);
+      };
+      const onCardUpdated = () => this.cardBar.refresh();
+      const onBagUpdated = () => this.bagPanel.refresh();
+      const onSpeedUpEnd = () => this.showToast(getText('game.acceleratorStopped'));
+
+      eventBus.on(GameEvents.BASE_CHANGED, onBaseChanged);
+      eventBus.on(GameEvents.TOAST_SHOW, onToast);
+      eventBus.on(GameEvents.HERO_JOINED, onHeroJoined);
+      eventBus.on(GameEvents.GRID_ITEM_CHANGED, onItemChanged);
+      eventBus.on(GameEvents.GRID_ITEM_MOVED, onItemMoved);
+      eventBus.on(GameEvents.GRID_ITEM_MERGED, onItemMerged);
+      eventBus.on(GameEvents.GRID_ITEM_SPAWNED, onItemSpawned);
+      eventBus.on(GameEvents.GRID_BUBBLE_BOMB, onBubbleBomb);
+      eventBus.on(GameEvents.RESOURCE_CHANGED, onResourceChanged);
+      eventBus.on(GameEvents.ROLE_LEVEL_UP, onLevelUp);
+      eventBus.on(GameEvents.TASK_UPDATED, onTaskUpdated);
+      eventBus.on(GameEvents.TASK_DONE, onTaskDone);
+      eventBus.on(GameEvents.CARD_UPDATED, onCardUpdated);
+      eventBus.on(GameEvents.BAG_UPDATED, onBagUpdated);
+      eventBus.on(GameEvents.SPEED_UP_END, onSpeedUpEnd);
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+        eventBus.off(GameEvents.BASE_CHANGED, onBaseChanged);
+        eventBus.off(GameEvents.TOAST_SHOW, onToast);
+        eventBus.off(GameEvents.HERO_JOINED, onHeroJoined);
+        eventBus.off(GameEvents.GRID_ITEM_CHANGED, onItemChanged);
+        eventBus.off(GameEvents.GRID_ITEM_MOVED, onItemMoved);
+        eventBus.off(GameEvents.GRID_ITEM_MERGED, onItemMerged);
+        eventBus.off(GameEvents.GRID_ITEM_SPAWNED, onItemSpawned);
+        eventBus.off(GameEvents.GRID_BUBBLE_BOMB, onBubbleBomb);
+        eventBus.off(GameEvents.RESOURCE_CHANGED, onResourceChanged);
+        eventBus.off(GameEvents.ROLE_LEVEL_UP, onLevelUp);
+        eventBus.off(GameEvents.TASK_UPDATED, onTaskUpdated);
+        eventBus.off(GameEvents.TASK_DONE, onTaskDone);
+        eventBus.off(GameEvents.CARD_UPDATED, onCardUpdated);
+        eventBus.off(GameEvents.BAG_UPDATED, onBagUpdated);
+        eventBus.off(GameEvents.SPEED_UP_END, onSpeedUpEnd);
+        this.renderer3d?.dispose();
+        this.renderer3d = null;
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
+      });
+
+      // 物品层 tick：发射器 cd 恢复/气泡到期/自动生成（500ms）
+      this.time.addEvent({ delay: 500, loop: true, callback: () => this.spawnSystem.update(this.state, 500) });
+
+      // 周期产出 + 存档（供电状态随燃料到期变化，刷新网格上的缺电角标）
+      this.time.addEvent({
+        delay: 5000, loop: true, callback: () => {
+          this.baseSystem.tickProduction(this.state);
+          this.economy.recoverPower(this.state);
+          this.renderGrid();
+          this.save();
+        }
+      });
+      document.addEventListener('visibilitychange', this.onVisibilityChange);
+
+      const gainText = formatGains(gains.items);
+      const resourceGainText = formatResourceGains(gains.resources);
+      if (gainText !== getText('base.none')) this.showToast(getText('base.resourceGain', { gain: gainText }));
+      if (resourceGainText !== getText('base.none')) this.showToast(getText('base.resourceGain', { gain: resourceGainText }));
+      if (this.openMarketOnEnter) this.openBlackMarket();
+    } catch (e) {
+      console.error('[BaseScene] create error:', e);
+      this.add.text(this.scale.width / 2, this.scale.height / 2, getText('game.loadFailed', { error: String(e) }), {
+        fontSize: '20px',
+        color: '#ff0000',
+        align: 'center'
+      }).setOrigin(0.5);
+    }
+  }
+
+  private gridHasItem(state: IGameState): boolean {
+    for (const row of state.grid.cells) {
+      for (const cell of row) {
+        if (cell.item) return true;
+      }
+    }
+    return false;
   }
 
   private save(): void {
+    if (this.saveDisabled) return;
     this.storage.saveState(this.state);
   }
 
+  private changeLanguage(language: Language): void {
+    this.state.language = language;
+    setLanguage(language);
+    this.save();
+    this.scene.restart();
+  }
+
+  private resetGame(): void {
+    this.saveDisabled = true;
+    this.storage.clearState();
+    location.reload();
+  }
+
+  /** 切换玩法模式：清空存档并按新模式重开 */
+  private changePlayMode(mode: 'merge' | 'build'): void {
+    if ((this.state.playMode ?? 'merge') === mode) return;
+    this.saveDisabled = true;
+    this.storage.clearState();
+    // 新开局时 createInitialGameState 会带上目标模式
+    localStorage.setItem('merge_survival_td_pending_mode', mode);
+    location.reload();
+  }
+
+  /** 重开确认后禁用一切自动存档，防止重载前 visibilitychange 把旧档写回 */
+  private saveDisabled = false;
+
+  /** 页面隐藏时存档；类字段持有引用，shutdown 时可精确 removeEventListener */
+  private onVisibilityChange = (): void => {
+    if (document.hidden) this.save();
+  };
+
   private showToast(msg: string): void {
     showSceneToast(this, msg, { yRatio: 0.7 });
+  }
+
+  update(): void {
+    this.renderer3d?.update();
+    this.hud?.update();
   }
 
   /** 英雄加入堡垒：走剧情对话单句模式（立绘 + 隆重提示），与播放中的剧情自动排队 */
@@ -266,6 +674,10 @@ export class BaseScene extends Phaser.Scene {
 
   /** 摆放模式下，跟随指针显示当前悬停格防御塔的攻击范围 */
   private updateRangeHint(pointer: Phaser.Input.Pointer): void {
+    if (this.renderer3d) {
+      this.rangeHint.setVisible(false); // 3D 下范围圈由 Base3DRenderer 悬停绘制
+      return;
+    }
     if (this.placing === null) {
       this.rangeHint.setVisible(false);
       return;
@@ -292,6 +704,10 @@ export class BaseScene extends Phaser.Scene {
   }
 
   private renderGrid(): void {
+    if (this.renderer3d) {
+      this.renderer3d.syncAll(); // 3D 网格：地形/建筑/英雄/摆放提示全量同步
+      return;
+    }
     this.gridLayer.removeAll(true);
     const base = this.state.base;
 
@@ -321,7 +737,15 @@ export class BaseScene extends Phaser.Scene {
         }
 
         cell.setInteractive();
-        cell.on('pointerup', () => this.handleCellTap(row, col));
+        const core = findCoreBuilding(base);
+        if (core && core.row === row && core.col === col) {
+          // 基地核心 = 发射器：短按选中/发射，长按打开核心面板
+          cell.on('pointerdown', () => this.beginCoreHold());
+          cell.on('pointerup', () => this.endCoreHold(row, col));
+          cell.on('pointerout', () => this.cancelCoreHold());
+        } else {
+          cell.on('pointerup', () => this.handleCellTap(row, col));
+        }
 
         // 摆放模式：合法格绿框提示
         if (this.placing !== null && !building) {
@@ -385,6 +809,22 @@ export class BaseScene extends Phaser.Scene {
       fontSize: '16px', color: '#ffe066', fontStyle: 'bold', stroke: '#000000', strokeThickness: 2
     }).setOrigin(0.5);
     this.gridLayer.add(lv);
+
+    // 核心 = 发射器：左下角显示剩余库存，冷却中改为倒计时
+    if (cfg.kind === 'core') {
+      const remain = this.coreSystem.cdRemainMs(this.state);
+      const cooling = (building.cdSum ?? 0) > 0 || remain > 0;
+      const stockText = cooling
+        ? formatCdRemain(remain)
+        : `x${building.times ?? 0}`;
+      const badge = this.add.graphics();
+      badge.fillStyle(cooling ? 0x8a5a00 : 0x14532d, 0.92);
+      badge.fillRoundedRect(x - CELL / 2 + 2, y + CELL / 2 - 24, cooling ? 52 : 40, 22, 6);
+      this.gridLayer.add(badge);
+      this.gridLayer.add(this.add.text(x - CELL / 2 + (cooling ? 28 : 22), y + CELL / 2 - 13, stockText, {
+        fontSize: '15px', color: cooling ? '#ffd75e' : '#8ce99a', fontStyle: 'bold'
+      }).setOrigin(0.5));
+    }
 
     // 缺电角标：右上角红底「缺电」
     if (!staffed) {
@@ -463,7 +903,101 @@ export class BaseScene extends Phaser.Scene {
     }
   }
 
+  // ============ 基地核心（= 合成核心 = 发射器） ============
+
+  /** 长按核心格：到点只记标记，抬手才开面板（避免同一次手势的抬手被面板遮罩当成「点空白关闭」） */
+  private beginCoreHold(): void {
+    this.cancelCoreHold();
+    this.coreHoldFired = false;
+    // 用真实时间计时（与 3D 渲染器同一套），不依赖场景时钟：2D/3D 手感一致，也不受暂停影响
+    this.coreHoldTimer = window.setTimeout(() => {
+      this.coreHoldTimer = null;
+      this.coreHoldFired = true;
+    }, CORE_HOLD_MS);
+  }
+
+  private cancelCoreHold(): void {
+    if (this.coreHoldTimer !== null) {
+      window.clearTimeout(this.coreHoldTimer);
+      this.coreHoldTimer = null;
+    }
+  }
+
+  private endCoreHold(row: number, col: number): void {
+    const wasHold = this.coreHoldFired;
+    this.coreHoldFired = false;
+    this.cancelCoreHold();
+    if (wasHold) {
+      const core = findCoreBuilding(this.state.base);
+      if (core && core.row === row && core.col === col) this.openCorePanel();
+      return;
+    }
+    this.handleCoreTap();
+  }
+
+  /** 核心短按：首次选中，选中后再点发射（与其它发射器手感一致，可连点连发） */
+  private handleCoreTap(): void {
+    if (this.coreIntroPanel?.isOpen) return;
+    const core = findCoreBuilding(this.state.base);
+    if (!core) return;
+    const wasSelected = this.selectedItem?.row === core.row && this.selectedItem?.col === core.col;
+    if (wasSelected) {
+      this.coreSystem.clickSpawn(this.state);
+      this.save();
+    }
+    this.setItemSelection({ row: core.row, col: core.col });
+    this.renderGrid();
+  }
+
+  /** 核心面板（长按核心格 / 信息卡「核心」按钮） */
+  private openCorePanel(): void {
+    this.setItemSelection(null);
+    this.coreIntroPanel.open();
+  }
+
+  /** 核心产出一览（等级链式展示：当前可产出 + 升级后解锁） */
+  private openCoreProducts(): void {
+    this.spawnerPanel.openCore(this.coreSystem.getLevel(this.state));
+  }
+
+  /** 选中核心时的信息卡内容（库存/冷却/光环随状态刷新） */
+  private buildCoreCard(): ICoreCardInfo {
+    const level = this.coreSystem.getLevel(this.state);
+    const propId = getCorePropId(level);
+    const core = this.coreSystem.ensure(this.state);
+    const maxTimes = getCoreTimesAt(level);
+    const remain = this.coreSystem.cdRemainMs(this.state);
+    const cooling = this.coreSystem.inCd(this.state) || remain > 0;
+    const status = cooling
+      ? getText('core.card.cooling', { time: formatCdRemain(remain) })
+      : getText('core.card.ready', {
+        times: core?.times ?? 0,
+        max: maxTimes,
+        aura: Math.round(getCoreAuraChance(this.state) * 100)
+      });
+    const actions: IInfoAction[] = [
+      { label: getText('core.card.panel'), onClick: () => this.openCorePanel() },
+      { label: getText('action.view'), onClick: () => this.openCoreProducts() }
+    ];
+    return {
+      level,
+      iconPropId: propId,
+      title: getText('core.card.title', { name: getPropName(propId), level }),
+      status,
+      actions
+    };
+  }
+
   private handleCellTap(row: number, col: number): void {
+    // 背包/发射器产物面板打开时，点任意格先关面板
+    if (this.bagPanel.isVisible()) {
+      this.bagPanel.close();
+      return;
+    }
+    if (this.spawnerPanel.isVisible()) {
+      this.spawnerPanel.close();
+      return;
+    }
     if (this.placingHero !== null) {
       // 部署英雄：非法格由 core 弹 reason toast，成功才退出部署模式
       const ok = this.heroSystem.deploy(this.state, this.placingHero, row, col);
@@ -483,6 +1017,12 @@ export class BaseScene extends Phaser.Scene {
       this.renderPalette();
       return;
     }
+    // 基地核心（= 发射器）：短按选中/发射（3D 与 2D 共用这条判定树）
+    const coreBuilding = findCoreBuilding(this.state.base);
+    if (coreBuilding && coreBuilding.row === row && coreBuilding.col === col) {
+      this.handleCoreTap();
+      return;
+    }
     const building = buildingAt(this.state.base, row, col);
     if (building) {
       this.openBuildingDialog(building);
@@ -494,13 +1034,195 @@ export class BaseScene extends Phaser.Scene {
       return;
     }
     const hero = this.heroSystem.getHeroAt(this.state, row, col);
-    if (hero) this.openHeroDialog(hero);
+    if (hero) {
+      this.openHeroDialog(hero);
+      return;
+    }
+    // 物品格（基地即合成场）：选中/二次点击触发
+    const item = getItem(this.state.grid, row, col);
+    if (item) {
+      this.handleItemTap(row, col, item);
+      return;
+    }
+    // 空地：取消物品选中
+    this.setItemSelection(null);
+  }
+
+  /** 物品格点击判定树：首次点击 = 仅选中；已选中再点 = 触发效果（发射/使用/开背包） */
+  private handleItemTap(row: number, col: number, item: IItemData): void {
+    const pos = { row, col };
+    const wasSelected = this.selectedItem?.row === row && this.selectedItem?.col === col;
+
+    // 已解锁的 mdt=1 发射器（手提包解锁完、次数已恢复）按普通发射器处理
+    const tapProp = getProp(item.id);
+    const unlockedSpawner = !!tapProp && tapProp.mdt === 1 && !item.unlock && (item.times ?? 0) > 0;
+
+    // 1. 纸箱点击提示
+    if (item.st === ItemStatus.Carton) {
+      this.showToast(getText('game.cartonHint'));
+      return;
+    }
+
+    // 2. 背包 → 首次选中，再次点击打开/关闭背包面板
+    if (item.id === PROP_IDS.bag && !item.st) {
+      if (wasSelected) this.bagPanel.toggle();
+      else this.setItemSelection(pos);
+      return;
+    }
+
+    // 3. 气泡 → 选中（InfoBar 提供戳破），并 toast 说明机制（气泡不可合成/拖动）
+    if (itemIsBubble(item, this.state.timestamp)) {
+      this.setItemSelection(pos);
+      const secs = Math.max(1, Math.ceil(((item.cdBubble ?? 0) - Date.now()) / 1000));
+      this.showToast(getText('game.bubbleHint', { seconds: secs, diamonds: tapProp?.bubble ?? 5 }));
+      return;
+    }
+
+    // 4. 点击型特殊道具（体力、金币链、无限能量等）：首次选中，再次点击使用
+    //    已解锁的 mdt=1 发射器（手提包解锁完、次数已恢复）除外，走下面的发射器分支
+    if (this.specialSystem.isClickSpecial(item.id) && !unlockedSpawner) {
+      if (wasSelected) {
+        this.specialSystem.clickSpecial(this.state, pos);
+        this.setItemSelection(null);
+      } else {
+        this.setItemSelection(pos);
+      }
+      return;
+    }
+
+    // 5. 冷却中 → 选中（InfoBar 提供跳过 CD）
+    if (itemInCd(item)) {
+      this.setItemSelection(pos);
+      return;
+    }
+
+    // 6. 发射器 → 首次选中，选中状态下再次点击才产出（产出后保持选中，可连点连发）
+    if (isClickSpawner(item.id)) {
+      if (wasSelected) this.spawnSystem.clickSpawn(this.state, pos);
+      this.setItemSelection(pos);
+      return;
+    }
+
+    // 7. 最终蓝图 → 首次选中，选中状态下再次点击使用（解锁对应建筑并消耗蓝图）
+    const bpBuilding = getBlueprintBuilding(item.id);
+    if (bpBuilding) {
+      if (wasSelected) {
+        const r = useBlueprint(this.state, pos);
+        if (r) {
+          this.showToast(r.fresh ? getText('game.blueprintUnlocked', { building: getBuildingName(r.cfg.id) }) : getText('game.duplicateBlueprint', { building: getBuildingName(r.cfg.id) }));
+          if (r.fresh) this.storySystem.checkBlueprint(this.state, r.cfg.id);
+          this.setItemSelection(null);
+          this.save();
+        }
+      } else {
+        this.setItemSelection(pos);
+      }
+      return;
+    }
+
+    // 8. 其他 → 选中
+    this.setItemSelection(pos);
+  }
+
+  /** 物品拖拽落点 → 移动/合成/入包/特殊道具（弹回无需处理：业务层不改状态，棋子视觉已复位） */
+  private handleItemDrop(src: IPoint, target: IPoint): void {
+    this.mergeSystem.moveOrMerge(this.state, src, target);
+    this.setItemSelection(null);
+    this.save();
+  }
+
+  /** 物品/核心选中（3D 高亮 + InfoBar 详情/出售/戳泡/跳 CD/使用蓝图/查看发射器/核心信息） */
+  private setItemSelection(pos: IPoint | null): void {
+    this.selectedItem = pos;
+    this.renderer3d?.setSelection(pos);
+
+    const core = findCoreBuilding(this.state.base);
+    if (pos && core && pos.row === core.row && pos.col === core.col) {
+      this.infoBar.showCore(this.buildCoreCard());
+      return;
+    }
+
+    const item = pos ? getItem(this.state.grid, pos.row, pos.col) : null;
+    const actions = (pos && item) ? buildInfoActions(this.state, pos, item, {
+      onSell: (p) => {
+        this.economy.sellItem(this.state, p);
+        this.setItemSelection(null);
+      },
+      onPopBubble: (p) => {
+        this.specialSystem.popBubble(this.state, p);
+        this.setItemSelection(null);
+      },
+      onSkipCd: (p, cdType) => {
+        this.specialSystem.skipCd(this.state, p, cdType);
+        this.setItemSelection(null);
+      },
+      onUse: (p) => {
+        const it = getItem(this.state.grid, p.row, p.col);
+        if (it && getBlueprintBuilding(it.id)) {
+          const r = useBlueprint(this.state, p);
+          if (r) {
+            this.showToast(r.fresh ? getText('game.blueprintUnlocked', { building: getBuildingName(r.cfg.id) }) : getText('game.duplicateBlueprint', { building: getBuildingName(r.cfg.id) }));
+            if (r.fresh) this.storySystem.checkBlueprint(this.state, r.cfg.id);
+            this.save();
+          }
+        } else {
+          this.specialSystem.clickSpecial(this.state, p);
+        }
+        this.setItemSelection(null);
+      },
+      onViewSpawner: (p) => {
+        const it = getItem(this.state.grid, p.row, p.col);
+        if (it) this.spawnerPanel.open(this.getHighestSpawnerId(it.id));
+      }
+    }) : [];
+    this.infoBar.showSelection(pos, item, actions);
+  }
+
+  private getHighestSpawnerId(spawnerId: number): number {
+    const selected = getProp(spawnerId);
+    if (!selected) return spawnerId;
+
+    let highestId = spawnerId;
+    let highestLevel = selected.luna;
+    for (const row of this.state.grid.cells) {
+      for (const cell of row) {
+        const item = cell.item;
+        const prop = item ? getProp(item.id) : undefined;
+        if (prop && item && isClickSpawner(item.id) && prop.type === selected.type && prop.typeson === selected.typeson && prop.luna > highestLevel) {
+          highestId = item.id;
+          highestLevel = prop.luna;
+        }
+      }
+    }
+    return highestId;
+  }
+
+  /** 提交任务；有额外物品奖励时由满仓用对话发放（有专属任务剧情的除外——剧情里老鬼已代为打赏，不重复说） */
+  private handleTaskSubmit(task: ITask): void {
+    const rewards = task.rewardPropArr ? task.rewardPropArr.map(r => ({ ...r })) : [];
+    const ok = this.taskSystem.completeTask(this.state, task);
+    if (!ok || rewards.length === 0 || hasTaskStoryBeat(task.id)) return;
+    const names = rewards
+      .map(r => getText('game.rewardItem', { item: getPropName(r.id), count: r.num > 1 ? r.num : '' }))
+      .join(getText('game.listSeparator'));
+    this.storySystem.playAdHoc([
+      { who: 'mancang', text: getText('game.taskRewardIntro') },
+      { who: 'mancang', text: getText('game.taskRewardStored', { names }) }
+    ]);
+  }
+
+  /** 钻石直接完成任务（合成路径弹窗的按钮回调） */
+  private handleTaskDiamondComplete(task: ITask): void {
+    if (!this.taskSystem.completeTaskWithDiamond(this.state, task)) return;
+    this.taskChainPanel?.close();
+    this.save();
   }
 
   /** 地形清理确认弹窗：图标 + 名称 + 说明 + 金币清理按钮 */
   private openTerrainDialog(row: number, col: number, terrain: TerrainKind): void {
     this.closeDialog();
     this.selectedRangeHint.setVisible(false);
+    this.renderer3d?.setSelectedRange(0, 0, null);
     const { width, height } = this.scale;
     const panelW = 620;
     const panelH = 560;
@@ -703,48 +1425,48 @@ export class BaseScene extends Phaser.Scene {
     if (deployed || critical) g.setAlpha(0.55);
     this.paletteLayer.add(g);
 
-    // 左侧：立绘头像 110×110（char- 纹理），缺失回退色块
+    // 左侧：立绘头像 96×96（char- 纹理），缺失回退色块
     const texKey = `char-${hero.key}`;
     if (this.textures.exists(texKey)) {
-      const icon = this.add.image(x - 175, y, texKey).setDisplaySize(110, 110);
+      const icon = this.add.image(x - 175, y, texKey).setDisplaySize(96, 96);
       if (deployed) icon.setAlpha(0.6);
       this.paletteLayer.add(icon);
     } else {
       const iconG = this.add.graphics();
       iconG.fillStyle(cfg.fxColor, 1);
-      iconG.fillRoundedRect(x - 230, y - 55, 110, 110, 14);
+      iconG.fillRoundedRect(x - 223, y - 48, 96, 96, 14);
       this.paletteLayer.add(iconG);
     }
 
-    const name = this.add.text(x - 104, y - 74, getHeroName(cfg.key), {
-      fontSize: '34px', color: deployed ? '#9999aa' : '#ffffff', fontStyle: 'bold', padding: { x: 2, y: 8 }
+    const name = this.add.text(x - 104, y - 58, getHeroName(cfg.key), {
+      fontSize: '30px', color: deployed ? '#9999aa' : '#ffffff', fontStyle: 'bold', padding: { x: 2, y: 8 }
     }).setOrigin(0, 0.5);
     this.paletteLayer.add(name);
 
-    const stats = this.add.text(x - 104, y - 32, getText('base.heroStats', { attack: cfg.attack, range: cfg.range, speed: cfg.speed }), {
-      fontSize: '24px', color: '#8899aa'
+    const stats = this.add.text(x - 104, y - 20, getText('base.heroStats', { attack: cfg.attack, range: cfg.range, speed: cfg.speed }), {
+      fontSize: '22px', color: '#8899aa'
     }).setOrigin(0, 0.5);
     this.paletteLayer.add(stats);
 
     const health = critical
       ? getText('base.heroCritical', { days: hero.recoveryDays ?? 0 })
       : getText('base.heroHealth', { hp: hero.hp ?? cfg.hp, maxHp: hero.maxHp ?? cfg.hp });
-    this.paletteLayer.add(this.add.text(x - 104, y - 2, health, { fontSize: '22px', color: critical ? '#ff8f8f' : '#60d394' }).setOrigin(0, 0.5));
+    this.paletteLayer.add(this.add.text(x - 104, y + 10, health, { fontSize: '20px', color: critical ? '#ff8f8f' : '#60d394' }).setOrigin(0, 0.5));
 
-    const desc = this.add.text(x - 104, y + 22, getHeroDescription(cfg.key), {
-      fontSize: '22px', color: '#9fa4b8', wordWrap: { width: CARD_W - 150 }
+    const desc = this.add.text(x - 104, y + 42, getHeroDescription(cfg.key), {
+      fontSize: '20px', color: '#9fa4b8', wordWrap: { width: CARD_W - 150, useAdvancedWrap: true }, maxLines: 2
     }).setOrigin(0, 0.5);
     this.paletteLayer.add(desc);
 
     if (deployed) {
       // 已部署态：金色徽章，整卡不可再点（撤回/移动走格子上的详情弹窗）
       const badge = this.add.graphics();
-      drawUiBox(badge, x + CARD_W / 2 - 90, y - CARD_H / 2 + 34, 140, 44, {
+      drawUiBox(badge, x + CARD_W / 2 - 90, y - CARD_H / 2 + 28, 140, 40, {
         fill: UI_SLOT_FILL, fillAlpha: 0.95, stroke: UI_GOLD, strokeAlpha: 0.8, radius: 10
       });
       this.paletteLayer.add(badge);
-      const badgeText = this.add.text(x + CARD_W / 2 - 90, y - CARD_H / 2 + 34, getText('base.deployed'), {
-        fontSize: '24px', color: '#ffe066', fontStyle: 'bold'
+      const badgeText = this.add.text(x + CARD_W / 2 - 90, y - CARD_H / 2 + 28, getText('base.deployed'), {
+        fontSize: '22px', color: '#ffe066', fontStyle: 'bold'
       }).setOrigin(0.5);
       this.paletteLayer.add(badgeText);
       return;
@@ -877,41 +1599,41 @@ export class BaseScene extends Phaser.Scene {
         const lockIcon = this.add.image(x - 175, y, 'lock').setDisplaySize(72, 72);
         this.paletteLayer.add(lockIcon);
       }
-      const lockName = this.add.text(x - 104, y - 80, getBuildingName(cfg.id), {
+      const lockName = this.add.text(x - 104, y - 58, getBuildingName(cfg.id), {
         fontSize: buildingTitleFontSize, color: '#9999aa', fontStyle: 'bold', padding: { x: 2, y: 8 }
       }).setOrigin(0, 0.5);
       this.paletteLayer.add(lockName);
-      const lockDesc = this.add.text(x - 104, y - 10, description, {
+      const lockDesc = this.add.text(x - 104, y - 8, description, {
         fontSize: getLanguage() === 'en' ? '18px' : '20px', color: '#aeb3c5', wordWrap: { width: CARD_W - 150, useAdvancedWrap: true }, maxLines: 2
       }).setOrigin(0, 0.5);
       this.paletteLayer.add(lockDesc);
-      const lockTip = this.add.text(x - 104, y + 40, getText('base.needBlueprint', { blueprint: bpName }), {
+      const lockTip = this.add.text(x - 104, y + 46, getText('base.needBlueprint', { blueprint: bpName }), {
         fontSize: getLanguage() === 'en' ? '20px' : '26px', color: '#ffd43b', fontStyle: 'bold'
       }).setOrigin(0, 0.5);
       this.paletteLayer.add(lockTip);
       return;
     }
 
-    // 左侧：建筑图标 110×110，垂直居中，距卡片左缘 20px；优先专属贴图，缺失回退大类图标/色块
+    // 左侧：建筑图标 96×96，垂直居中，距卡片左缘 20px；优先专属贴图，缺失回退大类图标/色块
     const perKey = buildingIconKey(cfg.id);
     const iconKey = this.textures.exists(perKey) ? perKey : KIND_ICON_KEYS[cfg.kind];
     if (this.textures.exists(iconKey)) {
-      const icon = this.add.image(x - 175, y, iconKey).setDisplaySize(110, 110);
+      const icon = this.add.image(x - 175, y, iconKey).setDisplaySize(96, 96);
       this.paletteLayer.add(icon);
     } else {
       const iconG = this.add.graphics();
       iconG.fillStyle(KIND_COLORS[cfg.kind], 1);
-      iconG.fillRoundedRect(x - 230, y - 55, 110, 110, 14);
+      iconG.fillRoundedRect(x - 223, y - 48, 96, 96, 14);
       this.paletteLayer.add(iconG);
     }
 
     // 右上：建筑名（34px 左对齐）+ 一行小字简介（选中时替换为放置提示）
-    const name = this.add.text(x - 104, y - 80, getBuildingName(cfg.id), {
+    const name = this.add.text(x - 104, y - 58, getBuildingName(cfg.id), {
       fontSize: buildingTitleFontSize, color: '#ffffff', fontStyle: 'bold', padding: { x: 2, y: 8 }
     }).setOrigin(0, 0.5);
     this.paletteLayer.add(name);
 
-    const sub = this.add.text(x - 104, y - 10, selected ? getText('base.placeHint') : description, {
+    const sub = this.add.text(x - 104, y - 8, selected ? getText('base.placeHint') : description, {
       fontSize: getLanguage() === 'en' ? '18px' : '20px', color: selected ? '#ffe066' : '#8899aa',
       wordWrap: { width: CARD_W - 150, useAdvancedWrap: true }, maxLines: 2
     }).setOrigin(0, 0.5);
@@ -924,7 +1646,7 @@ export class BaseScene extends Phaser.Scene {
     }
 
     rows.forEach((row, j) => {
-      const rowY = y + 56 + j * 44;
+      const rowY = y + 48 + j * 44;
       const enough = row.have >= row.need;
       if (row.icon && this.textures.exists(row.icon)) {
         const mIcon = this.add.image(x - 82, rowY, row.icon).setDisplaySize(44, 44);
@@ -998,8 +1720,12 @@ export class BaseScene extends Phaser.Scene {
 
     // 选中防御塔时高亮显示其攻击范围
     if (cfg.kind === 'tower' && cfg.range) {
-      this.drawRangeCircle(this.selectedRangeHint, building.row, building.col, cfg.range, 0x66ff66);
-      this.selectedRangeHint.setVisible(true);
+      if (this.renderer3d) {
+        this.renderer3d.setSelectedRange(building.row, building.col, cfg.range);
+      } else {
+        this.drawRangeCircle(this.selectedRangeHint, building.row, building.col, cfg.range, 0x66ff66);
+        this.selectedRangeHint.setVisible(true);
+      }
     }
 
     const { width, height } = this.scale;
@@ -1365,7 +2091,7 @@ export class BaseScene extends Phaser.Scene {
     const core = this.baseSystem.getCore(this.state);
     const preview = getNightPreview(this.state.day);
     const sides = getAttackSides(this.state.base);
-    const routeLength = getShortestEntryPathLength(this.state.base);
+    const routeLength = getShortestEntryPathLength(this.state.base, (r, c) => !!getItem(this.state.grid, r, c));
 
     const mask = this.add.rectangle(0, 0, width, height, 0x000000, 0.65).setOrigin(0).setInteractive();
     this.dialogLayer.add(mask);
@@ -1544,5 +2270,6 @@ export class BaseScene extends Phaser.Scene {
     this.marketClipShape = undefined;
     this.dialogLayer.removeAll(true);
     this.selectedRangeHint.setVisible(false);
+    this.renderer3d?.setSelectedRange(0, 0, null);
   }
 }

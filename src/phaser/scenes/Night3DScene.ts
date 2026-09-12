@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { IGameState } from '../../core/types';
 import { GameEvents, eventBus } from '../../core/events/EventBus';
 import { StorageSystem } from '../../core/systems/StorageSystem';
+import { flushCloudUpload } from '../../platform/common/CloudSave';
 import { NightSystem, IBattle } from '../../core/systems/NightSystem';
 import { StorySystem } from '../../core/systems/StorySystem';
 import { StoryDialog } from '../ui/StoryDialog';
@@ -47,11 +48,12 @@ export class Night3DScene extends Phaser.Scene {
     // 隐藏 Phaser 背景，让 3D 场景可见
     this.cameras.main.setBackgroundColor('rgba(0,0,0,0)');
 
-    // 创建 3D 渲染器，叠加在 Phaser canvas 上层
+    // 创建 3D 渲染器，精确叠加在 Phaser canvas 上层（flex+autoCenter 下画布不在容器中心，按 rect 对齐）
     const gameCanvas = this.game.canvas;
     const container = gameCanvas.parentElement || document.body;
     const rect = gameCanvas.getBoundingClientRect();
     this.renderer3d = new Night3DRenderer(container, rect.width, rect.height);
+    this.renderer3d.syncToCanvas(gameCanvas);
 
     // UI 层
     this.uiLayer = this.add.container(0, 0).setDepth(100);
@@ -100,8 +102,8 @@ export class Night3DScene extends Phaser.Scene {
   }
 
   private onResize = (): void => {
-    const rect = this.game.canvas.getBoundingClientRect();
-    this.renderer3d?.resize(rect.width, rect.height);
+    // 等 Phaser ScaleManager 先完成 FIT 重排，再按新 rect 对齐 3D 画布
+    requestAnimationFrame(() => this.renderer3d?.syncToCanvas(this.game.canvas));
   };
 
   update(_time: number, delta: number): void {
@@ -156,7 +158,8 @@ export class Night3DScene extends Phaser.Scene {
         return;
       }
       this.storage.saveState(this.state);
-      this.scene.start('GameScene', { state: this.state });
+      void flushCloudUpload();
+      this.scene.start('BaseScene', { state: this.state, nightEndStory: { won, day: this.state.day } });
     });
   }
 }

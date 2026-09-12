@@ -1,5 +1,4 @@
 import * as Phaser from 'phaser';
-import { GameScene } from './phaser/scenes/GameScene';
 import { BaseScene } from './phaser/scenes/BaseScene';
 import { NightScene } from './phaser/scenes/NightScene';
 import { Night3DScene } from './phaser/scenes/Night3DScene';
@@ -29,11 +28,25 @@ function blockEdgeNavigation(): void {
   }, { passive: false });
 }
 
+/** 屏蔽移动端浏览器手势：iOS 捏合缩放、长按系统菜单、下拉刷新/整页回弹 */
+function blockMobileGestures(): void {
+  // iOS Safari 10+ 无视 viewport 的 user-scalable=no，需拦 gesture 事件防捏合缩放
+  for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+    document.addEventListener(type, e => e.preventDefault());
+  }
+  // 长按弹出系统菜单（Android 复制/分享、iOS 放大镜旁路）
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  // 下拉刷新/整页拖动：游戏无原生滚动，全部拦截；
+  // preventDefault 只阻止浏览器接管滚动/缩放，pointer 事件照常派发，游戏拖拽/捏合不受影响
+  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+}
+
 /**
  * 游戏入口
  */
 async function main() {
   blockEdgeNavigation();
+  blockMobileGestures();
   initAnalytics();
   // 初始化平台
   const platform = getPlatform();
@@ -55,7 +68,7 @@ async function main() {
       width: DESIGN_WIDTH,
       height: DESIGN_HEIGHT
     },
-    scene: [BootScene, GameScene, BaseScene, NightScene, Night3DScene, NightTestScene],
+    scene: [BootScene, BaseScene, NightScene, Night3DScene, NightTestScene],
     physics: {
       default: 'arcade',
       arcade: {

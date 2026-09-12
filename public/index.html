@@ -20,7 +20,12 @@
       overflow: hidden;
       background: #1a1a2e;
       touch-action: none;
-      overscroll-behavior-x: none;
+      /* 屏蔽移动端手势：下拉刷新/回弹（双轴）、长按选中/放大镜/通话菜单、点按高亮 */
+      overscroll-behavior: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
     }
     #game-container {
       width: 100%;

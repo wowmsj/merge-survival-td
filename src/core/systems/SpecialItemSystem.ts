@@ -7,6 +7,7 @@ import { createItemFromConfig, itemIsBubble, itemIsNormal } from '../model/Item'
 import { EconomySystem } from './EconomySystem';
 import { now } from '../utils/Common';
 import { getText } from '../i18n';
+import { canHostItem } from '../model/GameState';
 
 /**
  * 特殊道具系统（mdt 1~11）
@@ -196,7 +197,7 @@ export class SpecialItemSystem {
         setItem(state.grid, src.row, src.col, null);
         const splitItem = createItemFromConfig(targetItem.id - 1, undefined, undefined, state);
         setItem(state.grid, target.row, target.col, splitItem);
-        const emptyPos = findEmptyCell(state.grid);
+        const emptyPos = findEmptyCell(state.grid, (r, c) => canHostItem(state, r, c));
         if (emptyPos) {
           setItem(state.grid, emptyPos.row, emptyPos.col, createItemFromConfig(targetItem.id - 1, undefined, undefined, state));
           eventBus.emit(GameEvents.GRID_ITEM_SPAWNED, { source: target, newPositions: [emptyPos], isAuto: false });

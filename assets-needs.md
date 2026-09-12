@@ -111,7 +111,7 @@
 
 ### 4.3 代码接入点
 - 加载资源：`src/phaser/scenes/BootScene.ts` 的 `preload`（当前没有，需要添加）。
-- 使用图标：`src/phaser/objects/ItemSprite.ts` 的 `updateItem`，在 `this.bg` 之上绘制道具图标。
+- 使用图标：`src/three/BoardItemView.ts` 的 `updateItem`，在棋子模型之上叠加道具图标（覆盖层/2D 回退）。
 
 ---
 

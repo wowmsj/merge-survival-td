@@ -1,35 +1,32 @@
 import { IGameState } from '../types';
-import { forEachCell } from '../model/Grid';
+import { findCoreBuilding } from '../model/Base';
 import { getMergeNextId } from './PropConfig';
+import { clampCoreLevel, getCoreAuraAt, getCorePropId, getCoreTierAt } from './CoreConfig';
 
 /**
- * 合成核心光环：棋盘上的核心装置（60026 核心基座起）让全场发射器产出概率升一级。
- * 外婆的核心越完整，共鸣越强——夜战掉落核心材料，合成升级核心，核心反哺合成。
+ * 合成核心（= 基地核心建筑）的三个作用：
+ *   1. 光环：全场发射器/收集站产出概率升一级；
+ *   2. 合成权限：物品链分三档，钢铁/科技档需要核心等级；
+ *   3. 发射器：点击核心发射各链链首材料（见 systems/CoreSystem）。
+ *
+ * 核心等级存在基地核心建筑上（IBuilding.level，1~6），数值表见 CoreConfig。
  */
-export const CORE_AURA: Record<number, number> = {
-  60026: 0.05,
-  60027: 0.10,
-  60028: 0.15,
-  60029: 0.20,
-  60030: 0.25,
-  60031: 0.30
-};
 
-/** 棋盘上最高级核心装置对应的光环概率（无核心为 0） */
+/** 基地核心等级（旧存档/异常数据兜底为 1） */
+export function getCoreLevel(state: IGameState): number {
+  const core = state.base ? findCoreBuilding(state.base) : null;
+  return clampCoreLevel(core?.level);
+}
+
+/** 当前核心光环概率（产出升一级） */
 export function getCoreAuraChance(state: IGameState): number {
-  let chance = 0;
-  forEachCell(state.grid, item => {
-    if (!item) return;
-    const c = CORE_AURA[item.id];
-    if (c && c > chance) chance = c;
-  });
-  return chance;
+  return getCoreAuraAt(getCoreLevel(state));
 }
 
 /**
  * 物资档次：0 普通 / 1 钢铁 / 2 科技。
- * 合成高档物品需要棋盘上的核心装置达到对应等级（外婆的核心决定你能造什么）。
- * 未列出的 id 一律视为普通档：工具/净水/口粮/药品/拾荒/种植/猫鼠/孤品/核心/蓝图链。
+ * 合成高档物品需要基地核心达到对应等级（核心决定你能造什么）。
+ * 未列出的 id 一律视为普通档：工具/净水/口粮/药品/拾荒/种植/猫鼠/孤品/核心材料/蓝图链。
  */
 const TIER_RANGES: { min: number; max: number; tier: number }[] = [
   // 钢铁档：物资推车/废铁/防御材料/手册技能/远征/武器/手办/机器人/废料/电源
@@ -44,12 +41,12 @@ const TIER_RANGES: { min: number; max: number; tier: number }[] = [
   { min: 60008, max: 60020, tier: 2 }
 ];
 
-/** 各档次解锁所需的最低核心装置 id（toast/简介展示用） */
-export const TIER_CORE_REQUIREMENT: Record<number, number> = { 1: 60027, 2: 60029 };
+/** 各档次解锁所需的核心等级（toast/简介展示用） */
+export const TIER_CORE_LEVEL: Record<number, number> = { 1: 2, 2: 4 };
 
-/** 合成核心链道具（60024 神秘零件 ~ 60031 完整核心） */
-export function isCoreChainItem(id: number): boolean {
-  return id >= 60024 && id <= 60031;
+/** 该档次需要的核心名称（toast 用，如「合成核心原型」） */
+export function getTierCoreName(tier: number): number {
+  return getCorePropId(TIER_CORE_LEVEL[tier] ?? 1);
 }
 
 /** 物品的物资档次（0 普通 / 1 钢铁 / 2 科技） */
@@ -60,16 +57,9 @@ export function getItemTier(id: number): number {
   return 0;
 }
 
-/** 棋盘上最高核心装置对应的合成权限档次（无核心/基座=0，原型/TG-I=1，二型及以上=2） */
+/** 当前核心提供的合成权限档次 */
 export function getCoreTier(state: IGameState): number {
-  let best = 0;
-  forEachCell(state.grid, item => {
-    if (!item) return;
-    const id = item.id;
-    if (id >= 60029 && id <= 60031) best = Math.max(best, 2);
-    else if (id === 60027 || id === 60028) best = Math.max(best, 1);
-  });
-  return best;
+  return getCoreTierAt(getCoreLevel(state));
 }
 
 /**

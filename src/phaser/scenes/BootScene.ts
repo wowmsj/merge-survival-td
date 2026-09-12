@@ -2,6 +2,8 @@ import * as Phaser from 'phaser';
 import { ITEM_ICON_KEYS } from '../config/ItemIconMap';
 import { UI_GOLD, UI_SLOT_FILL, UI_STROKE, drawUiBox } from '../ui/UiStyle';
 import { getText } from '../../core/i18n';
+import { initAuth } from '../../platform/common/Auth';
+import { resolveCloudSaveOnBoot } from '../../platform/common/CloudSave';
 
 /** webpack DefinePlugin 注入的构建版本号（素材 URL 缓存破除用） */
 declare const __ASSET_VERSION__: string;
@@ -105,9 +107,16 @@ export class BootScene extends Phaser.Scene {
     });
   }
 
-  create(): void {
+  async create(): Promise<void> {
     this.generateTextures();
-    this.scene.start('GameScene');
+    // 账号系统 + 云存档：无凭据时全部静默降级为纯游客模式，不阻塞启动
+    try {
+      await initAuth();
+      await resolveCloudSaveOnBoot();
+    } catch (e) {
+      console.warn('[BootScene] auth/cloud save init failed:', e);
+    }
+    this.scene.start('BaseScene');
   }
 
   /** PNG 已加载成功的 key 跳过，只为缺失的 key 程序化生成纹理 */

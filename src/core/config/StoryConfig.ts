@@ -20,9 +20,10 @@ import { getHeroConfig } from './HeroConfig';
  *  item      物品 id=value 首次出现在棋盘
  *  zombie    首次出现 moveType=value 的僵尸（ground/fly/burrow）
  *  day       存活到第 value 天
+ *  coreLevel 基地核心（合成核心）等级 >= value
  */
 export interface IStoryTrigger {
-  type: 'newGame' | 'merge' | 'task' | 'coin' | 'nightWin' | 'nightLose' | 'level' | 'building' | 'blueprint' | 'item' | 'zombie' | 'day';
+  type: 'newGame' | 'merge' | 'task' | 'coin' | 'nightWin' | 'nightLose' | 'level' | 'building' | 'blueprint' | 'item' | 'zombie' | 'day' | 'coreLevel';
   value?: number | string;
 }
 
@@ -95,7 +96,7 @@ export function getBeatsByTrigger(
   return STORY_BEATS.filter(b => {
     if (b.trigger.type !== type || seen.has(b.id)) return false;
     if (value === undefined) return true;
-    if (type === 'level' || type === 'day' || type === 'coin') return Number(b.trigger.value) <= Number(value);
+    if (type === 'level' || type === 'day' || type === 'coin' || type === 'coreLevel') return Number(b.trigger.value) <= Number(value);
     // task：带 value 的 beat 精确匹配任务 id；无 value 的通用 task beat 任意任务完成都触发
     if (type === 'task') return b.trigger.value === undefined || Number(b.trigger.value) === Number(value);
     return b.trigger.value === value;

@@ -5,7 +5,7 @@ import { getItem } from '../../core/model/Grid';
 import { itemIsNormal } from '../../core/model/Item';
 import { getBuildingConfig } from '../../core/config/BuildingConfig';
 import { HAND_DONE_INDEX } from '../../core/systems/MergeSystem';
-import { isCoreChainItem } from '../../core/config/MergeCoreConfig';
+import { corePoint } from '../../core/model/Base';
 import { UI_FILL, UI_GOLD } from './UiStyle';
 import { getText } from '../../core/i18n';
 
@@ -30,8 +30,8 @@ const FARM_EMITTER_STAGE = 15;
 const FARM_MERGE_STAGE = 16;
 const FARM_UNLOCK_STAGE = 17;
 
-/** 横幅中心 y：棋盘（222..1546）之下、卡片栏（1674）之上的空档 */
-const BANNER_Y = 1596;
+/** 横幅中心 y：棋盘（346..1276）之下、卡片栏（1318）之上的空档 */
+const BANNER_Y = 1300;
 const BANNER_H = 64;
 
 /**
@@ -91,13 +91,12 @@ export class HandGuide {
     };
     eventBus.on(GameEvents.GRID_ITEM_MERGED, onMerged);
 
-    // 手动产出 → 核心发射够两个工具箱把手推进到 6（新开局引导：先点核心）/ 12
+    // 手动产出 → 核心（基地核心=发射器）发射够两个工具箱把手推进到 6（新开局引导：先点核心）/ 12
     const onSpawned = (data: { isAuto: boolean; source?: IPoint | null }) => {
-      if (!data.isAuto && this.state.handIndex <= 5 && data.source) {
-        const srcItem = getItem(this.state.grid, data.source.row, data.source.col);
-        if (srcItem && isCoreChainItem(srcItem.id) && this.countToolboxChainOnBoard() >= 2) {
-          this.setHandIndex(6);
-        }
+      const core = corePoint(this.state.base);
+      const fromCore = (src?: IPoint | null) => !!src && src.row === core.row && src.col === core.col;
+      if (!data.isAuto && this.state.handIndex <= 5 && fromCore(data.source)) {
+        if (this.countToolboxChainOnBoard() >= 2) this.setHandIndex(6);
       } else if (this.state.handIndex === 11 && data.source) {
         const srcItem = getItem(this.state.grid, data.source.row, data.source.col);
         if (srcItem?.id === TOWER_EMITTER) this.enterTowerBlueprintStage();

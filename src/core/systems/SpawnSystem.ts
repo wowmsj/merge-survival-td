@@ -1,12 +1,14 @@
 import { GameEvents, eventBus } from '../events/EventBus';
 import { DESIGN_CONFIG, getClickProducts, getProp, isToolboxSpawner } from '../config/PropConfig';
 import { IGameState, IItemData, IPoint } from '../types';
-import { findEmptyCell, forEachCell, getItem, getNineEmptyCells, getNineNeighbors, setItem } from '../model/Grid';
+import { forEachCell, getItem, getNineEmptyCells, getNineNeighbors, setItem } from '../model/Grid';
 import { createItemFromConfig, itemInCd, itemIsBubble, itemIsNormal } from '../model/Item';
 import { propCanSpeedUp } from '../config/PropConfig';
 import { getRandomByWeight, now } from '../utils/Common';
 import { applyCoreAura } from '../config/MergeCoreConfig';
 import { getText } from '../i18n';
+import { findHostCellNear, canHostItem } from '../model/GameState';
+import { CoreSystem } from './CoreSystem';
 
 /**
  * 生成系统
@@ -14,6 +16,8 @@ import { getText } from '../i18n';
  * （对应源项目 onClickRoomNew / refreshRoomAutoNew / update）
  */
 export class SpawnSystem {
+  /** 基地核心（= 合成核心发射器）的库存/CD 心跳 */
+  private coreSystem = new CoreSystem();
 
   /** 每帧/每 tick 更新（源项目 500ms 一次，这里由 World.update 驱动） */
   update(state: IGameState, _dt: number): void {
@@ -125,11 +129,9 @@ export class SpawnSystem {
     return { success: true, newPos: emptyPos, productId };
   }
 
-  /** 发射器产出落点：优先周围九宫空格，否则全盘首个空格 */
+  /** 发射器产出落点：优先周围九宫可承载空格，否则全盘首个可承载空格 */
   private findSpawnCell(state: IGameState, source: IPoint): IPoint | null {
-    const nine = getNineEmptyCells(state.grid, source.row, source.col);
-    if (nine.length > 0) return nine[0];
-    return findEmptyCell(state.grid);
+    return findHostCellNear(state, source.row, source.col);
   }
 
   /** 决定点击产出 id：优先 clickPropId 队列，否则 atom/matic 权重 */
@@ -229,6 +231,9 @@ export class SpawnSystem {
       if (item.cdAuto) item.cdAuto -= dt;
       eventBus.emit(GameEvents.GRID_ITEM_CHANGED, { pos, item });
     }
+
+    // 基地核心：CD 到期回满库存（核心不再是棋盘道具，单独 tick）
+    this.coreSystem.tick(state);
   }
 
   /**
@@ -242,7 +247,7 @@ export class SpawnSystem {
     const prop = getProp(item.id);
     if (!prop || prop.fair <= 0) return;
 
-    const empties = getNineEmptyCells(state.grid, pos.row, pos.col);
+    const empties = getNineEmptyCells(state.grid, pos.row, pos.col, (r, c) => canHostItem(state, r, c));
     if (empties.length <= 0) return;
 
     const newPositions: IPoint[] = [];

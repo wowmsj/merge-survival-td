@@ -3,9 +3,9 @@ import { IGameState, IItemData, IPoint } from '../../core/types';
 import { getProp, isClickSpecialProp, isClickSpawner, isMergeChainTop } from '../../core/config/PropConfig';
 import { itemIsBubble, itemInCd } from '../../core/model/Item';
 import { getBlueprintBuilding } from '../../core/config/BuildingConfig';
-import { isCoreChainItem } from '../../core/config/MergeCoreConfig';
 import { UI_FILL, UI_SLOT_FILL, UI_STROKE, drawUiBox } from './UiStyle';
 import { getItemIconKey } from '../config/ItemIconMap';
+import { applyModelIcon } from '../../three/ModelIconRenderer';
 import { getLanguage, getPropDescription, getPropName, getText } from '../../core/i18n';
 
 export interface IInfoAction {
@@ -13,8 +13,21 @@ export interface IInfoAction {
   onClick: () => void;
 }
 
+/** 基地核心（= 合成核心 = 发射器）的信息卡内容 */
+export interface ICoreCardInfo {
+  /** 核心等级 1~6 */
+  level: number;
+  /** 展示用道具 id（图标随等级，取 CoreConfig.getCorePropId） */
+  iconPropId: number;
+  /** 卡片标题（核心名 + 等级） */
+  title: string;
+  /** 状态行：库存 / 光环 / 冷却 */
+  status: string;
+  actions: IInfoAction[];
+}
+
 const INFO_X = 536;
-const INFO_Y = 1642;
+const INFO_Y = 1292;
 const INFO_W = 506;
 const INFO_H = 144;
 const DESC_W = 224;
@@ -51,23 +64,35 @@ export class InfoBar {
   }
 
   showSelection(pos: IPoint | null, item: IItemData | null, actions: IInfoAction[]): void {
-    this.clearButtons();
     if (!pos || !item) {
+      this.clearButtons();
       this.container.setVisible(false);
       return;
     }
-
-    this.container.setVisible(true);
     const prop = getProp(item.id);
-    const isEnglish = getLanguage() === 'en';
-    this.titleText.setStyle({ fontSize: isEnglish ? '21px' : '24px' });
-    this.titleText.setText(`${getPropName(item.id)}  Lv.${prop?.luna ?? 1}`);
-    this.descText.setStyle({ fontSize: isEnglish ? '17px' : '18px' });
-    this.descText.setText(getPropDescription(item.id));
+    const title = `${getPropName(item.id)}  Lv.${prop?.luna ?? 1}`;
+    this.renderCard(item.id, title, getPropDescription(item.id), actions);
+  }
 
-    const iconKey = getItemIconKey(item.id, this.scene.textures);
+  /** 基地核心信息卡：核心不是棋盘物品，单独一条入口（图标随等级、状态行动态刷新） */
+  showCore(info: ICoreCardInfo): void {
+    this.renderCard(info.iconPropId, info.title, info.status, info.actions);
+  }
+
+  private renderCard(iconId: number, title: string, desc: string, actions: IInfoAction[]): void {
+    this.clearButtons();
+    this.container.setVisible(true);
+    const isEnglish = getLanguage() === 'en';
+
+    this.titleText.setStyle({ fontSize: isEnglish ? '21px' : '24px' });
+    this.titleText.setText(title);
+    this.descText.setStyle({ fontSize: isEnglish ? '17px' : '18px' });
+    this.descText.setText(desc);
+
+    const iconKey = getItemIconKey(iconId, this.scene.textures);
     if (iconKey && this.scene.textures.exists(iconKey)) {
       this.icon.setTexture(iconKey).setDisplaySize(92, 92).setVisible(true);
+      applyModelIcon(this.scene, this.icon, iconId, 92); // 3D 快照就绪后原位升级，失败保持 2D
     } else {
       this.icon.setVisible(false);
     }
@@ -111,7 +136,6 @@ export function buildInfoActions(
     onSkipCd: (pos: IPoint, cdType: 1 | 2) => void;
     onUse: (pos: IPoint) => void;
     onViewSpawner: (pos: IPoint) => void;
-    onViewIntro: (pos: IPoint) => void;
   }
 ): IInfoAction[] {
   const actions: IInfoAction[] = [];
@@ -126,7 +150,6 @@ export function buildInfoActions(
     return actions;
   }
   if (isClickSpawner(item.id)) actions.push({ label: getText('action.view'), onClick: () => handlers.onViewSpawner(pos) });
-  if (isCoreChainItem(item.id)) actions.push({ label: getText('action.intro'), onClick: () => handlers.onViewIntro(pos) });
   if (getBlueprintBuilding(item.id)) actions.push({ label: getText('action.use'), onClick: () => handlers.onUse(pos) });
   const unlockedSpawner = prop.mdt === 1 && !item.unlock && (item.times ?? 0) > 0;
   if (isClickSpecialProp(item.id) && !unlockedSpawner) actions.push({ label: getText('action.use'), onClick: () => handlers.onUse(pos) });

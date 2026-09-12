@@ -58,7 +58,7 @@ export class NightTestScene extends Phaser.Scene {
     }).setOrigin(0.5);
     makeUiButton(this, null, 96, 56, 140, 56, getText('nightTest.back'), {
       box: { radius: 12 }
-    }, () => this.scene.start('GameScene', this.originalState ? { state: this.originalState } : undefined));
+    }, () => this.scene.start('BaseScene', this.originalState ? { state: this.originalState } : undefined));
 
     // 天数调节（第二行，居中）
     this.dayText = this.add.text(DESIGN_WIDTH / 2, 132, getText('nightTest.day', { day: this.state.day }), {

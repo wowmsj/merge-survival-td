@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { IUiBoxOpts, drawUiBox } from './UiStyle';
+import { IUiBoxOpts, UI_STROKE, drawUiBox } from './UiStyle';
 
 /**
  * 场景级共享 UI 小组件：toast 提示 + 全屏背景 + 统一按钮
@@ -10,7 +10,7 @@ export interface IToastOpts {
   yRatio?: number;
   /** 字号，默认 28px */
   fontSize?: string;
-  /** true = 上飘淡出（GameScene 风格）；false/缺省 = 原地停留后淡出（BaseScene/NightScene 风格） */
+  /** true = 上飘淡出；false/缺省 = 原地停留后淡出（NightScene 风格） */
   rise?: boolean;
 }
 
@@ -78,6 +78,8 @@ export interface IUiButtonOpts {
   color?: string;
   /** 同时设置到底与文本（同一 depth，创建顺序保证文字在底之上） */
   depth?: number;
+  /** 置灰不可点（条件不满足的按钮，如材料不够的「升级」） */
+  disabled?: boolean;
 }
 
 export interface IUiButton {
@@ -88,6 +90,7 @@ export interface IUiButton {
 /**
  * 统一按钮：drawUiBox 圆角底 + 居中加粗文本 + 按下 0.7 / 抬起触发 / 移出还原。
  * parent 非空时加入该容器（面板内按钮），否则挂在场景根。
+ * disabled=true 时压暗且不注册任何指针事件（点击穿透由面板遮罩兜住）。
  */
 export function makeUiButton(
   scene: Phaser.Scene,
@@ -101,17 +104,23 @@ export function makeUiButton(
   onTap: () => void
 ): IUiButton {
   const bg = scene.add.graphics();
-  drawUiBox(bg, x, y, w, h, opts.box);
-  bg.setInteractive(new Phaser.Geom.Rectangle(x - w / 2, y - h / 2, w, h), Phaser.Geom.Rectangle.Contains);
-  bg.on('pointerdown', () => bg.setAlpha(0.7));
-  bg.on('pointerup', () => {
-    bg.setAlpha(1);
-    onTap();
-  });
-  bg.on('pointerout', () => bg.setAlpha(1));
+  if (opts.disabled) {
+    drawUiBox(bg, x, y, w, h, { fillAlpha: 0.5, stroke: UI_STROKE, strokeAlpha: 0.3, radius: opts.box?.radius ?? 12 });
+  } else {
+    drawUiBox(bg, x, y, w, h, opts.box);
+  }
+  if (!opts.disabled) {
+    bg.setInteractive(new Phaser.Geom.Rectangle(x - w / 2, y - h / 2, w, h), Phaser.Geom.Rectangle.Contains);
+    bg.on('pointerdown', () => bg.setAlpha(0.7));
+    bg.on('pointerup', () => {
+      bg.setAlpha(1);
+      onTap();
+    });
+    bg.on('pointerout', () => bg.setAlpha(1));
+  }
   const text = scene.add.text(x, y, label, {
     fontSize: opts.fontSize ?? '26px',
-    color: opts.color ?? '#ffffff',
+    color: opts.disabled ? '#555a6e' : (opts.color ?? '#ffffff'),
     fontStyle: 'bold'
   }).setOrigin(0.5);
   if (opts.depth !== undefined) {

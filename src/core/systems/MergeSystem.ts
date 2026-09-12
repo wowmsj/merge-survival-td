@@ -8,8 +8,9 @@ import { BagSystem } from './BagSystem';
 import { SpecialItemSystem } from './SpecialItemSystem';
 import { LevelSystem } from './LevelSystem';
 import { getRandomByWeight, now } from '../utils/Common';
-import { getCoreTier, getItemTier, TIER_CORE_REQUIREMENT } from '../config/MergeCoreConfig';
+import { getCoreTier, getItemTier, getTierCoreName } from '../config/MergeCoreConfig';
 import { getText, getPropName } from '../i18n';
+import { canHostItem } from '../model/GameState';
 
 /**
  * 二合系统
@@ -85,6 +86,11 @@ export class MergeSystem {
 
     // 目标为空 → 直接移动（蜘蛛网/气泡中不能作为落点空位，但可以移动）
     if (!targetItem) {
+      // 落点格不可承载物品（基地改造后：未开垦/有建筑/地形）→ 弹回
+      if (!canHostItem(state, target.row, target.col)) {
+        result.kind = 'bounce';
+        return result;
+      }
       // 蜘蛛网物品不能放入空位（不能交换位置），弹回
       if (srcItem.st === ItemStatus.Spider) {
         eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.spiderCannotMove'));
@@ -116,12 +122,12 @@ export class MergeSystem {
       return result;
     }
 
-    // 合成权限门槛：钢铁/科技档物品需要棋盘上的核心装置达到对应等级
+    // 合成权限门槛：钢铁/科技档物品需要基地核心达到对应等级
     if (srcItem.id === targetItem.id && nextId > 0) {
       const needTier = getItemTier(nextId);
       if (needTier > getCoreTier(state)) {
         eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.mergeNeedsCore', {
-          core: getPropName(TIER_CORE_REQUIREMENT[needTier])
+          core: getPropName(getTierCoreName(needTier))
         }));
         result.kind = 'bounce';
         return result;
@@ -225,7 +231,7 @@ export class MergeSystem {
     const retRow = getRandomByWeight(COMPOSE_AWARDS);
     if (!retRow || retRow.propId === 0) return;
 
-    const emptyPos = findEmptyCell(state.grid);
+    const emptyPos = findEmptyCell(state.grid, (r, c) => canHostItem(state, r, c));
     if (!emptyPos) return;
 
     let newItem: IItemData | null = null;

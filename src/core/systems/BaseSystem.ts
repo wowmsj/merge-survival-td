@@ -1,6 +1,7 @@
 import { GameEvents, eventBus } from '../events/EventBus';
 import { IBaseState, IBuilding, IGameState, IResource } from '../types';
 import { buildingAt, claimAround, createDefaultBase, hasKillCorridor, isClaimed } from '../model/Base';
+import { getItem } from '../model/Grid';
 import {
   getBuildingConfig, getUpgradeCostCoin, getDemolishRefundCoin, getRepairCostCoin,
   hpAtLevel, outputIntervalAtLevel, outputAmountAtLevel, isBuildingUnlocked,
@@ -181,11 +182,13 @@ export class BaseSystem {
     const base = this.ensure(state);
     if (row < 0 || row >= base.rows || col < 0 || col >= base.cols) return { ok: false, reason: getText('toast.outOfBase') };
     if (buildingAt(base, row, col)) return { ok: false, reason: getText('toast.cellOccupied') };
+    if (getItem(state.grid, row, col)) return { ok: false, reason: getText('toast.cellOccupied') };
     const terrain = terrainAt(base, row, col);
     if (terrain) return { ok: false, reason: getText('toast.terrainBlocked', { terrain: getText(`terrain.${terrain}`) }) };
 
     if (!isClaimed(base, row, col)) return { ok: false, reason: getText('toast.expandTerritory') };
-    if (cfg.kind !== 'trap' && !hasKillCorridor(base, { row, col })) {
+    const itemBlocked = (r: number, c: number) => !!getItem(state.grid, r, c);
+    if (cfg.kind !== 'trap' && !hasKillCorridor(base, { row, col }, itemBlocked)) {
       return { ok: false, reason: getText('toast.killCorridor') };
     }
 

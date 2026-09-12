@@ -45,11 +45,11 @@ export function forEachCell(grid: IGrid, cb: (item: IItemData | null, row: numbe
   }
 }
 
-/** 从上到下、从左到右找第一个空格子 */
-export function findEmptyCell(grid: IGrid): IPoint | null {
+/** 从上到下、从左到右找第一个空格子；canHost 提供时还要求该格可承载物品 */
+export function findEmptyCell(grid: IGrid, canHost?: (row: number, col: number) => boolean): IPoint | null {
   for (let r = 0; r < grid.rowNum; r++) {
     for (let c = 0; c < grid.colNum; c++) {
-      if (!grid.cells[r][c].item) {
+      if (!grid.cells[r][c].item && (!canHost || canHost(r, c))) {
         return { row: r, col: c };
       }
     }
@@ -88,13 +88,13 @@ export function getCrossNeighbors(grid: IGrid, row: number, col: number): IPoint
   return res;
 }
 
-/** 九宫格空位（自动生成器用） */
-export function getNineEmptyCells(grid: IGrid, row: number, col: number): IPoint[] {
+/** 九宫格空位（自动生成器用）；canHost 提供时还要求该格可承载物品 */
+export function getNineEmptyCells(grid: IGrid, row: number, col: number, canHost?: (row: number, col: number) => boolean): IPoint[] {
   const res: IPoint[] = [];
   for (const [dr, dc] of NINE_DIRS) {
     const nr = row + dr;
     const nc = col + dc;
-    if (inGrid(grid, nr, nc) && !grid.cells[nr][nc].item) {
+    if (inGrid(grid, nr, nc) && !grid.cells[nr][nc].item && (!canHost || canHost(nr, nc))) {
       res.push({ row: nr, col: nc });
     }
   }

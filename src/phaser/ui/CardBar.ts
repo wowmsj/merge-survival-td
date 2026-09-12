@@ -4,7 +4,7 @@ import { getText } from '../../core/i18n';
 import { getItemIconKey } from '../config/ItemIconMap';
 import { UI_FILL, UI_GOLD, UI_SLOT_FILL, UI_STROKE, drawUiBox } from './UiStyle';
 
-const BOTTOM_BAR_Y = 1674;
+const BOTTOM_BAR_Y = 1318;
 const CARD_SLOT_PITCH = 124;
 
 /**
@@ -24,7 +24,7 @@ export class CardBar {
     up: () => void;
   } | null = null;
 
-  /** 由 GameScene 注入 */
+  /** 由 BaseScene 注入 */
   onUseCard: (index: number) => void = () => {};
   onOpenAllCards: () => void = () => {};
 

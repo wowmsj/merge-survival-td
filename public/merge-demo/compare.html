@@ -1,0 +1,19 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>原图与 3D 对照</title>
+<style>body{margin:0;background:#302c27;color:#f3e5ce;font:15px system-ui,sans-serif}header,main{max-width:1060px;margin:auto;padding:22px}h1{font-size:24px;margin:0 0 8px}p{color:#c9bda9;font-size:13px}a,button{color:#f2d18c;background:#454039;border:1px solid #75634a;border-radius:5px;padding:8px 12px;text-decoration:none;cursor:pointer}main{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding-top:0}article{border:1px solid #75634a;border-radius:8px;overflow:hidden;background:#464038}h2{font-size:16px;margin:14px}.pair{display:grid;grid-template-columns:1fr 1fr;background:#d4caba}.view{min-width:0;text-align:center;color:#544a3e}.view img,.view canvas{display:block;width:100%;height:235px;object-fit:contain}.view span{display:block;font-size:12px;padding:8px}.buttons{display:flex;gap:6px;padding:12px}button{font-size:12px}@media(max-width:700px){main{grid-template-columns:1fr;padding:12px}.view img,.view canvas{height:210px}header{padding:18px}}</style>
+<script type="importmap">{"imports":{"three":"/vendor/three.module.js"}}</script></head><body><header><h1>原图 → 立体模型</h1><p>四件试制品 · 同尺寸对照 · 无投影。按钮可查看模型侧面与背面。</p><a href="./?v=reference">放回 63 格棋盘查看</a></header><main id="cards"></main><script type="module">
+import * as THREE from 'three';
+import {buildReferenceModel,referenceIds} from './reference-models.js';
+const names={20004:'翻修冷藏箱',20011:'脏水',20013:'煮沸水',30004:'空推车'};
+const views=[];
+for(const id of referenceIds){
+ const card=document.createElement('article');card.innerHTML=`<h2>${names[id]} · ${id}</h2><div class="pair"><div class="view"><img src="/icons/icon_p${id}.png" alt="${names[id]}原图"><span>原有 2D 图标</span></div><div class="view target"><span>代码制作的 3D</span></div></div><div class="buttons"><button data-turn="0">原图角度</button><button data-turn="1.57">侧面</button><button data-turn="3.14">背面</button></div>`;document.querySelector('#cards').append(card);
+ const target=card.querySelector('.target'),scene=new THREE.Scene();scene.background=new THREE.Color('#d4caba');
+ const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1;renderer.shadowMap.enabled=false;target.prepend(renderer.domElement);
+ const camera=new THREE.OrthographicCamera(-1,1,1,-1,.1,20);camera.position.set(-3,2.5,4);camera.lookAt(0,0,0);
+ scene.add(new THREE.HemisphereLight(0xffffff,0x867156,2));const light=new THREE.DirectionalLight(0xffeddb,2.4);light.position.set(-3,6,5);scene.add(light);
+ const model=buildReferenceModel(id),bounds=new THREE.Box3().setFromObject(model),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());const scale=1.45/Math.max(size.x,size.y,size.z);model.scale.setScalar(scale);model.position.copy(center.multiplyScalar(-scale));const pivot=new THREE.Group();pivot.add(model);scene.add(pivot);
+ const draw=()=>{const w=target.clientWidth,h=innerWidth<700?210:235;renderer.setSize(w,h,false);camera.left=-w/h;camera.right=w/h;camera.updateProjectionMatrix();renderer.render(scene,camera);};
+ card.querySelectorAll('button').forEach(button=>button.onclick=()=>{pivot.rotation.y=Number(button.dataset.turn);draw();});views.push(draw);draw();
+}
+addEventListener('resize',()=>views.forEach(draw=>draw()));window.referenceReady=true;
+</script></body></html>

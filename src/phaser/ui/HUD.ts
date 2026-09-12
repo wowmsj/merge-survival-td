@@ -33,7 +33,7 @@ export class HUD {
   private tooltip: Phaser.GameObjects.Container | null = null;
   private tooltipTimer: Phaser.Time.TimerEvent | null = null;
 
-  /** 无限能量剩余毫秒（由 GameScene 注入查询） */
+  /** 无限能量剩余毫秒（由 BaseScene 注入查询） */
   getPowerFreeRemain: () => number = () => 0;
 
   constructor(scene: Phaser.Scene, state: IGameState) {

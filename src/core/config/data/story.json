@@ -234,8 +234,8 @@
   "id": 13,
   "chapter": 4,
   "trigger": {
-   "type": "item",
-   "value": 60026
+   "type": "coreLevel",
+   "value": 2
   },
   "lines": [
    {

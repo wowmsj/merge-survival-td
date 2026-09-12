@@ -37,6 +37,7 @@
     "webpack-dev-server": "^4.15.1"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.115.0",
     "@types/three": "^0.185.4",
     "phaser": "^4.0.0",
     "three": "^0.185.1"

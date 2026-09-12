@@ -197,22 +197,30 @@ export function getMergeChain(id: number): number[] {
 }
 
 /**
+ * 已退休的合成核心道具（60026 核心基座 ~ 60031 完整合成核心）。
+ * 三作用（光环/合成权限/发射器）已并入基地核心建筑，这些 id 仅供
+ * CoreConfig 取数值与图标、以及旧存档折算识别，不再作为棋盘上的道具出现。
+ */
+export function isRetiredCoreProp(id: number): boolean {
+  return id >= 60026 && id <= 60031;
+}
+
+/**
  * 返回能直接产出该合成链首级材料的发射器/自动器。
- * 优先该链的专属来源（点击 atom 或自动 fair 产出链首），
- * 核心发射器（60024~60031，见 MergeCoreConfig.isCoreChainItem）是通用链首来源，只作兜底——
- * 否则它 atom 里挂了全部链首，面板会把每条链都标成核心基座产出。
+ * 优先该链的专属来源（点击 atom 或自动 fair 产出链首）；
+ * 已退休的核心链道具不参与（链首改由基地核心发射器产出，UI 见 CoreConfig.isCoreOnlyChainHead）。
  */
 export function getMergeChainSpawner(id: number): number | undefined {
   const chain = getMergeChain(id);
   const sourceId = chain[0];
   if (!sourceId) return undefined;
-  const isCore = (rowId: number) => rowId >= 60024 && rowId <= 60031;
+  const usable = (rowId: number) => !isRetiredCoreProp(rowId);
   const dedicated = PROP_TABLE.find(row =>
-    !isCore(row.id) &&
+    usable(row.id) &&
     (row.fair === sourceId || getClickProducts(row.id).some(product => product.id === sourceId))
   )?.id;
   if (dedicated) return dedicated;
-  return PROP_TABLE.find(row => getClickProducts(row.id).some(product => product.id === sourceId))?.id;
+  return PROP_TABLE.find(row => usable(row.id) && getClickProducts(row.id).some(product => product.id === sourceId))?.id;
 }
 
 /** 所有作为合成结果的 id 集合（ blessId 反向索引） */

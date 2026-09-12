@@ -6,6 +6,7 @@ import { PROP_IDS } from '../config/PropConfig';
 import { getBagGridPrice } from '../config/TableConfig';
 import { now } from '../utils/Common';
 import { getText } from '../i18n';
+import { canHostItem } from '../model/GameState';
 
 /**
  * 背包系统
@@ -89,7 +90,7 @@ export class BagSystem {
     const item = bagItem.roomArr[index];
     if (!item) return null;
 
-    const emptyPos = findEmptyCell(state.grid);
+    const emptyPos = findEmptyCell(state.grid, (r, c) => canHostItem(state, r, c));
     if (!emptyPos) {
       eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.boardFull'));
       return null;

@@ -6,7 +6,7 @@ import { TERRAIN_TABLE, terrainAt, isTerrainWalkableForGround } from '../config/
 export const BASE_ROWS = 13;
 export const BASE_COLS = 13;
 export const BASE_CENTER = Math.floor(BASE_ROWS / 2); // 6
-export const INITIAL_CLAIM_RADIUS = 3;
+export const INITIAL_CLAIM_RADIUS = 5;
 
 /** 建筑摆放区域 */
 export enum BaseZone {
@@ -122,8 +122,23 @@ export function buildingAt(base: IBaseState, row: number, col: number): IBuildin
   return base.buildings.find(b => b.row === row && b.col === col) ?? null;
 }
 
-function isWalkableForGround(base: IBaseState, row: number, col: number, extraBlocked?: IPoint): boolean {
+/** 基地核心建筑（固定中央，全局唯一；旧存档缺核心时返回 null，由 CoreSystem.ensure 补齐） */
+export function findCoreBuilding(base: IBaseState): IBuilding | null {
+  return base.buildings.find(b => getBuildingConfig(b.cfgId)?.kind === 'core') ?? null;
+}
+
+/** 基地核心格坐标（无核心返回中央格） */
+export function corePoint(base: IBaseState): IPoint {
+  const core = findCoreBuilding(base);
+  return { row: core?.row ?? BASE_CENTER, col: core?.col ?? BASE_CENTER };
+}
+
+/** 额外的格子阻挡谓词（如「该格有合成物品」）；基地合成改造后由调用方传入 */
+export type CellBlocker = (row: number, col: number) => boolean;
+
+function isWalkableForGround(base: IBaseState, row: number, col: number, extraBlocked?: IPoint, itemBlocked?: CellBlocker): boolean {
   if (extraBlocked?.row === row && extraBlocked.col === col) return false;
+  if (itemBlocked && itemBlocked(row, col)) return false;
   const terrain = terrainAt(base, row, col);
   if (terrain && !isTerrainWalkableForGround(terrain)) return false;
   const building = buildingAt(base, row, col);
@@ -142,9 +157,9 @@ function cardinalNeighbors(base: IBaseState, point: IPoint): IPoint[] {
 }
 
 /** Uniform-cost cardinal search; weighted terrain can replace this with A* without changing callers. */
-export function findPathToCore(base: IBaseState, start: IPoint, extraBlocked?: IPoint): IPoint[] | null {
-  const core = base.buildings.find(b => getBuildingConfig(b.cfgId)?.kind === 'core');
-  if (!core || !isWalkableForGround(base, start.row, start.col, extraBlocked)) return null;
+export function findPathToCore(base: IBaseState, start: IPoint, extraBlocked?: IPoint, itemBlocked?: CellBlocker): IPoint[] | null {
+  const core = findCoreBuilding(base);
+  if (!core || !isWalkableForGround(base, start.row, start.col, extraBlocked, itemBlocked)) return null;
   const queue: IPoint[] = [start];
   const parent = new Map<string, IPoint | null>([[`${start.row},${start.col}`, null]]);
   while (queue.length > 0) {
@@ -160,7 +175,7 @@ export function findPathToCore(base: IBaseState, start: IPoint, extraBlocked?: I
     }
     for (const next of cardinalNeighbors(base, current)) {
       const key = `${next.row},${next.col}`;
-      if (parent.has(key) || !isWalkableForGround(base, next.row, next.col, extraBlocked)) continue;
+      if (parent.has(key) || !isWalkableForGround(base, next.row, next.col, extraBlocked, itemBlocked)) continue;
       parent.set(key, current);
       queue.push(next);
     }
@@ -168,27 +183,28 @@ export function findPathToCore(base: IBaseState, start: IPoint, extraBlocked?: I
   return null;
 }
 
-export function getOpenEdgeCells(base: IBaseState): IPoint[] {
+export function getOpenEdgeCells(base: IBaseState, itemBlocked?: CellBlocker): IPoint[] {
+  const open = (row: number, col: number) => !buildingAt(base, row, col) && !(itemBlocked && itemBlocked(row, col));
   const cells: IPoint[] = [];
   for (let col = 0; col < base.cols; col++) {
-    if (!buildingAt(base, 0, col)) cells.push({ row: 0, col });
-    if (base.rows > 1 && !buildingAt(base, base.rows - 1, col)) cells.push({ row: base.rows - 1, col });
+    if (open(0, col)) cells.push({ row: 0, col });
+    if (base.rows > 1 && open(base.rows - 1, col)) cells.push({ row: base.rows - 1, col });
   }
   for (let row = 1; row < base.rows - 1; row++) {
-    if (!buildingAt(base, row, 0)) cells.push({ row, col: 0 });
-    if (base.cols > 1 && !buildingAt(base, row, base.cols - 1)) cells.push({ row, col: base.cols - 1 });
+    if (open(row, 0)) cells.push({ row, col: 0 });
+    if (base.cols > 1 && open(row, base.cols - 1)) cells.push({ row, col: base.cols - 1 });
   }
   return cells;
 }
 
-export function hasKillCorridor(base: IBaseState, extraBlocked?: IPoint): boolean {
-  return getOpenEdgeCells(base).some(entry => findPathToCore(base, entry, extraBlocked));
+export function hasKillCorridor(base: IBaseState, extraBlocked?: IPoint, itemBlocked?: CellBlocker): boolean {
+  return getOpenEdgeCells(base, itemBlocked).some(entry => findPathToCore(base, entry, extraBlocked, itemBlocked));
 }
 
 /** Shortest current ground route from any open edge to the core, in grid cells. */
-export function getShortestEntryPathLength(base: IBaseState): number | null {
-  const lengths = getOpenEdgeCells(base)
-    .map(entry => findPathToCore(base, entry)?.length ?? 0)
+export function getShortestEntryPathLength(base: IBaseState, itemBlocked?: CellBlocker): number | null {
+  const lengths = getOpenEdgeCells(base, itemBlocked)
+    .map(entry => findPathToCore(base, entry, undefined, itemBlocked)?.length ?? 0)
     .filter(Boolean);
   return lengths.length > 0 ? Math.min(...lengths) : null;
 }

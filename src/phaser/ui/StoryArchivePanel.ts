@@ -15,7 +15,7 @@ const PANEL_H = 1080;
 /**
  * 剧情回顾面板：收录全部主线剧情（序章 + 天数章节，引导剧情不算）。
  * 已解锁章节显示内容摘要、可点「回顾」重播；未解锁显示解锁条件。
- * 由 GameScene 的「剧情」按钮打开；onReplay 回调负责关闭面板并重播。
+ * 由 BaseScene 的「剧情」按钮打开；onReplay 回调负责关闭面板并重播。
  */
 export class StoryArchivePanel extends BasePanel {
   private state: IGameState;
