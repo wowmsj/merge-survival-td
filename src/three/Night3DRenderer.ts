@@ -33,6 +33,11 @@ const BUILDING_GLB: Record<string, string> = {
   trap: 'warm_building_trap.glb',
   wall: 'warm_building_wall.glb'
 };
+const BUILDING_GLB_BY_CFG: Record<number, string> = {
+  202: 'medical_station.glb',
+  203: 'power_station.glb',
+  206: 'workshop.glb'
+};
 /** 废墟三种变体（布局未指定的运行时新增废墟按格哈希取变体） */
 const RUIN_GLBS = ['warm_ruin.glb', 'warm_ruin_1.glb', 'warm_ruin_2.glb'];
 
@@ -854,7 +859,7 @@ export class Night3DRenderer {
     const cfg = getBuildingConfig(cfgId);
     if (!cfg) return null;
     if (cfg.kind === 'ruin') return RUIN_GLBS[(row * BASE_COLS + col) % RUIN_GLBS.length];
-    return BUILDING_GLB[cfg.kind] ?? null;
+    return BUILDING_GLB_BY_CFG[cfgId] ?? BUILDING_GLB[cfg.kind] ?? null;
   }
 
   /** 尝试用暖土 GLB 升级建筑视图：成功则原位替换程序化占位；失败/异步期间被拆则不动 */
