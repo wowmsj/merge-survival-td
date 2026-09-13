@@ -331,9 +331,9 @@ async function main() {
         Math.abs(st.projected.x - st.frame.x) < 2 && Math.abs(st.projected.y - st.frame.y) < 2,
         `proj=${JSON.stringify(st.projected)} frame=${JSON.stringify(st.frame)}`);
 
-      // 放大到底 → 基地溢出网格矩形但刚好铺满可用宽度（不再被框线切掉，也不压 UI）
+      // 放大到底 → 基地宽到可用宽度的 2 倍（玩家要求"能放大到超过屏幕范围，至少现在的两倍"）
       const zoomInBtn = page.locator('button[data-base3d-ctl="zoom-in"]');
-      for (let i = 0; i < 6; i++) await zoomInBtn.click();
+      for (let i = 0; i < 8; i++) await zoomInBtn.click();
       await page.waitForTimeout(300);
       const sp = await page.evaluate(() => {
         const c = window.__base3d.camera();
@@ -343,19 +343,42 @@ async function main() {
         const halfW = probe.maxNdcX * f.inputRect.width / 2;
         const halfH = probe.maxNdcY * f.inputRect.height / 2;
         return {
-          zoom: +c.zoom.toFixed(3), maxZoom: +c.maxZoom.toFixed(3),
+          zoom: +c.zoom.toFixed(3), maxZoom: +c.maxZoom.toFixed(3), defaultZoom: +c.defaultZoom.toFixed(3),
           probe: { x: +probe.maxNdcX.toFixed(3), y: +probe.maxNdcY.toFixed(3) },
           baseW: Math.round(halfW * 2), baseBottom: Math.round(f.frame.y + halfH),
-          limitW: Math.round(Math.min(window.innerWidth, game.width)),
-          cardsTop: Math.round(game.top + 1420 / 1920 * game.height)
+          limitW: Math.round(Math.min(window.innerWidth, game.width))
         };
       });
-      check('放大到底被钳位在「基地刚好铺满可用宽度」',
-        Math.abs(sp.zoom - sp.maxZoom) < 1e-6 && sp.maxZoom > 1.1, JSON.stringify(sp));
+      check('放大到底被钳位在倍率上限', Math.abs(sp.zoom - sp.maxZoom) < 1e-6 && sp.maxZoom > 1.1, JSON.stringify(sp));
       check('放大到底基地溢出网格矩形（不再被框线切掉）', sp.probe.x > 1.05, JSON.stringify(sp.probe));
-      check('放大到底基地宽度 ≈ 可用宽度（不出屏）',
-        sp.baseW <= sp.limitW + 2 && sp.baseW >= sp.limitW * 0.95, JSON.stringify(sp));
-      check('放大到底基地不压卡片栏', sp.baseBottom <= sp.cardsTop, JSON.stringify(sp));
+      check('倍率上限 ≥ 默认倍率的 2 倍（能放到超过屏幕范围）',
+        sp.maxZoom >= sp.defaultZoom * 1.9, JSON.stringify(sp));
+      check('放大到底基地宽度 ≈ 可用宽度的 2 倍（允许超出屏幕）',
+        sp.baseW >= sp.limitW * 1.9 && sp.baseW <= sp.limitW * 2.1, JSON.stringify(sp));
+      // 放大后基地会盖住 UI（玩家要求允许超出屏幕）；DOM 视角按钮仍在最上层，不受影响
+      check('放大到底基地确实超出屏幕（可盖住 UI，符合"放大超过屏幕"的要求）',
+        sp.baseW > sp.limitW + 2, JSON.stringify(sp));
+      // 放到 2 倍后仍能靠一指平移看全每一格：把边角格平移进画面内
+      const reach = await page.evaluate(() => {
+        const o = window.__base3d.owner.orbit;
+        const f = window.__base3d.framing();
+        const vh = window.innerHeight;
+        const vw = window.innerWidth;
+        const corner = { row: 12, col: 12 };
+        let best = Infinity;
+        let inside = false;
+        for (const [dx, dy] of [[-1e6, -1e6], [1e6, -1e6], [-1e6, 1e6], [1e6, 1e6]]) {
+          o.resetView();
+          o.setZoom(o.zoomMax);
+          o.panBy(dx, dy, vh);
+          const p = window.__base3d.cellToScreen(corner.row, corner.col);
+          if (p.x >= 0 && p.x <= vw && p.y >= 0 && p.y <= vh) inside = true;
+          best = Math.min(best, Math.hypot(p.x - f.frame.x, p.y - f.frame.y));
+        }
+        o.resetView();
+        return { best: Math.round(best), inside, panLimit: +o.panLimit.toFixed(2) };
+      });
+      check('放大到顶时一指平移能把边角格拉进画面（不缺视角）', reach.inside === true, JSON.stringify(reach));
       await page.screenshot({ path: path.join(SHOTS, 'base3d-zoom-spill.png') });
       await page.locator('button[data-base3d-ctl="reset"]').click();
       await page.waitForTimeout(200);

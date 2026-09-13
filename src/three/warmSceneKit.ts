@@ -102,7 +102,10 @@ export const ORBIT_MAX_ELEVATION = THREE.MathUtils.degToRad(75);
 export const ORBIT_DEFAULT_ELEVATION = THREE.MathUtils.degToRad(52);
 export const ORBIT_DEFAULT_AZIMUTH = Math.atan2(-10, -10);
 export const ORBIT_MIN_ZOOM = 1;
-export const ORBIT_MAX_ZOOM = 3;
+/** 缩放绝对上限（相对 fitMaxZoom 算出的"铺满可用宽度"的倍数由 ORBIT_MAX_ZOOM_FACTOR 决定） */
+export const ORBIT_MAX_ZOOM = 8;
+/** 放大上限倍数：基地最多放到"可用宽度"的 2 倍（再多就只剩一格在屏幕里，没有意义） */
+export const ORBIT_MAX_ZOOM_FACTOR = 2;
 /** 初始/兜底倍率；真实默认值由 fitDefaultZoom() 按「默认角度下基地不裁切」算出（见 homeZoom） */
 export const ORBIT_DEFAULT_ZOOM = 1;
 /** 双指平移范围下限（世界单位）；真实范围见 WarmOrbitCamera.panLimit（随缩放/地图尺寸放大） */
@@ -146,13 +149,16 @@ export class WarmOrbitCamera {
   }
 
   /**
-   * 当前允许的平移半径（世界单位）：取景余量 + 放大后多出来的部分。
-   * zoom=1 时等于取景余量（全景仍然铺满，不会把基地推出画面）；
-   * 放大后可见范围变小，允许平移的范围随之变大——正好够把任意角落推到屏幕中心。
+   * 当前允许的平移半径（世界单位）：够把**任意格子（含对角线角格）**拉进画面。
+   *
+   * 用对角线口径算：角格离基地中心 √2×半边长（≈9.7），放大到 z 时可见半径 = √2×(半边长+取景余量)/z，
+   * 于是「角格刚好可见」需要的平移量 = 两者之差。zoom=1 时该差为负 → 退回取景余量（全景仍推不出画面），
+   * 与旧行为一致；放大到 2 倍时约 5.9，正好够平移到任意角落（e2e 有「拉进画面」用例）。
    */
   get panLimit(): number {
-    const visible = (this.halfExtent + ORBIT_PAN_LIMIT) / this.zoom;
-    return Math.max(ORBIT_PAN_LIMIT, this.halfExtent - visible);
+    const visible = Math.SQRT2 * (this.halfExtent + ORBIT_PAN_LIMIT) / this.zoom;
+    const corner = Math.SQRT2 * this.halfExtent + 0.5;
+    return Math.max(ORBIT_PAN_LIMIT, corner - visible);
   }
 
   apply(): void {
@@ -239,15 +245,16 @@ export class WarmOrbitCamera {
   }
 
   /**
-   * 定放大上限：让基地（含底座与建筑顶高）在默认角度下**刚好铺满可用宽度**（CSS px）。
+   * 定放大上限：基地（含底座与建筑顶高）在默认角度下放到**可用宽度的 N 倍**为止。
    *
-   * 为什么要有上限：3D 层铺满整屏后，再放大就会盖住 HUD/卡片栏（玩家反馈"基地压住界面"）。
-   * 上限取「铺满可用宽度」= 基地能到的最大尺寸，之后既不出屏也不压 UI。
+   * 上限倍数由调用方给（`ORBIT_MAX_ZOOM_FACTOR = 2`）：玩家要求"场景可以放大到超过屏幕范围，
+   * 至少是现在最大比例的两倍"，所以允许基地宽到屏幕的两倍——多出来的部分靠一指平移看（平移范围
+   * 随缩放放大，panLimit 正好够把任意角落推到屏幕中心）。
    * 可用宽度取「窗口宽，但不大于游戏画布宽」——宽屏桌面上游戏画布只占中间一条，
    * 若按窗口宽算上限，基地会被放大到把 UI 全盖住。
    */
-  fitMaxZoom(halfW: number, halfH: number, topY: number, limitW: number): number {
-    const target = Math.max(0.2, limitW / this.frameW); // 基地半宽 = 可用半宽时的取景框 NDC
+  fitMaxZoom(halfW: number, halfH: number, topY: number, limitW: number, factor = ORBIT_MAX_ZOOM_FACTOR): number {
+    const target = Math.max(0.2, limitW * factor / this.frameW); // 基地半宽 = 可用半宽 × 倍数
     let z = this.defaultZoom;
     for (let i = 0; i < 3; i++) {
       this.zoom = z;
