@@ -64,7 +64,9 @@ async function main() {
     backgroundColor: '#1a1a2e',
     scale: {
       mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
+      // 不要开 autoCenter：CENTER_BOTH 会给画布加 margin，而 #game-container 本身已是
+      // flex 居中，两者叠加＝画布被推离中心（1280×800 下左侧留出 622px 深色空边，
+      // 手机竖屏上下留 137/46px），看着就像画面被一层深色遮住。居中交给 flex 即可。
       width: DESIGN_WIDTH,
       height: DESIGN_HEIGHT
     },

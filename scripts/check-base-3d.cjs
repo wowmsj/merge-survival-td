@@ -381,6 +381,25 @@ async function main() {
     await page.waitForTimeout(500);
     check('相机手势全程无未捕获页面异常', pageErrors.length === 0, pageErrors.join(' | '));
 
+    // 画布必须居中：Phaser 的 autoCenter 与 #game-container 的 flex 居中叠加会「双居中」，
+    // 非 9:16 窗口下画布会整体偏离中心（1280×800 曾偏出 622px 深色空边，看着像被遮罩挡住）。
+    for (const vp of [{ width: 620, height: 719 }, { width: 412, height: 915 }]) {
+      await page.setViewportSize(vp);
+      await page.waitForTimeout(450);
+      const bands = await page.evaluate(() => {
+        const c = document.querySelector('#game-container canvas').getBoundingClientRect();
+        return {
+          left: +c.left.toFixed(1), right: +(window.innerWidth - c.right).toFixed(1),
+          top: +c.top.toFixed(1), bottom: +(window.innerHeight - c.bottom).toFixed(1)
+        };
+      });
+      check(`画布居中：${vp.width}×${vp.height} 四边留边对称（无双居中偏移）`,
+        Math.abs(bands.left - bands.right) < 2 && Math.abs(bands.top - bands.bottom) < 2,
+        JSON.stringify(bands));
+    }
+    await page.setViewportSize({ width: 540, height: 960 });
+    await page.waitForTimeout(450);
+
     // 点格用例不依赖残留相机姿态：回到「俯瞰全景」可读视角（近顶视 + zoom=1 恰好铺满 + 平移归位，
     // 投影落点不被前景建筑遮挡），否则残留的低俯角会让 cellToScreen 落点压到别的格上。
     await page.evaluate(() => {
