@@ -1,0 +1,51 @@
+{
+  "assetId": "203",
+  "assetName": "power_station",
+  "source": "wind-power-station reference assembly sheet",
+  "sop": "docs/Blender模型还原工艺SOP.md",
+  "version": "sop-80-layout",
+  "coordinateSystem": "Blender Z-up",
+  "exportRotation": [0, 0, 0],
+  "unitU": 0.5,
+  "origin": [0, 0, 0],
+  "bounds": {
+    "min": [-3.4, -3.0, 0.0],
+    "max": [3.4, 3.0, 6.31]
+  },
+  "baseFootprint": [6.8, 6.0],
+  "targetBoardCell": [7, 7],
+  "camera": {
+    "type": "ORTHO",
+    "location": [8.6, -10.4, 8.2],
+    "target": [0, 0, 2.7],
+    "orthoScale": 9.6,
+    "azimuthDegrees": 45,
+    "elevationDegrees": 32
+  },
+  "materials": {
+    "dark soil": "#3B1A09",
+    "soil": "#AD6626",
+    "grass": "#2E7A0F",
+    "concrete gray": "#8C938F",
+    "white": "#EBEBDB",
+    "blade cream": "#E0D1AD",
+    "warning orange": "#F24705",
+    "hub teal": "#058C7A",
+    "panel green": "#056657",
+    "dark gray": "#1F2626"
+  },
+  "validation": {
+    "baseMinZ": 0.0,
+    "meshOnlyGlb": true,
+    "principledMaterials": true,
+    "noAdditionalAxisCorrection": true,
+    "rotorPlane": "XZ",
+    "rotorAxis": "Y"
+  },
+  "deliverables": [
+    "power_station.blend",
+    "power_station.glb",
+    "power_station_preview.png",
+    "power_station_spec.json"
+  ]
+}
