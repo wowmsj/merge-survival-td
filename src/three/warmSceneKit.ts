@@ -126,6 +126,8 @@ export class WarmOrbitCamera {
   private halfExtent = 6.5;
   /** 回正/开局的默认倍率：默认角度下基地刚好铺满且四角不越界（fitDefaultZoom 写入） */
   private defaultZoom = ORBIT_DEFAULT_ZOOM;
+  /** 放大上限：基地刚好铺满可用宽度（fitMaxZoom 写入）。再大就会出屏 / 压住 UI */
+  private maxZoom = ORBIT_MAX_ZOOM;
   /** 视口（3D 画布）与取景框（世界窗口）尺寸、取景框中心相对视口中心的偏移（setFraming 写入） */
   private viewportW = 1;
   private viewportH = 1;
@@ -166,9 +168,14 @@ export class WarmOrbitCamera {
   }
 
   setZoom(z: number): void {
-    this.zoom = THREE.MathUtils.clamp(z, ORBIT_MIN_ZOOM, ORBIT_MAX_ZOOM);
+    this.zoom = THREE.MathUtils.clamp(z, ORBIT_MIN_ZOOM, this.maxZoom);
     this.clampTarget();
     this.apply();
+  }
+
+  /** 当前最大倍率（fitMaxZoom 按「基地刚好铺满可用宽度」算；缺省为绝对值上限） */
+  get zoomMax(): number {
+    return this.maxZoom;
   }
 
   /**
@@ -229,6 +236,30 @@ export class WarmOrbitCamera {
     this.zoom = keep;
     this.apply();
     return this.defaultZoom;
+  }
+
+  /**
+   * 定放大上限：让基地（含底座与建筑顶高）在默认角度下**刚好铺满可用宽度**（CSS px）。
+   *
+   * 为什么要有上限：3D 层铺满整屏后，再放大就会盖住 HUD/卡片栏（玩家反馈"基地压住界面"）。
+   * 上限取「铺满可用宽度」= 基地能到的最大尺寸，之后既不出屏也不压 UI。
+   * 可用宽度取「窗口宽，但不大于游戏画布宽」——宽屏桌面上游戏画布只占中间一条，
+   * 若按窗口宽算上限，基地会被放大到把 UI 全盖住。
+   */
+  fitMaxZoom(halfW: number, halfH: number, topY: number, limitW: number): number {
+    const target = Math.max(0.2, limitW / this.frameW); // 基地半宽 = 可用半宽时的取景框 NDC
+    let z = this.defaultZoom;
+    for (let i = 0; i < 3; i++) {
+      this.zoom = z;
+      this.apply();
+      const probe = this.fitProbe(halfW, halfH, topY);
+      const cur = Math.max(probe.maxNdcX, 1e-3);
+      z = THREE.MathUtils.clamp(z * target / cur, ORBIT_MIN_ZOOM, ORBIT_MAX_ZOOM);
+    }
+    this.maxZoom = Math.max(this.defaultZoom, z); // 上限不能小于默认，否则回正都回不去
+    this.zoom = THREE.MathUtils.clamp(this.zoom, ORBIT_MIN_ZOOM, this.maxZoom);
+    this.apply();
+    return this.maxZoom;
   }
 
   /** 单指/鼠标左键拖动：平移（内容跟随手指，范围随缩放与地图尺寸自适应） */

@@ -33,7 +33,7 @@ import type { IRouteCell } from '../core/systems/RoutePreview';
 import {
   WARM_LAYOUT_URL, cellToWorld13, worldToCell13, applyWarmRendererSettings, createWarmScene,
   WarmOrbitCamera, WarmGlbCache, makeViewControls, disposeObjectTree,
-  ORBIT_MIN_ELEVATION, ORBIT_MAX_ELEVATION, ORBIT_MIN_ZOOM, ORBIT_MAX_ZOOM,
+  ORBIT_MIN_ELEVATION, ORBIT_MAX_ELEVATION, ORBIT_MIN_ZOOM,
   ORBIT_ROTATE_STEP, ORBIT_TILT_STEP
 } from './warmSceneKit';
 
@@ -373,7 +373,7 @@ export class Base3DRenderer implements IBoardItemHost {
           minElevation: ORBIT_MIN_ELEVATION,
           maxElevation: ORBIT_MAX_ELEVATION,
           minZoom: ORBIT_MIN_ZOOM,
-          maxZoom: ORBIT_MAX_ZOOM
+          maxZoom: this.orbit.zoomMax
         }),
         fit: (halfExtent?: number, topY?: number) =>
           this.orbit.fitProbe(halfExtent ?? BASE_COLS / 2, halfExtent ?? BASE_ROWS / 2, topY ?? 1.8),
@@ -448,6 +448,8 @@ export class Base3DRenderer implements IBoardItemHost {
     // 默认视角：按「底座 + 建筑顶高」在默认角度下的投影顶到刚好不裁切
     // （写死放大倍率会把基地左右两侧切出世界窗口）
     this.orbit.fitDefaultZoom(BASE_COLS / 2 + 0.25, BASE_ROWS / 2 + 0.25, 2.6);
+    // 放大上限：基地刚好铺满可用宽度（= min(窗口宽, 游戏画布宽)），再大就压 UI
+    this.orbit.fitMaxZoom(BASE_COLS / 2 + 0.25, BASE_ROWS / 2 + 0.25, 2.6, Math.min(vw, rect.width));
     if (!this.viewInitialized) {
       this.viewInitialized = true;
       this.orbit.setZoom(this.orbit.homeZoom);

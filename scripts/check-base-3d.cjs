@@ -331,18 +331,31 @@ async function main() {
         Math.abs(st.projected.x - st.frame.x) < 2 && Math.abs(st.projected.y - st.frame.y) < 2,
         `proj=${JSON.stringify(st.projected)} frame=${JSON.stringify(st.frame)}`);
 
-      // 放大两档 → 基地溢出网格矩形（旧版正是在这里被 overflow:hidden 切掉一块）
+      // 放大到底 → 基地溢出网格矩形但刚好铺满可用宽度（不再被框线切掉，也不压 UI）
       const zoomInBtn = page.locator('button[data-base3d-ctl="zoom-in"]');
-      await zoomInBtn.click();
-      await page.waitForTimeout(120);
-      await zoomInBtn.click();
+      for (let i = 0; i < 6; i++) await zoomInBtn.click();
       await page.waitForTimeout(300);
-      const sp = await page.evaluate(() => ({
-        zoom: window.__base3d.camera().zoom,
-        probe: window.__base3d.fit(6.75, 2.6)
-      }));
-      check('放大后基地溢出网格矩形（3D 画到 UI 之上，不再被裁）',
-        sp.probe.maxNdcX > 1.05, JSON.stringify(sp));
+      const sp = await page.evaluate(() => {
+        const c = window.__base3d.camera();
+        const f = window.__base3d.framing();
+        const game = document.querySelector('#game-container canvas').getBoundingClientRect();
+        const probe = window.__base3d.fit(6.75, 2.6);
+        const halfW = probe.maxNdcX * f.inputRect.width / 2;
+        const halfH = probe.maxNdcY * f.inputRect.height / 2;
+        return {
+          zoom: +c.zoom.toFixed(3), maxZoom: +c.maxZoom.toFixed(3),
+          probe: { x: +probe.maxNdcX.toFixed(3), y: +probe.maxNdcY.toFixed(3) },
+          baseW: Math.round(halfW * 2), baseBottom: Math.round(f.frame.y + halfH),
+          limitW: Math.round(Math.min(window.innerWidth, game.width)),
+          cardsTop: Math.round(game.top + 1420 / 1920 * game.height)
+        };
+      });
+      check('放大到底被钳位在「基地刚好铺满可用宽度」',
+        Math.abs(sp.zoom - sp.maxZoom) < 1e-6 && sp.maxZoom > 1.1, JSON.stringify(sp));
+      check('放大到底基地溢出网格矩形（不再被框线切掉）', sp.probe.x > 1.05, JSON.stringify(sp.probe));
+      check('放大到底基地宽度 ≈ 可用宽度（不出屏）',
+        sp.baseW <= sp.limitW + 2 && sp.baseW >= sp.limitW * 0.95, JSON.stringify(sp));
+      check('放大到底基地不压卡片栏', sp.baseBottom <= sp.cardsTop, JSON.stringify(sp));
       await page.screenshot({ path: path.join(SHOTS, 'base3d-zoom-spill.png') });
       await page.locator('button[data-base3d-ctl="reset"]').click();
       await page.waitForTimeout(200);
