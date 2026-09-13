@@ -51,6 +51,20 @@ function addFueledGenerator(state: IGameState) {
 let passed = 0;
 let failed = 0;
 
+/**
+ * 固定随机数：core 里生成器产出/夜战抽型/掉落都走 Math.random，不固定的话同一份代码
+ * 每次跑会有 1~2 条用例随机红（例如"1 级工具箱只产 10012 螺丝刀"），没法当作验收依据。
+ * 这里换成固定种子的 LCG，让冒烟可复现；换种子能顺带扫出"只在某条随机路径上才暴露"的问题。
+ */
+{
+  const seedEnv = process.env.SMOKE_SEED;
+  let seed = (seedEnv ? Number(seedEnv) : 20260913) >>> 0;
+  Math.random = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+}
+
 function assert(cond: boolean, name: string) {
   if (cond) {
     passed++;
@@ -417,12 +431,15 @@ console.log('== 发射器 ==');
   const r5 = spawn.clickSpawn(fullState, { row: 4, col: 3 });
   assert(!r5.success && getItem(fullState.grid, 4, 3)?.id === 1001, '棋盘满时不能使用发射器');
 
-  // 开局发射器从 1 级起步：10001 anc=1 times=15，atom 单条目 → 必产 10012 螺丝刀
+  // 开局发射器从 1 级起步：10001 anc=1 times=15，atom 单条目 → 产 10012 螺丝刀。
+  // 但核心光环（Lv1 = 5%）有小概率把它升一级，所以断言要放行"10012 或其合成下一级"
   const st1 = createInitialGameState();
   setItem(st1.grid, 0, 0, createItemFromConfig(10001));
   const r6 = spawn.clickSpawn(st1, { row: 0, col: 0 });
   assert(r6.success && r6.newPos !== undefined, '1 级工具箱（10001）是发射器');
-  assert(getItem(st1.grid, r6.newPos!.row, r6.newPos!.col)?.id === 10012, '1 级工具箱只产 10012 螺丝刀');
+  const prod1 = getItem(st1.grid, r6.newPos!.row, r6.newPos!.col)?.id;
+  assert(prod1 === 10012 || prod1 === getMergeNextId(10012),
+    `1 级工具箱只产 10012 螺丝刀（核心光环升级算通过，实际 ${prod1}）`);
 
   // 两个 10001 合成 10002，仍是发射器（升级解锁更多产物种类）
   const { merge: merge2 } = makeSystems();
