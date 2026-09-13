@@ -199,19 +199,59 @@ async function main() {
       });
       check('旋转 ~90° 后 zoom=1 无溢出', f.maxNdcX <= 1.001 && f.maxNdcY <= 1.001, JSON.stringify(f));
     }
+
+    // ============ 拖拽方向（玩家反馈"旋转是反的"回归）：拖拽方向 == 场景移动方向 ============
+    {
+      const resetCam = () => page.evaluate(() => {
+        const o = window.__base3d.owner.orbit;
+        o.azimuth = Math.atan2(-10, -10);
+        o.elevation = 40 * Math.PI / 180;
+        o.apply();
+      });
+      const nearCell = [1, 1]; // 默认视角下的近景角格（画面下方）
+      const screenOf = () => page.evaluate(
+        ([r, c]) => window.__base3d.cellToScreen(r, c), nearCell);
+
+      await resetCam();
+      await page.waitForTimeout(120);
+      const p0 = await screenOf();
+      const a0 = await readCam();
+      await drag(120, 0);
+      const p1 = await screenOf();
+      const a1 = await readCam();
+      check('右拖 → 方位角减小（相机反向环绕 = 抓住场景）', a1.azimuth < a0.azimuth,
+        `az ${a0.azimuth.toFixed(3)} → ${a1.azimuth.toFixed(3)}`);
+      check('右拖 → 近景格跟着右移（方向未反）', p1.x - p0.x > 20,
+        `x ${p0.x.toFixed(1)} → ${p1.x.toFixed(1)}`);
+
+      await resetCam();
+      await page.waitForTimeout(120);
+      const q0 = await screenOf();
+      const e0 = await readCam();
+      await drag(0, 100);
+      const q1 = await screenOf();
+      const e1 = await readCam();
+      check('下拖 → 俯仰角增大（相机抬高 = 抓住场景）', e1.elevation > e0.elevation,
+        `el ${(e0.elevation * 180 / Math.PI).toFixed(1)}° → ${(e1.elevation * 180 / Math.PI).toFixed(1)}°`);
+      check('下拖 → 近景格跟着下移（方向未反）', q1.y - q0.y > 20,
+        `y ${q0.y.toFixed(1)} → ${q1.y.toFixed(1)}`);
+    }
+
     await page.waitForTimeout(200);
     await page.screenshot({ path: path.join(SHOTS, 'base3d-rotated.png') });
 
+    // 下拖 = 把场景往下拽 → 相机抬高、更俯视，钳位上限 75°（不到正顶、不翻转）
     await drag(0, 1500);
-    const camLow = await readCam();
-    check('俯仰钳位下限（25°，不翻转）',
-      Math.abs(camLow.elevation - camLow.minElevation) < 1e-3 && camLow.minElevation > 0,
-      `el=${(camLow.elevation * 180 / Math.PI).toFixed(1)}°`);
-    await drag(0, -2000);
     const camHigh = await readCam();
-    check('俯仰钳位上限（75°，不到正顶）',
+    check('下拖到底 → 俯仰钳位上限（75°，不到正顶）',
       Math.abs(camHigh.elevation - camHigh.maxElevation) < 1e-3 && camHigh.maxElevation < Math.PI / 2,
       `el=${(camHigh.elevation * 180 / Math.PI).toFixed(1)}°`);
+    // 上推 = 把场景往上推 → 相机压低，钳位下限 25°（永不触地/翻转）
+    await drag(0, -2000);
+    const camLow = await readCam();
+    check('上推到底 → 俯仰钳位下限（25°，不翻转）',
+      Math.abs(camLow.elevation - camLow.minElevation) < 1e-3 && camLow.minElevation > 0,
+      `el=${(camLow.elevation * 180 / Math.PI).toFixed(1)}°`);
 
     const zoomIn = page.locator('button[data-base3d-ctl="zoom-in"]');
     const zoomOut = page.locator('button[data-base3d-ctl="zoom-out"]');
@@ -240,6 +280,16 @@ async function main() {
     await page.setViewportSize({ width: 540, height: 960 });
     await page.waitForTimeout(500);
     check('相机手势全程无未捕获页面异常', pageErrors.length === 0, pageErrors.join(' | '));
+
+    // 点格用例不依赖残留相机姿态：回到「俯瞰全景」可读视角（近顶视 + zoom=1 恰好铺满，
+    // 投影落点不被前景建筑遮挡），否则残留的低俯角会让 cellToScreen 落点压到别的格上。
+    await page.evaluate(() => {
+      const o = window.__base3d.owner.orbit;
+      o.azimuth = Math.atan2(-10, -10);
+      o.elevation = 75 * Math.PI / 180;
+      o.setZoom(1);
+    });
+    await page.waitForTimeout(300);
 
     // ================= 摆放模式：绿格提示 + 真实放置 =================
     {

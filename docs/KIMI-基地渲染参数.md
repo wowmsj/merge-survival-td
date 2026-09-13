@@ -109,6 +109,20 @@ const camera = new THREE.OrthographicCamera(
 
 移动端必须根据容器宽高动态更新 `left/right/top/bottom`，不能写死画布像素尺寸。
 
+### 6.1 拖拽方向（唯一正确的约定，别改回去）
+
+单指/鼠标拖动是「**抓住场景**」手感，与 three.js `OrbitControls` 默认值逐符号一致
+（`sphericalDelta.theta -= dx`、`sphericalDelta.phi -= dy`，而俯角 `elevation = 90° - phi`）：
+
+| 操作 | 相机 | 画面 |
+| --- | --- | --- |
+| 向右拖 | 方位角 `azimuth -= dx * 0.008`（相机反方向环绕） | 场景跟着手指向右转 |
+| 向下拖 | 俯仰角 `elevation += dy * 0.006`（相机抬高、更俯视） | 场景跟着手指向下沉 |
+
+验收：拖右时近景格的屏幕 X 必须增大、拖下时屏幕 Y 必须增大（`scripts/check-base-3d.cjs`
+与 `scripts/check-night-3d.cjs` 的「方向未反」用例）。玩家曾反馈"旋转是反的"，
+说明人眼对"相机跟随拖拽"（`azimuth += dx`）的观感是错的，不要再改回正号。
+
 ## 7. 阴影
 
 所有基地建筑、地形和地基设置：

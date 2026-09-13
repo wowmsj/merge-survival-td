@@ -139,11 +139,16 @@ export class WarmOrbitCamera {
     this.apply();
   }
 
-  /** 单指拖动：水平 → 方位角（自由 360°），垂直 → 俯仰（钳位带内） */
+  /**
+   * 单指/鼠标拖动：水平 → 方位角（自由 360°），垂直 → 俯仰（钳位带内）。
+   * 方向沿用 three.js OrbitControls 的「抓住场景」手感（与 Google Maps / Sketchfab 一致）：
+   *   向右拖 → 场景跟着向右转（相机反向环绕）；向下拖 → 相机抬高、更俯视。
+   * （反过来写就是"相机跟随拖拽"，玩家反馈那种手感是反的，别再改回去。）
+   */
   rotateBy(dxPx: number, dyPx: number): void {
-    this.azimuth += dxPx * 0.008;
+    this.azimuth -= dxPx * 0.008;
     this.elevation = THREE.MathUtils.clamp(
-      this.elevation - dyPx * 0.006, ORBIT_MIN_ELEVATION, ORBIT_MAX_ELEVATION);
+      this.elevation + dyPx * 0.006, ORBIT_MIN_ELEVATION, ORBIT_MAX_ELEVATION);
     this.apply();
   }
 

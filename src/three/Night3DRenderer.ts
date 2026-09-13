@@ -572,6 +572,13 @@ export class Night3DRenderer {
           srgb: this.renderer.outputColorSpace === THREE.SRGBColorSpace,
           shadows: this.renderer.shadowMap.enabled
         }),
+        /** 格心 → 屏幕像素（相机拖拽方向验收用：拖右时近景格必须跟着右移） */
+        cellToScreen: (row: number, col: number) => {
+          const { x, z } = cellToWorld(row, col);
+          const v = new THREE.Vector3(x, 0, z).project(this.camera);
+          const rect = this.renderer.domElement.getBoundingClientRect();
+          return { x: rect.left + (v.x + 1) / 2 * rect.width, y: rect.top + (1 - v.y) / 2 * rect.height };
+        },
         /** 取景探针：基地四角（含建筑顶高）投影的最大 |NDC|，≤1 即无溢出 */
         fit: () => {
           const gx = (BASE_COLS * CELL_SIZE) / 2;
@@ -701,8 +708,9 @@ export class Night3DRenderer {
     if (!this.camDragging && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < DRAG_THRESHOLD_PX) return;
     this.camDragging = true;
     // 单指拖动：水平 → 方位角（自由 360°），垂直 → 俯仰（钳位带内）
-    this.azimuth += stepX * 0.008;
-    this.setElevation(this.elevation - stepY * 0.006);
+    // 方向与白天基地一致：场景跟随拖拽（three.js OrbitControls 手感）
+    this.azimuth -= stepX * 0.008;
+    this.setElevation(this.elevation + stepY * 0.006);
     this.applyCamera();
     e.stopPropagation(); // 拖动手势不传给 Phaser，避免误触 UI
   };

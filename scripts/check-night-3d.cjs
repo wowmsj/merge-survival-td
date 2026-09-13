@@ -248,19 +248,56 @@ async function main() {
       await page.waitForTimeout(200);
       await page.screenshot({ path: path.join(SHOTS, 'night3d-rotate.png') });
 
-      // 俯仰：大幅下拉压到下限（场景不翻转），再上推顶到上限
+      // 俯仰：下拖 = 把场景往下拽 → 相机抬高（更俯视），顶到上限；上推 = 压低，压到下限
       await drag(0, 1500);
-      const camLow = await readCam();
-      check('A: 俯仰钳位下限（永不低于地平线/不翻转）',
-        Math.abs(camLow.elevation - camLow.minElevation) < 1e-3 && camLow.minElevation > 0,
-        `el=${(camLow.elevation * 180 / Math.PI).toFixed(1)}°`);
+      const camHigh = await readCam();
+      check('A: 下拖到底 → 俯仰钳位上限（不到正顶 90°）',
+        Math.abs(camHigh.elevation - camHigh.maxElevation) < 1e-3 && camHigh.maxElevation < Math.PI / 2,
+        `el=${(camHigh.elevation * 180 / Math.PI).toFixed(1)}°`);
       await page.waitForTimeout(200);
       await page.screenshot({ path: path.join(SHOTS, 'night3d-tilt.png') });
       await drag(0, -2000);
-      const camHigh = await readCam();
-      check('A: 俯仰钳位上限（不到正顶 90°）',
-        Math.abs(camHigh.elevation - camHigh.maxElevation) < 1e-3 && camHigh.maxElevation < Math.PI / 2,
-        `el=${(camHigh.elevation * 180 / Math.PI).toFixed(1)}°`);
+      const camLow = await readCam();
+      check('A: 上推到底 → 俯仰钳位下限（永不低于地平线/不翻转）',
+        Math.abs(camLow.elevation - camLow.minElevation) < 1e-3 && camLow.minElevation > 0,
+        `el=${(camLow.elevation * 180 / Math.PI).toFixed(1)}°`);
+
+      // ============ 拖拽方向（玩家反馈"旋转是反的"回归）：拖拽方向 == 场景移动方向 ============
+      {
+        const resetCam = () => page.evaluate(() => {
+          const o = window.__night3d.owner;
+          o.azimuth = Math.atan2(-10, -10);
+          o.elevation = 0.55;
+          o.applyCamera();
+        });
+        const nearCell = [1, 1]; // 默认视角下的近景角格（画面下方）
+        const screenOf = () => page.evaluate(
+          ([r, c]) => window.__night3d.cellToScreen(r, c), nearCell);
+
+        await resetCam();
+        await page.waitForTimeout(120);
+        const p0 = await screenOf();
+        const a0 = await readCam();
+        await drag(120, 0);
+        const p1 = await screenOf();
+        const a1 = await readCam();
+        check('A: 右拖 → 方位角减小（相机反向环绕 = 抓住场景）', a1.azimuth < a0.azimuth,
+          `az ${a0.azimuth.toFixed(3)} → ${a1.azimuth.toFixed(3)}`);
+        check('A: 右拖 → 近景格跟着右移（方向未反）', p1.x - p0.x > 20,
+          `x ${p0.x.toFixed(1)} → ${p1.x.toFixed(1)}`);
+
+        await resetCam();
+        await page.waitForTimeout(120);
+        const q0 = await screenOf();
+        const e0 = await readCam();
+        await drag(0, 100);
+        const q1 = await screenOf();
+        const e1 = await readCam();
+        check('A: 下拖 → 俯仰角增大（相机抬高 = 抓住场景）', e1.elevation > e0.elevation,
+          `el ${(e0.elevation * 180 / Math.PI).toFixed(1)}° → ${(e1.elevation * 180 / Math.PI).toFixed(1)}°`);
+        check('A: 下拖 → 近景格跟着下移（方向未反）', q1.y - q0.y > 20,
+          `y ${q0.y.toFixed(1)} → ${q1.y.toFixed(1)}`);
+      }
 
       // 缩放按钮：＋ 放大到上限并钳位；－ 缩回下限（全景可见）
       const zoomIn = page.locator('button[data-night3d-ctl="zoom-in"]');
