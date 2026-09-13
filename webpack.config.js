@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -20,6 +21,13 @@ function loadKeyEnv() {
   return map;
 }
 const keyEnv = loadKeyEnv();
+
+// props/ 仅作为「无 voxel_32 模型时的兜底」：voxel 已覆盖的 id 其 prop_*.glb 永远不会被请求，不进包
+const voxelIds = new Set(
+  fs.readdirSync(path.resolve(__dirname, 'assets/models/blender-samples'))
+    .filter(f => /^voxel_32_\d+\.glb$/.test(f))
+    .map(f => f.replace(/^voxel_32_/, '').replace(/\.glb$/, ''))
+);
 
 module.exports = (env, argv) => ({
   entry: './src/main.ts',
@@ -64,11 +72,20 @@ module.exports = (env, argv) => ({
     new CopyWebpackPlugin({
       patterns: [
         // generated/ 是 1024x1024 原图源目录，不进包；游戏用 resize-assets 生成的 images/
-        // models/ 下只发布运行时 GLB 和清单：.blend 源文件、预览图、manifest、演示页不进包
-        { from: 'assets', to: 'assets', noErrorOnMissing: true, globOptions: { ignore: [
+        // models/ 下只发布运行时 GLB 和清单：.blend 源文件、预览图、manifest、演示页不进包；
+        // previews/ 是开发参考画廊、sheets/ 无运行时引用，均不进包
+        { from: 'assets', to: 'assets', noErrorOnMissing: true,
+          filter: async (resourcePath) => {
+            const m = resourcePath.match(/assets[/\\]models[/\\]props[/\\]prop_(\d+)\.glb$/);
+            return m ? !voxelIds.has(m[1]) : true;
+          },
+          globOptions: { ignore: [
           '**/generated/**', '**/backup_originals/**',
+          '**/models/previews/**', '**/models/sheets/**',
           '**/models/**/*.blend', '**/models/**/*-preview.png', '**/models/**/*-board.png',
-          '**/models/**/*-alternate.png', '**/models/**/*-manifest.json', '**/models/**/voxel.html'
+          '**/models/**/*-alternate.png', '**/models/**/*-manifest.json', '**/models/**/voxel.html',
+          '**/models/blender-samples/chain_*', '**/models/blender-samples/assembly_*',
+          '**/models/blender-samples/rebuilt_*', '**/models/blender-samples/sample_ground*'
         ] } },
         { from: 'configs', to: 'configs', noErrorOnMissing: true }
       ]
