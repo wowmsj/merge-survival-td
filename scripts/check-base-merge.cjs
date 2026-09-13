@@ -183,14 +183,14 @@ async function main() {
     check('开局剧情对话已全部关闭', await bootGame(page));
     await enterBase(page);
 
-    // ================= 1. 物品层棋子数 = state.grid 物品数（初始 42） =================
+    // ================= 1. 物品层棋子数 = state.grid 物品数（初始 41：32 封印瓦砾 + 6 蜘蛛网 + 3 普通） =================
     check('基地 3D 渲染器激活（__base3d 钩子存在）', await page.evaluate(() => !!window.__base3d));
     check('基地 3D 画布存在且只有一张',
       await page.evaluate(() => document.querySelectorAll('canvas[data-base3d]').length) === 1);
     {
       // 单次 evaluate 读两侧，无 tick 竞态
       const r = await page.evaluate(() => ({ grid: window.__t.count(), layer: window.__base3d.itemCount() }));
-      check(`物品层棋子数 = state.grid 物品数（grid=${r.grid}）`, r.grid === 42 && r.layer === r.grid,
+      check(`物品层棋子数 = state.grid 物品数（grid=${r.grid}）`, r.grid === 41 && r.layer === r.grid,
         JSON.stringify(r));
     }
     await page.screenshot({ path: path.join(SHOTS, 'base-merge-items.png') });
@@ -376,17 +376,26 @@ async function main() {
         const s = await page.evaluate(() => window.__base3d.getSelection());
         check('tap 物品格选中高亮', !!s && s.row === sel1[0] && s.col === sel1[1], JSON.stringify(s));
       }
-      // tap 建筑（核心）→ 详情弹窗
-      const core = await page.evaluate(() => window.__base3d.cellScreen(6, 6));
-      await page.mouse.click(core.x, core.y);
+      // 核心即发射器：长按 = 核心面板、轻点 = 发射（不再弹建筑详情）。
+      // 命中测试（按键落在核心格上）由 check-core-emitter.cjs 全覆盖；这里直接验 host 回调接线，
+      // 不受棋子遮挡/相机角度影响。
+      await page.evaluate(() => window.__base3d.owner.host.onCellLongPress(6, 6));
       await page.waitForTimeout(400);
-      check('tap 建筑（核心）打开建筑详情弹窗', await page.evaluate(() => window.__base3d.dialogOpen()));
-      await page.evaluate(() => window.__base3d.owner.scene.closeDialog());
+      check('核心格长按回调 → 打开核心面板', await page.evaluate(() => window.__base3d.dialogOpen()));
+      await page.evaluate(() => window.__base3d.owner.scene.coreIntroPanel.close());
       await page.waitForTimeout(300);
       check('关闭弹窗后 3D 画布恢复可见', await page.evaluate(() => {
         const c = document.querySelector('canvas[data-base3d]');
         return !!c && getComputedStyle(c.parentElement).visibility !== 'hidden';
       }));
+      // 轻点核心格 → 发射/选中，不再弹建筑详情
+      {
+        const core = await page.evaluate(() => window.__base3d.cellScreen(6, 6));
+        await page.mouse.click(core.x, core.y);
+        await page.waitForTimeout(300);
+        check('轻点核心格不弹建筑详情（核心 = 发射器）',
+          !(await page.evaluate(() => window.__base3d.dialogOpen())));
+      }
       // tap 空地 → 取消选中
       const cell = await page.evaluate(() => {
         for (let r = 0; r < 13; r++) for (let c = 0; c < 13; c++) {

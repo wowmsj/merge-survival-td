@@ -5,9 +5,9 @@
  * Night3DRenderer 保持自己的实现不动，新代码如需同款能力从这里取：
  * - applyWarmRendererSettings：§1 色彩空间/ACES/阴影参数
  * - createWarmScene：§2 背景 + 地面承接平面 + §3/§4/§5 半球光/主光/补光
- * - WarmOrbitCamera：轨道相机（方位自由、俯仰 25°~75° 不翻转、缩放 1~3、数值法取景不溢出、双指平移）
+ * - WarmOrbitCamera：轨道相机（方位自由、俯仰 25°~75° 不翻转、缩放 1~3、数值法取景不溢出、平移范围随缩放自适应）
  * - WarmGlbCache：GLB 模板 Promise 缓存（失败记 null）+ 统一释放
- * - makeZoomControls：＋/－ 缩放按钮（深色底金边，同棋盘/夜战样式）
+ * - makeViewControls：视角按钮组（旋转/俯仰/回正/缩放，深色底金边，按住连续步进）
  */
 
 import * as THREE from 'three';
@@ -105,8 +105,11 @@ export const ORBIT_MIN_ZOOM = 1;
 export const ORBIT_MAX_ZOOM = 3;
 /** 默认放大倍率：zoom=1 是「全景恰好铺满」，默认再放大一档 */
 export const ORBIT_DEFAULT_ZOOM = 1.6;
-/** 双指平移范围（世界单位，围绕基地中心） */
+/** 双指平移范围下限（世界单位）；真实范围见 WarmOrbitCamera.panLimit（随缩放/地图尺寸放大） */
 export const ORBIT_PAN_LIMIT = 1.0;
+/** 视角按钮步进：点一下水平旋转 15°、俯仰 12°；按住则连续步进 */
+export const ORBIT_ROTATE_STEP = THREE.MathUtils.degToRad(15);
+export const ORBIT_TILT_STEP = THREE.MathUtils.degToRad(12);
 
 export class WarmOrbitCamera {
   readonly camera: THREE.PerspectiveCamera;
@@ -117,9 +120,21 @@ export class WarmOrbitCamera {
   baseDist = 20;
   readonly target = new THREE.Vector3(0, 0, 0.3);
   private readonly homeTarget = new THREE.Vector3(0, 0, 0.3);
+  /** 地图半边长（fit 写入）：平移范围要跟着地图尺寸走，地图扩大后仍能平移到边缘 */
+  private halfExtent = 6.5;
 
   constructor(fov = 50, aspect = 1) {
     this.camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 100);
+  }
+
+  /**
+   * 当前允许的平移半径（世界单位）：取景余量 + 放大后多出来的部分。
+   * zoom=1 时等于取景余量（全景仍然铺满，不会把基地推出画面）；
+   * 放大后可见范围变小，允许平移的范围随之变大——正好够把任意角落推到屏幕中心。
+   */
+  get panLimit(): number {
+    const visible = (this.halfExtent + ORBIT_PAN_LIMIT) / this.zoom;
+    return Math.max(ORBIT_PAN_LIMIT, this.halfExtent - visible);
   }
 
   apply(): void {
@@ -136,6 +151,7 @@ export class WarmOrbitCamera {
 
   setZoom(z: number): void {
     this.zoom = THREE.MathUtils.clamp(z, ORBIT_MIN_ZOOM, ORBIT_MAX_ZOOM);
+    this.clampTarget();
     this.apply();
   }
 
@@ -152,22 +168,50 @@ export class WarmOrbitCamera {
     this.apply();
   }
 
-  /** 双指拖动平移（内容跟随手指，钳制在基地中心附近） */
+  /** 视角按钮：水平旋转（正 = 场景逆时针转，符号与拖拽同源） */
+  nudgeAzimuth(delta: number): void {
+    this.azimuth += delta;
+    this.apply();
+  }
+
+  /** 视角按钮：俯仰增减（正 = 相机抬高、更俯视），钳位在 25°~75° 带内 */
+  nudgeElevation(delta: number): void {
+    this.elevation = THREE.MathUtils.clamp(
+      this.elevation + delta, ORBIT_MIN_ELEVATION, ORBIT_MAX_ELEVATION);
+    this.apply();
+  }
+
+  /** 回正：方位角/俯仰/缩放/平移全部回到默认读图视角（地图怎么转都能一键找回基地） */
+  resetView(): void {
+    this.azimuth = ORBIT_DEFAULT_AZIMUTH;
+    this.elevation = ORBIT_DEFAULT_ELEVATION;
+    this.zoom = ORBIT_DEFAULT_ZOOM;
+    this.target.copy(this.homeTarget);
+    this.apply();
+  }
+
+  /** 单指/鼠标左键拖动：平移（内容跟随手指，范围随缩放与地图尺寸自适应） */
   panBy(dxPx: number, dyPx: number, viewportH: number): void {
     const dist = this.baseDist / this.zoom;
     const wpp = (2 * dist * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2))) / Math.max(1, viewportH);
     const right = new THREE.Vector3(Math.cos(this.azimuth), 0, -Math.sin(this.azimuth));
     const back = new THREE.Vector3(Math.sin(this.azimuth), 0, Math.cos(this.azimuth));
     this.target.addScaledVector(right, -dxPx * wpp).addScaledVector(back, dyPx * wpp);
+    this.clampTarget();
+    this.apply();
+  }
+
+  /** 把平移目标钳回允许半径内（缩放变化会让允许半径变小，须重新钳一次） */
+  private clampTarget(): void {
     const dx = this.target.x - this.homeTarget.x;
     const dz = this.target.z - this.homeTarget.z;
     const len = Math.hypot(dx, dz);
-    if (len > ORBIT_PAN_LIMIT) {
-      this.target.x = this.homeTarget.x + dx / len * ORBIT_PAN_LIMIT;
-      this.target.z = this.homeTarget.z + dz / len * ORBIT_PAN_LIMIT;
+    const limit = this.panLimit;
+    if (len > limit) {
+      this.target.x = this.homeTarget.x + dx / len * limit;
+      this.target.z = this.homeTarget.z + dz / len * limit;
     }
     this.target.y = this.homeTarget.y;
-    this.apply();
   }
 
   /**
@@ -176,6 +220,7 @@ export class WarmOrbitCamera {
    */
   fit(width: number, height: number, halfW: number, halfH: number, topY = 1.8): void {
     this.camera.aspect = width / height;
+    this.halfExtent = Math.max(halfW, halfH); // 平移范围随地图尺寸放大
     const tanH = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
     const tanW = tanH * this.camera.aspect;
     const gx = halfW + ORBIT_PAN_LIMIT;
@@ -266,27 +311,76 @@ export class WarmGlbCache {
   }
 }
 
-// ---------- 缩放按钮（样式同棋盘/夜战：深色底 + 金边，字符图标不走 i18n） ----------
+// ---------- 视角按钮组（样式同棋盘/夜战：深色底 + 金边，字符图标不走 i18n） ----------
 
-export function makeZoomControls(
+export interface ViewControlHandlers {
+  rotateLeft: () => void;
+  rotateRight: () => void;
+  tiltUp: () => void;
+  tiltDown: () => void;
+  reset: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+}
+
+const VIEW_BTN_CSS = 'box-sizing:border-box;width:36px;height:36px;pointer-events:auto;border:2px solid #d4a94e;border-radius:8px;' +
+  'background:rgba(20,16,10,0.78);color:#ffe066;font-size:18px;line-height:1;padding:0;cursor:pointer;';
+/** 两列网格：4 行共 162px 高，竖排 7 键要 288px，小屏（横屏/矮窗）会被容器 overflow:hidden 裁掉上半截 */
+const VIEW_WRAPPER_CSS = 'position:absolute;right:8px;bottom:8px;z-index:7;display:grid;' +
+  'grid-template-columns:repeat(2,36px);gap:6px;pointer-events:none;';
+/** 按住连续步进：首次延迟 320ms，之后每 70ms 一步（点一下 = 一步，按住 = 连续转） */
+const VIEW_HOLD_DELAY_MS = 320;
+const VIEW_HOLD_REPEAT_MS = 70;
+
+/**
+ * 视角按钮组（两列）：⟲ 左转 / ⟳ 右转、⌃ 抬高俯视 / ⌄ 压低平视、＋ 放大 / － 缩小、
+ * 底部通栏 ⌂ 回正。
+ *
+ * 为什么要有按钮：一指拖动已经用来平移地图（地图扩大后必需），旋转交给按钮更精准也不会误触；
+ * 桌面端仍可右键拖动旋转，滚轮缩放。按钮用 pointerdown 直接触发（不用 click），这样按住能连续转，
+ * 抬手也不会多补一步。
+ */
+export function makeViewControls(
   container: HTMLElement,
   datasetKey: string,
-  onZoomIn: () => void,
-  onZoomOut: () => void
+  handlers: ViewControlHandlers,
+  wrapperCss = VIEW_WRAPPER_CSS
 ): HTMLDivElement {
   const div = document.createElement('div');
-  div.style.cssText = 'position:absolute;right:8px;bottom:8px;z-index:7;display:flex;flex-direction:column;gap:6px;pointer-events:none;';
+  div.style.cssText = wrapperCss;
   container.appendChild(div);
-  const mkBtn = (label: string, ctl: string, onTap: () => void): void => {
+  const mkBtn = (label: string, ctl: string, onStep: () => void, span = false): void => {
     const b = document.createElement('button');
     b.textContent = label;
     b.dataset[datasetKey] = ctl;
-    b.style.cssText = 'width:36px;height:36px;pointer-events:auto;border:2px solid #d4a94e;border-radius:8px;' +
-      'background:rgba(20,16,10,0.78);color:#ffe066;font-size:20px;line-height:1;padding:0;cursor:pointer;';
-    b.addEventListener('click', ev => { ev.stopPropagation(); onTap(); });
+    b.style.cssText = span ? `${VIEW_BTN_CSS}grid-column:span 2;width:78px;` : VIEW_BTN_CSS;
+    let holdTimer: number | null = null;
+    const stopHold = (): void => {
+      if (holdTimer !== null) {
+        window.clearTimeout(holdTimer);
+        holdTimer = null;
+      }
+    };
+    b.addEventListener('pointerdown', ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      onStep();
+      holdTimer = window.setTimeout(function repeat(): void {
+        onStep();
+        holdTimer = window.setTimeout(repeat, VIEW_HOLD_REPEAT_MS);
+      }, VIEW_HOLD_DELAY_MS);
+    });
+    b.addEventListener('pointerup', stopHold);
+    b.addEventListener('pointercancel', stopHold);
+    b.addEventListener('pointerleave', stopHold);
     div.appendChild(b);
   };
-  mkBtn('＋', 'zoom-in', onZoomIn);
-  mkBtn('－', 'zoom-out', onZoomOut);
+  mkBtn('⟲', 'rotate-left', handlers.rotateLeft);
+  mkBtn('⟳', 'rotate-right', handlers.rotateRight);
+  mkBtn('⌃', 'tilt-up', handlers.tiltUp);
+  mkBtn('⌄', 'tilt-down', handlers.tiltDown);
+  mkBtn('＋', 'zoom-in', handlers.zoomIn);
+  mkBtn('－', 'zoom-out', handlers.zoomOut);
+  mkBtn('⌂', 'reset', handlers.reset, true); // 通栏：回正是「一键找回基地」，占整行更好按
   return div;
 }

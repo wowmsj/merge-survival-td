@@ -171,24 +171,64 @@ async function main() {
     await page.screenshot({ path: path.join(SHOTS, 'base3d-default.png') });
     check('初始化阶段无未捕获页面异常', pageErrors.length === 0, pageErrors.join(' | '));
 
-    // ================= 相机手势：旋转 / 俯仰钳位 / 缩放 =================
+    // ============ 相机：一指平移 / 右键旋转 / 按钮 / 俯仰钳位 / 缩放 / 边缘滑动 ============
     const readCam = () => page.evaluate(() => window.__base3d.camera());
     const center = await designPoint(page, 540, 763); // 网格矩形中心
-    const drag = async (dx, dy) => {
+    const drag = async (dx, dy, button = 'left') => {
       await page.mouse.move(center.x, center.y);
-      await page.mouse.down();
+      await page.mouse.down({ button });
       await page.mouse.move(center.x + dx, center.y + dy, { steps: 12 });
-      await page.mouse.up();
+      await page.mouse.up({ button });
       await page.waitForTimeout(80);
     };
+    const rotateDrag = (dx, dy) => drag(dx, dy, 'right');
+    /** 回到默认读图视角（含平移归位），每个用例自己起跑，互不污染 */
+    const resetCam = (elevationDeg = 40) => page.evaluate((deg) => {
+      const o = window.__base3d.owner.orbit;
+      o.resetView();
+      o.elevation = deg * Math.PI / 180;
+      o.apply();
+    }, elevationDeg);
+    const screenOf = (r, c) => page.evaluate(([rr, cc]) => window.__base3d.cellToScreen(rr, cc), [r, c]);
+    /** 平移量 = 相机目标点相对归位点 (0, 0.3) 的距离（归位点 z=0.3，不是原点） */
+    const panOffset = (c) => Math.hypot(c.targetX, c.targetZ - 0.3);
+    const nearCell = [1, 1]; // 默认视角下的近景角格（画面下方）
 
-    const cam0 = await readCam();
-    await drag(196, 0);
-    const cam1 = await readCam();
-    check('拖动旋转方位角（自由 360°）',
-      Math.abs(cam1.azimuth - cam0.azimuth) > 0.8 && Math.abs(cam1.azimuth - cam0.azimuth) < 2.4,
-      `az ${cam0.azimuth.toFixed(2)} → ${cam1.azimuth.toFixed(2)}`);
+    // ---- 一指拖动 = 平移地图（地图扩大后必需；方位角/俯仰不能被带走）----
     {
+      await resetCam();
+      await page.waitForTimeout(120);
+      const p0 = await screenOf(...nearCell);
+      const a0 = await readCam();
+      await drag(120, 0);
+      const p1 = await screenOf(...nearCell);
+      const a1 = await readCam();
+      check('一指拖动 → 平移地图（方位角/俯仰不动）',
+        Math.abs(a1.azimuth - a0.azimuth) < 1e-6 && Math.abs(a1.elevation - a0.elevation) < 1e-6 &&
+        Math.hypot(a1.targetX - a0.targetX, a1.targetZ - a0.targetZ) > 0.2,
+        `az ${a0.azimuth.toFixed(3)}→${a1.azimuth.toFixed(3)} target ${a0.targetX.toFixed(2)},${a0.targetZ.toFixed(2)}→${a1.targetX.toFixed(2)},${a1.targetZ.toFixed(2)}`);
+      check('一指右拖 → 近景格跟着右移（内容跟手）', p1.x - p0.x > 20,
+        `x ${p0.x.toFixed(1)} → ${p1.x.toFixed(1)}`);
+    }
+
+    // ---- 右键拖动 = 旋转（桌面端；与 three.js OrbitControls 同手感）----
+    {
+      await resetCam();
+      await page.waitForTimeout(120);
+      const p0 = await screenOf(...nearCell);
+      const a0 = await readCam();
+      await rotateDrag(120, 100);
+      const p1 = await screenOf(...nearCell);
+      const a1 = await readCam();
+      check('右键拖动 → 方位角减小（相机反向环绕 = 抓住场景）', a1.azimuth < a0.azimuth,
+        `az ${a0.azimuth.toFixed(3)} → ${a1.azimuth.toFixed(3)}`);
+      check('右键拖动 → 俯仰角增大（相机抬高 = 抓住场景）', a1.elevation > a0.elevation,
+        `el ${(a0.elevation * 180 / Math.PI).toFixed(1)}° → ${(a1.elevation * 180 / Math.PI).toFixed(1)}°`);
+      check('右键拖动 → 近景格跟着右移（方向未反）', p1.x - p0.x > 20,
+        `x ${p0.x.toFixed(1)} → ${p1.x.toFixed(1)}`);
+    }
+    {
+      // 旋转到任意角度都不溢出（取景数学与角度无关）
       const f = await page.evaluate(() => {
         const orbit = window.__base3d.owner.orbit;
         const z0 = orbit.zoom;
@@ -197,57 +237,108 @@ async function main() {
         orbit.setZoom(z0);
         return probe;
       });
-      check('旋转 ~90° 后 zoom=1 无溢出', f.maxNdcX <= 1.001 && f.maxNdcY <= 1.001, JSON.stringify(f));
+      check('旋转后 zoom=1 无溢出', f.maxNdcX <= 1.001 && f.maxNdcY <= 1.001, JSON.stringify(f));
     }
-
-    // ============ 拖拽方向（玩家反馈"旋转是反的"回归）：拖拽方向 == 场景移动方向 ============
-    {
-      const resetCam = () => page.evaluate(() => {
-        const o = window.__base3d.owner.orbit;
-        o.azimuth = Math.atan2(-10, -10);
-        o.elevation = 40 * Math.PI / 180;
-        o.apply();
-      });
-      const nearCell = [1, 1]; // 默认视角下的近景角格（画面下方）
-      const screenOf = () => page.evaluate(
-        ([r, c]) => window.__base3d.cellToScreen(r, c), nearCell);
-
-      await resetCam();
-      await page.waitForTimeout(120);
-      const p0 = await screenOf();
-      const a0 = await readCam();
-      await drag(120, 0);
-      const p1 = await screenOf();
-      const a1 = await readCam();
-      check('右拖 → 方位角减小（相机反向环绕 = 抓住场景）', a1.azimuth < a0.azimuth,
-        `az ${a0.azimuth.toFixed(3)} → ${a1.azimuth.toFixed(3)}`);
-      check('右拖 → 近景格跟着右移（方向未反）', p1.x - p0.x > 20,
-        `x ${p0.x.toFixed(1)} → ${p1.x.toFixed(1)}`);
-
-      await resetCam();
-      await page.waitForTimeout(120);
-      const q0 = await screenOf();
-      const e0 = await readCam();
-      await drag(0, 100);
-      const q1 = await screenOf();
-      const e1 = await readCam();
-      check('下拖 → 俯仰角增大（相机抬高 = 抓住场景）', e1.elevation > e0.elevation,
-        `el ${(e0.elevation * 180 / Math.PI).toFixed(1)}° → ${(e1.elevation * 180 / Math.PI).toFixed(1)}°`);
-      check('下拖 → 近景格跟着下移（方向未反）', q1.y - q0.y > 20,
-        `y ${q0.y.toFixed(1)} → ${q1.y.toFixed(1)}`);
-    }
-
     await page.waitForTimeout(200);
     await page.screenshot({ path: path.join(SHOTS, 'base3d-rotated.png') });
 
-    // 下拖 = 把场景往下拽 → 相机抬高、更俯视，钳位上限 75°（不到正顶、不翻转）
-    await drag(0, 1500);
+    // ---- 视角按钮组：旋转 ⟲⟳ / 俯仰 ⌃⌄ / 回正 ⌂ / 缩放 ＋－ ----
+    {
+      const btns = await page.locator('button[data-base3d-ctl]').count();
+      check('视角按钮组挂载 7 个（旋转/俯仰/回正/缩放）', btns === 7, `count=${btns}`);
+      const tap = async (ctl) => {
+        await page.locator(`button[data-base3d-ctl="${ctl}"]`).click();
+        await page.waitForTimeout(90);
+      };
+      const DEG = 180 / Math.PI;
+
+      await resetCam(52);
+      const b0 = await readCam();
+      await tap('rotate-right');
+      const b1 = await readCam();
+      check('⟳ 按钮 → 场景右转 15°（方位角 -15°）',
+        Math.abs((b0.azimuth - b1.azimuth) * DEG - 15) < 0.5 && Math.abs(b1.elevation - b0.elevation) < 1e-6,
+        `Δaz=${((b0.azimuth - b1.azimuth) * DEG).toFixed(2)}°`);
+      await tap('rotate-left');
+      const b2 = await readCam();
+      check('⟲ 按钮 → 场景左转回原位（方位角 +15°）',
+        Math.abs(b2.azimuth - b0.azimuth) < 1e-6,
+        `az ${b0.azimuth.toFixed(3)} → ${b2.azimuth.toFixed(3)}`);
+
+      await tap('tilt-up');
+      const b3 = await readCam();
+      check('⌃ 按钮 → 相机抬高 12°（更俯视）',
+        Math.abs((b3.elevation - b2.elevation) * DEG - 12) < 0.5,
+        `Δel=${((b3.elevation - b2.elevation) * DEG).toFixed(2)}°`);
+      await tap('tilt-down');
+      const b4 = await readCam();
+      check('⌄ 按钮 → 相机压低 12°（回到原俯仰）',
+        Math.abs(b4.elevation - b2.elevation) < 1e-6,
+        `el=${(b4.elevation * DEG).toFixed(2)}°`);
+
+      await drag(120, 0); // 先平移走
+      await tap('rotate-right');
+      await tap('tilt-up');
+      await tap('reset');
+      const b5 = await readCam();
+      check('⌂ 回正 → 方位角/俯仰/缩放/平移全部复位',
+        Math.abs(b5.azimuth - Math.atan2(-10, -10)) < 1e-6 &&
+        Math.abs(b5.elevation - 52 * Math.PI / 180) < 1e-6 &&
+        Math.abs(b5.zoom - 1.6) < 1e-6 &&
+        panOffset(b5) < 1e-6,
+        JSON.stringify(b5));
+    }
+
+    // ---- 拖棋子到画布边缘 → 地图自动平移（地图扩大后把棋子搬到屏幕外格子的唯一办法）----
+    {
+      await resetCam(75);
+      await page.evaluate(() => window.__base3d.owner.orbit.setZoom(1));
+      await page.waitForTimeout(200);
+      const src = await page.evaluate(() => {
+        const s = window.__base3d.state;
+        for (let r = 0; r < s.grid.rowNum; r++) {
+          for (let c = 0; c < s.grid.colNum; c++) {
+            const it = window.__base3d.getItemAt(r, c);
+            if (it && it.st !== 2) return { row: r, col: c }; // 2=纸箱不可拖；蜘蛛网可拖
+          }
+        }
+        return null;
+      });
+      check('找到可拖棋子（边缘滑动用例）', !!src, JSON.stringify(src));
+      if (src) {
+        const p = await screenOf(src.row, src.col);
+        const t0 = await readCam();
+        await page.mouse.move(p.x, p.y);
+        await page.mouse.down();
+        await page.mouse.move(p.x + 40, p.y, { steps: 5 }); // 先起拖
+        const rect = await page.evaluate(() => {
+          const c = document.querySelector('canvas[data-base3d]').getBoundingClientRect();
+          return { right: c.right, top: c.top, height: c.height };
+        });
+        await page.mouse.move(rect.right - 5, p.y, { steps: 10 }); // 贴右边缘停住
+        await page.waitForTimeout(700);
+        const t1 = await readCam();
+        await page.mouse.up();
+        await page.waitForTimeout(200);
+        check('拖棋子贴边停住 → 地图自动平移',
+          Math.hypot(t1.targetX - t0.targetX, t1.targetZ - t0.targetZ) > 0.3,
+          `target ${t0.targetX.toFixed(2)},${t0.targetZ.toFixed(2)} → ${t1.targetX.toFixed(2)},${t1.targetZ.toFixed(2)}`);
+        check('边缘滑动期间不改方位角/俯仰',
+          Math.abs(t1.azimuth - t0.azimuth) < 1e-6 && Math.abs(t1.elevation - t0.elevation) < 1e-6,
+          `az ${t1.azimuth.toFixed(3)} el ${t1.elevation.toFixed(3)}`);
+        check('边缘滑动不超出平移范围', panOffset(t1) <= t1.panLimit + 1e-6,
+          `offset=${panOffset(t1).toFixed(3)} limit=${t1.panLimit.toFixed(3)}`);
+      }
+    }
+
+    // ---- 俯仰钳位（右键拖动，永不触地/翻转）----
+    await resetCam(52);
+    await rotateDrag(0, 1500);
     const camHigh = await readCam();
     check('下拖到底 → 俯仰钳位上限（75°，不到正顶）',
       Math.abs(camHigh.elevation - camHigh.maxElevation) < 1e-3 && camHigh.maxElevation < Math.PI / 2,
       `el=${(camHigh.elevation * 180 / Math.PI).toFixed(1)}°`);
-    // 上推 = 把场景往上推 → 相机压低，钳位下限 25°（永不触地/翻转）
-    await drag(0, -2000);
+    await rotateDrag(0, -2000);
     const camLow = await readCam();
     check('上推到底 → 俯仰钳位下限（25°，不翻转）',
       Math.abs(camLow.elevation - camLow.minElevation) < 1e-3 && camLow.minElevation > 0,
@@ -259,9 +350,13 @@ async function main() {
     for (let i = 0; i < 6; i++) await zoomIn.click();
     const camZoom = await readCam();
     check('＋ 按钮放大并钳位倍率上限', camZoom.zoom === camZoom.maxZoom && camZoom.maxZoom <= 3, `zoom=${camZoom.zoom}`);
+    check('放大后可平移范围随之变大（能推到角落）',
+      camZoom.panLimit > 1.001, `limit=${camZoom.panLimit.toFixed(2)}`);
     for (let i = 0; i < 10; i++) await zoomOut.click();
     const camZoomOut = await readCam();
     check('－ 按钮缩小并钳位下限（zoom=1 全景恰好铺满）', camZoomOut.zoom === camZoomOut.minZoom, `zoom=${camZoomOut.zoom}`);
+    check('zoom=1 时平移范围收回到取景余量（全景不会被推出画面）',
+      Math.abs(camZoomOut.panLimit - 1) < 1e-6, `limit=${camZoomOut.panLimit}`);
 
     await page.mouse.move(center.x, center.y);
     await page.mouse.wheel(0, -400);
@@ -274,18 +369,23 @@ async function main() {
     await page.setViewportSize({ width: 400, height: 800 });
     await page.waitForTimeout(500);
     {
-      const f = await page.evaluate(() => window.__base3d.fit());
+      const f = await page.evaluate(() => {
+        const o = window.__base3d.owner.orbit;
+        o.resetView();
+        o.setZoom(1);
+        return window.__base3d.fit();
+      });
       check('窄屏 400×800 zoom=1 无横向溢出', f.maxNdcX <= 1.001, JSON.stringify(f));
     }
     await page.setViewportSize({ width: 540, height: 960 });
     await page.waitForTimeout(500);
     check('相机手势全程无未捕获页面异常', pageErrors.length === 0, pageErrors.join(' | '));
 
-    // 点格用例不依赖残留相机姿态：回到「俯瞰全景」可读视角（近顶视 + zoom=1 恰好铺满，
+    // 点格用例不依赖残留相机姿态：回到「俯瞰全景」可读视角（近顶视 + zoom=1 恰好铺满 + 平移归位，
     // 投影落点不被前景建筑遮挡），否则残留的低俯角会让 cellToScreen 落点压到别的格上。
     await page.evaluate(() => {
       const o = window.__base3d.owner.orbit;
-      o.azimuth = Math.atan2(-10, -10);
+      o.resetView();
       o.elevation = 75 * Math.PI / 180;
       o.setZoom(1);
     });
@@ -362,8 +462,8 @@ async function main() {
       await page.waitForTimeout(600);
       check('restart 后基地 3D 画布唯一（旧画布已移除）',
         await page.evaluate(() => document.querySelectorAll('canvas[data-base3d]').length) === 1);
-      check('restart 后缩放按钮唯一一对（旧按钮已移除）',
-        await page.evaluate(() => document.querySelectorAll('button[data-base3d-ctl]').length) === 2);
+      check('restart 后视角按钮唯一一组（旧按钮已移除）',
+        await page.evaluate(() => document.querySelectorAll('button[data-base3d-ctl]').length) === 7);
       check('restart 销毁旧渲染器（dispose 计数 +1，无残留循环）',
         await page.evaluate((n) => (window.__base3dDestroyed || 0) === n + 1, destroyedBefore));
     }

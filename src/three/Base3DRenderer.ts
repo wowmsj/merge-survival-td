@@ -32,8 +32,9 @@ import { BoardItemView, IBoardItemHost } from './BoardItemView';
 import type { IRouteCell } from '../core/systems/RoutePreview';
 import {
   WARM_LAYOUT_URL, cellToWorld13, worldToCell13, applyWarmRendererSettings, createWarmScene,
-  WarmOrbitCamera, WarmGlbCache, makeZoomControls, disposeObjectTree,
-  ORBIT_MIN_ELEVATION, ORBIT_MAX_ELEVATION, ORBIT_MIN_ZOOM, ORBIT_MAX_ZOOM
+  WarmOrbitCamera, WarmGlbCache, makeViewControls, disposeObjectTree,
+  ORBIT_MIN_ELEVATION, ORBIT_MAX_ELEVATION, ORBIT_MIN_ZOOM, ORBIT_MAX_ZOOM,
+  ORBIT_ROTATE_STEP, ORBIT_TILT_STEP
 } from './warmSceneKit';
 
 declare const __DEV_FEATURES__: boolean;
@@ -78,6 +79,9 @@ const ROUTE_Y = 0.055;
 /** 拖拽抬升高度（拖拽跟随平面同高，棋子视觉正好贴在指针下） */
 const DRAG_Y = 0.9;
 const DRAG_THRESHOLD = 8;
+/** 拖棋子时靠近画布边缘多少像素内开始自动平移地图，以及最大平移速度（CSS 像素/秒） */
+const EDGE_PAN_MARGIN = 48;
+const EDGE_PAN_MAX_SPEED = 620;
 
 /** 核心格长按判定时长（ms）：与 BaseScene.CORE_HOLD_MS 一致（短按=发射，长按=核心面板） */
 const CORE_HOLD_MS = 480;
@@ -203,6 +207,10 @@ export class Base3DRenderer implements IBoardItemHost {
   private pointers = new Map<number, { sx: number; sy: number; px: number; py: number }>();
   private pinch: { d0: number; z0: number; mx: number; my: number } | null = null;
   private camDragging = false;
+  /** 单指相机手势模式：true = 旋转（鼠标右键/中键拖动），false = 平移地图（触摸与左键） */
+  private camRotate = false;
+  /** 拖棋子时靠近画布边缘自动平移地图：上一帧时间戳（按 dt 计步，帧率无关） */
+  private lastFrameTs = 0;
   private downCell: { row: number; col: number } | null = null;
   /** 核心格长按计时（长按 = 打开核心面板，短按 = 发射/选中） */
   private holdTimer: number | null = null;
@@ -260,9 +268,15 @@ export class Base3DRenderer implements IBoardItemHost {
     this.overlayLayer = document.createElement('div');
     this.overlayLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
     this.root.appendChild(this.overlayLayer);
-    makeZoomControls(this.root, 'base3dCtl',
-      () => this.orbit.setZoom(this.orbit.zoom * 1.25),
-      () => this.orbit.setZoom(this.orbit.zoom / 1.25));
+    makeViewControls(this.root, 'base3dCtl', {
+      rotateLeft: () => this.orbit.nudgeAzimuth(ORBIT_ROTATE_STEP),
+      rotateRight: () => this.orbit.nudgeAzimuth(-ORBIT_ROTATE_STEP),
+      tiltUp: () => this.orbit.nudgeElevation(ORBIT_TILT_STEP),
+      tiltDown: () => this.orbit.nudgeElevation(-ORBIT_TILT_STEP),
+      reset: () => this.orbit.resetView(),
+      zoomIn: () => this.orbit.setZoom(this.orbit.zoom * 1.25),
+      zoomOut: () => this.orbit.setZoom(this.orbit.zoom / 1.25)
+    });
 
     // 程序化兜底网格/边界（§8 暖褐格线不纯黑；GLB 地基就位后隐藏）
     const gridSize = Math.max(BASE_COLS, BASE_ROWS);
@@ -311,6 +325,8 @@ export class Base3DRenderer implements IBoardItemHost {
     this.canvas.addEventListener('pointercancel', this.onPointerCancel);
     this.canvas.addEventListener('pointerleave', this.onPointerCancel);
     this.canvas.addEventListener('wheel', this.onWheel, { passive: false });
+    // 右键拖动 = 旋转：屏蔽画布右键菜单，否则一按就弹菜单打断手势
+    this.canvas.addEventListener('contextmenu', this.onContextMenu);
 
     this.syncAll();
 
@@ -336,6 +352,9 @@ export class Base3DRenderer implements IBoardItemHost {
           azimuth: this.orbit.azimuth,
           elevation: this.orbit.elevation,
           zoom: this.orbit.zoom,
+          targetX: this.orbit.target.x,
+          targetZ: this.orbit.target.z,
+          panLimit: this.orbit.panLimit,
           minElevation: ORBIT_MIN_ELEVATION,
           maxElevation: ORBIT_MAX_ELEVATION,
           minZoom: ORBIT_MIN_ZOOM,
@@ -977,15 +996,28 @@ export class Base3DRenderer implements IBoardItemHost {
   // ---------- 输入 ----------
 
   private ndcFromEvent(e: PointerEvent): THREE.Vector2 {
+    return this.ndcFromClient(e.clientX, e.clientY);
+  }
+
+  /** 屏幕坐标 → NDC（拖拽跟手/边缘自动平移要按坐标而不是事件取点） */
+  private ndcFromClient(clientX: number, clientY: number): THREE.Vector2 {
     const rect = this.canvas.getBoundingClientRect();
     return new THREE.Vector2(
-      ((e.clientX - rect.left) / rect.width) * 2 - 1,
-      -((e.clientY - rect.top) / rect.height) * 2 + 1
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1
     );
   }
 
+  /** 画布上禁用右键菜单（右键拖动 = 旋转视图） */
+  private onContextMenu = (e: Event): void => { e.preventDefault(); };
+
   private eventCell(e: PointerEvent): { row: number; col: number } | null {
-    this.raycaster.setFromCamera(this.ndcFromEvent(e), this.orbit.camera);
+    return this.cellFromClient(e.clientX, e.clientY);
+  }
+
+  /** 屏幕坐标落在地面平面上的格（边缘自动平移时也按坐标取格） */
+  private cellFromClient(clientX: number, clientY: number): { row: number; col: number } | null {
+    this.raycaster.setFromCamera(this.ndcFromClient(clientX, clientY), this.orbit.camera);
     const hit = new THREE.Vector3();
     if (!this.raycaster.ray.intersectPlane(this.groundPlane, hit)) return null;
     return worldToCell13(hit.x, hit.z);
@@ -1036,6 +1068,8 @@ export class Base3DRenderer implements IBoardItemHost {
     this.camDragging = false;
     this.hasDragged = false;
     this.gesture = 'none';
+    // 相机手势模式：鼠标右键/中键拖动 = 旋转，其它（触摸、左键）= 平移地图
+    this.camRotate = e.pointerType === 'mouse' && e.button !== 0;
     this.beginCoreHold();
 
     // 物品手势：非摆放/部署模式、按下格有可拖物品（纸箱/气泡不可拖）
@@ -1082,19 +1116,29 @@ export class Base3DRenderer implements IBoardItemHost {
       // 物品拖拽：>8px 阈值后拖起幽灵棋子跟随（Y=DRAG_Y 平面，棋子视觉正好在指针下）
       if (!this.hasDragged && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < DRAG_THRESHOLD) return;
       this.hasDragged = true;
-      this.raycaster.setFromCamera(this.ndcFromEvent(e), this.orbit.camera);
-      const hit = new THREE.Vector3();
-      if (this.raycaster.ray.intersectPlane(this.dragPlane, hit) && this.dragView) {
-        this.dragView.root.position.set(hit.x, DRAG_Y, hit.z);
-      }
+      this.placeDragGhost(e.clientX, e.clientY);
       this.updateDragHover(e);
       return;
     }
-    // 相机手势：单指拖动 = 方位角/俯仰（原逻辑不变）
+    // 相机手势：>8px 阈值后 右键拖动=旋转（方位角/俯仰），单指/左键拖动=平移地图
     if (!this.camDragging && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < DRAG_THRESHOLD) return;
     this.camDragging = true;
-    this.orbit.rotateBy(stepX, stepY);
+    if (this.camRotate) {
+      this.orbit.rotateBy(stepX, stepY);
+    } else {
+      this.orbit.panBy(stepX, stepY, this.canvas.getBoundingClientRect().height);
+    }
   };
+
+  /** 拖拽中的棋子在 DRAG_Y 平面上跟到指针对应的世界点（棋子视觉正好贴在指针下） */
+  private placeDragGhost(clientX: number, clientY: number): void {
+    if (!this.dragView) return;
+    this.raycaster.setFromCamera(this.ndcFromClient(clientX, clientY), this.orbit.camera);
+    const hit = new THREE.Vector3();
+    if (this.raycaster.ray.intersectPlane(this.dragPlane, hit)) {
+      this.dragView.root.position.set(hit.x, DRAG_Y, hit.z);
+    }
+  }
 
   private onPointerUp = (e: PointerEvent): void => {
     if (!this.pointers.has(e.pointerId)) return;
@@ -1189,7 +1233,11 @@ export class Base3DRenderer implements IBoardItemHost {
 
   /** 拖拽中途悬停格视觉反馈（贴格顶黄框 quad，随指针取格） */
   private updateDragHover(e: PointerEvent): void {
-    const cell = this.eventCell(e);
+    this.updateDragHoverAt(e.clientX, e.clientY);
+  }
+
+  private updateDragHoverAt(clientX: number, clientY: number): void {
+    const cell = this.cellFromClient(clientX, clientY);
     if (!cell) {
       if (this.hoverQuad) this.hoverQuad.visible = false;
       return;
@@ -1354,6 +1402,32 @@ export class Base3DRenderer implements IBoardItemHost {
 
   // ---------- 帧更新 ----------
 
+  /**
+   * 拖棋子时指针贴近画布边缘 → 地图自动平移（RTS 边缘滑动）。
+   * 地图扩大后这是把棋子搬到屏幕外格子的唯一办法：平移量按 dt 计步（与帧率无关），
+   * 平移后立刻把棋子与落点提示按同一坐标重新投影，视觉上棋子始终贴在指针下、不脱手。
+   */
+  private autoPanWhileDragging(nowMs: number): void {
+    const dt = this.lastFrameTs ? Math.min(64, nowMs - this.lastFrameTs) : 0;
+    this.lastFrameTs = nowMs;
+    if (dt <= 0 || this.gesture !== 'item' || !this.hasDragged || this.pointers.size !== 1) return;
+    const p = [...this.pointers.values()][0];
+    const rect = this.canvas.getBoundingClientRect();
+    // 指针所在的边（右/下为 +1，左/上为 -1，中间为 0）；内容要往反方向移动才露得出新格子
+    const edge = (pos: number, size: number): number => {
+      if (pos < EDGE_PAN_MARGIN) return -Math.min(1, (EDGE_PAN_MARGIN - pos) / EDGE_PAN_MARGIN);
+      if (pos > size - EDGE_PAN_MARGIN) return Math.min(1, (pos - (size - EDGE_PAN_MARGIN)) / EDGE_PAN_MARGIN);
+      return 0;
+    };
+    const ex = edge(p.px - rect.left, rect.width);
+    const ey = edge(p.py - rect.top, rect.height);
+    if (ex === 0 && ey === 0) return;
+    const k = dt / 1000 * EDGE_PAN_MAX_SPEED;
+    this.orbit.panBy(-ex * k, -ey * k, rect.height);
+    this.placeDragGhost(p.px, p.py);
+    this.updateDragHoverAt(p.px, p.py);
+  }
+
   /** 每帧（BaseScene.update 驱动）：弹窗屏蔽切换 + 覆盖层投影 + 渲染 */
   update(): void {
     if (this.disposed) return;
@@ -1364,6 +1438,7 @@ export class Base3DRenderer implements IBoardItemHost {
     }
     if (blocked) return;
     this.checkIdleHint(Date.now());
+    this.autoPanWhileDragging(Date.now());
 
     // 覆盖层投影：建筑/英雄徽标锚点在格子上空
     const rect = this.canvas.getBoundingClientRect();
@@ -1414,6 +1489,7 @@ export class Base3DRenderer implements IBoardItemHost {
     this.canvas.removeEventListener('pointercancel', this.onPointerCancel);
     this.canvas.removeEventListener('pointerleave', this.onPointerCancel);
     this.canvas.removeEventListener('wheel', this.onWheel);
+    this.canvas.removeEventListener('contextmenu', this.onContextMenu);
     this.routeMeshes = [];
     this.routeGroup.clear();
     this.tscene.remove(this.routeGroup);

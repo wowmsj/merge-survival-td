@@ -6,6 +6,7 @@ import { GameEvents, eventBus } from '../core/events/EventBus';
 import { getBuildingConfig } from '../core/config/BuildingConfig';
 import { getZombieConfig } from '../core/config/ZombieConfig';
 import { BASE_COLS, BASE_ROWS } from '../core/model/Base';
+import { makeViewControls } from './warmSceneKit';
 
 /** webpack DefinePlugin 注入的构建版本号（GLB URL 缓存破除用） */
 declare const __ASSET_VERSION__: string;
@@ -60,6 +61,11 @@ const DEFAULT_ELEVATION = Math.atan2(8.5, Math.hypot(10, 10)); // ≈31°
 const DEFAULT_AZIMUTH = Math.atan2(-10, -10);
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
+/** 平移范围下限（世界单位）；真实范围 = panLimit（随缩放/地图尺寸放大） */
+const PAN_LIMIT = 1.0;
+/** 视角按钮步进：点一下水平旋转 15°、俯仰 12°（按住则由按钮工厂连续步进） */
+const ROTATE_STEP = THREE.MathUtils.degToRad(15);
+const TILT_STEP = THREE.MathUtils.degToRad(12);
 /** 拖动超过该距离才算相机手势，否则原样放行给 Phaser（剧情对话/结算按钮点击） */
 const DRAG_THRESHOLD_PX = 8;
 
@@ -398,10 +404,14 @@ export class Night3DRenderer {
   /** fitCamera 计算的全景距离（zoom=1 时相机到基地中心的距离） */
   private baseDist = 20;
   private readonly camTarget = new THREE.Vector3(0, 0, 0.3);
+  /** 平移的归位点（回正按钮用） */
+  private readonly homeTarget = new THREE.Vector3(0, 0, 0.3);
   private controlsDiv: HTMLDivElement | null = null;
   private pointers = new Map<number, { sx: number; sy: number; px: number; py: number }>();
-  private pinch: { d0: number; z0: number } | null = null;
+  private pinch: { d0: number; z0: number; mx: number; my: number } | null = null;
   private camDragging = false;
+  /** 单指相机手势模式：true = 旋转（鼠标右键/中键拖动），false = 平移地图（触摸与左键） */
+  private camRotate = false;
   /** Phaser 画布原 touch-action，dispose 时还原 */
   private savedTouchAction: string | null = null;
 
@@ -515,6 +525,8 @@ export class Night3DRenderer {
     window.addEventListener('pointerup', this.onPointerUp, true);
     window.addEventListener('pointercancel', this.onPointerCancel, true);
     this.container.addEventListener('wheel', this.onWheel, { passive: false });
+    // 右键拖动 = 旋转：屏蔽画布右键菜单，否则一按就弹菜单打断手势
+    this.container.addEventListener('contextmenu', this.onContextMenu);
     // 双指捏合需要禁掉浏览器默认触摸缩放（仅本场景存活期间）
     const phaserCanvas = Array.from(this.container.querySelectorAll('canvas')).find(c => c !== el);
     if (phaserCanvas) {
@@ -556,6 +568,9 @@ export class Night3DRenderer {
           azimuth: this.azimuth,
           elevation: this.elevation,
           zoom: this.zoom,
+          targetX: this.camTarget.x,
+          targetZ: this.camTarget.z,
+          panLimit: this.panLimit,
           minElevation: MIN_ELEVATION,
           maxElevation: MAX_ELEVATION,
           minZoom: MIN_ZOOM,
@@ -659,6 +674,57 @@ export class Night3DRenderer {
     const nz = THREE.MathUtils.clamp(z, MIN_ZOOM, MAX_ZOOM);
     if (nz === this.zoom) return;
     this.zoom = nz;
+    this.clampCamTarget();
+    this.applyCamera();
+  }
+
+  /** 单指/鼠标左键拖动：平移（内容跟随手指）；范围随缩放与地图尺寸放大，地图扩大后仍能推到边缘 */
+  private panBy(dxPx: number, dyPx: number, viewportH: number): void {
+    const dist = this.baseDist / this.zoom;
+    const wpp = (2 * dist * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2))) / Math.max(1, viewportH);
+    const right = new THREE.Vector3(Math.cos(this.azimuth), 0, -Math.sin(this.azimuth));
+    const back = new THREE.Vector3(Math.sin(this.azimuth), 0, Math.cos(this.azimuth));
+    this.camTarget.addScaledVector(right, -dxPx * wpp).addScaledVector(back, dyPx * wpp);
+    this.clampCamTarget();
+    this.applyCamera();
+  }
+
+  /** 允许的平移半径：zoom=1 时等于取景余量（全景仍铺满），放大后正好够把任意角落推到屏幕中心 */
+  private get panLimit(): number {
+    const half = Math.max(BASE_COLS, BASE_ROWS) * CELL_SIZE / 2;
+    const visible = (half + PAN_LIMIT) / this.zoom;
+    return Math.max(PAN_LIMIT, half - visible);
+  }
+
+  private clampCamTarget(): void {
+    const dx = this.camTarget.x - this.homeTarget.x;
+    const dz = this.camTarget.z - this.homeTarget.z;
+    const len = Math.hypot(dx, dz);
+    const limit = this.panLimit;
+    if (len > limit) {
+      this.camTarget.x = this.homeTarget.x + dx / len * limit;
+      this.camTarget.z = this.homeTarget.z + dz / len * limit;
+    }
+    this.camTarget.y = this.homeTarget.y;
+  }
+
+  /** 视角按钮：水平旋转（符号与拖拽同源） */
+  private nudgeAzimuth(delta: number): void {
+    this.azimuth += delta;
+    this.applyCamera();
+  }
+
+  /** 视角按钮：俯仰增减（正 = 相机抬高更俯视），钳位不翻转 */
+  private nudgeElevation(delta: number): void {
+    this.setElevation(this.elevation + delta);
+  }
+
+  /** 回正：方位角/俯仰/缩放/平移全部回到默认读图视角 */
+  private resetView(): void {
+    this.azimuth = DEFAULT_AZIMUTH;
+    this.elevation = DEFAULT_ELEVATION;
+    this.zoom = MIN_ZOOM;
+    this.camTarget.copy(this.homeTarget);
     this.applyCamera();
   }
 
@@ -681,10 +747,17 @@ export class Night3DRenderer {
 
   private onPointerDown = (e: PointerEvent): void => {
     if (this.disposed || !this.isGamePointer(e)) return;
+    // 鼠标右键/中键拖动 = 旋转；触摸与左键 = 平移（与白天基地一致）
+    this.camRotate = e.pointerType === 'mouse' && e.button !== 0;
     this.pointers.set(e.pointerId, { sx: e.clientX, sy: e.clientY, px: e.clientX, py: e.clientY });
     if (this.pointers.size === 2) {
       const pts = [...this.pointers.values()];
-      this.pinch = { d0: Math.hypot(pts[0].px - pts[1].px, pts[0].py - pts[1].py), z0: this.zoom };
+      this.pinch = {
+        d0: Math.hypot(pts[0].px - pts[1].px, pts[0].py - pts[1].py),
+        z0: this.zoom,
+        mx: (pts[0].px + pts[1].px) / 2,
+        my: (pts[0].py + pts[1].py) / 2
+      };
       this.camDragging = true; // 进入双指即视为相机手势，阻止 Phaser 收到后续事件
     }
   };
@@ -701,17 +774,26 @@ export class Night3DRenderer {
       const pts = [...this.pointers.values()];
       const d = Math.hypot(pts[0].px - pts[1].px, pts[0].py - pts[1].py);
       if (d > 0 && this.pinch.d0 > 0) this.setZoom(this.pinch.z0 * d / this.pinch.d0);
+      // 中点拖动 = 平移（双指在任意位置都能移动视角，翻看地图边缘）
+      const mx = (pts[0].px + pts[1].px) / 2;
+      const my = (pts[0].py + pts[1].py) / 2;
+      this.panBy(mx - this.pinch.mx, my - this.pinch.my, this.renderer.domElement.clientHeight || 1);
+      this.pinch.mx = mx;
+      this.pinch.my = my;
       e.stopPropagation();
       return;
     }
     if (this.pointers.size !== 1) return;
     if (!this.camDragging && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < DRAG_THRESHOLD_PX) return;
     this.camDragging = true;
-    // 单指拖动：水平 → 方位角（自由 360°），垂直 → 俯仰（钳位带内）
-    // 方向与白天基地一致：场景跟随拖拽（three.js OrbitControls 手感）
-    this.azimuth -= stepX * 0.008;
-    this.setElevation(this.elevation + stepY * 0.006);
-    this.applyCamera();
+    // 单指拖动：右键 = 旋转（方位角/俯仰），其余 = 平移地图
+    if (this.camRotate) {
+      this.azimuth -= stepX * 0.008;
+      this.setElevation(this.elevation + stepY * 0.006);
+      this.applyCamera();
+    } else {
+      this.panBy(stepX, stepY, this.renderer.domElement.clientHeight || 1);
+    }
     e.stopPropagation(); // 拖动手势不传给 Phaser，避免误触 UI
   };
 
@@ -736,27 +818,25 @@ export class Night3DRenderer {
     this.setZoom(this.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15));
   };
 
-  // ---------- 缩放按钮（样式同棋盘 3D：深色底 + 金边，字符图标不走 i18n） ----------
+  /** 禁用右键菜单（右键拖动 = 旋转视图） */
+  private onContextMenu = (e: Event): void => { e.preventDefault(); };
+
+  // ---------- 视角按钮（样式同棋盘 3D：深色底 + 金边，字符图标不走 i18n） ----------
 
   private makeControls(): void {
-    this.controlsDiv = document.createElement('div');
-    this.controlsDiv.style.cssText = 'position:absolute;z-index:11;display:flex;flex-direction:column;gap:6px;pointer-events:none;';
-    this.container.appendChild(this.controlsDiv);
-    const mkBtn = (label: string, ctl: string, onTap: () => void): void => {
-      const b = document.createElement('button');
-      b.textContent = label;
-      b.dataset.night3dCtl = ctl;
-      b.style.cssText = 'width:36px;height:36px;pointer-events:auto;border:2px solid #d4a94e;border-radius:8px;' +
-        'background:rgba(20,16,10,0.78);color:#ffe066;font-size:20px;line-height:1;padding:0;cursor:pointer;';
-      b.addEventListener('click', ev => { ev.stopPropagation(); onTap(); });
-      this.controlsDiv!.appendChild(b);
-    };
-    mkBtn('＋', 'zoom-in', () => this.setZoom(this.zoom * 1.25));
-    mkBtn('－', 'zoom-out', () => this.setZoom(this.zoom / 1.25));
+    this.controlsDiv = makeViewControls(this.container, 'night3dCtl', {
+      rotateLeft: () => this.nudgeAzimuth(ROTATE_STEP),
+      rotateRight: () => this.nudgeAzimuth(-ROTATE_STEP),
+      tiltUp: () => this.nudgeElevation(TILT_STEP),
+      tiltDown: () => this.nudgeElevation(-TILT_STEP),
+      reset: () => this.resetView(),
+      zoomIn: () => this.setZoom(this.zoom * 1.25),
+      zoomOut: () => this.setZoom(this.zoom / 1.25)
+    }, 'position:absolute;z-index:11;display:grid;grid-template-columns:repeat(2,36px);gap:6px;pointer-events:none;');
     this.positionControls();
   }
 
-  /** 按钮贴 3D 画布右下角（画布位置由 syncToCanvas 按游戏画布 rect 决定） */
+  /** 按钮贴 3D 画布右下角（画布位置由 syncToCanvas 按游戏画布 rect 决定）；高度按实际排版算 */
   private positionControls(): void {
     if (!this.controlsDiv) return;
     const el = this.renderer.domElement;
@@ -764,8 +844,10 @@ export class Night3DRenderer {
     const h = el.clientHeight || parseFloat(el.style.height) || 0;
     const left = parseFloat(el.style.left) || 0;
     const top = parseFloat(el.style.top) || 0;
-    this.controlsDiv.style.left = `${left + w - 46}px`;
-    this.controlsDiv.style.top = `${top + h - 88}px`;
+    // 两列网格：4 行（3 行成对 + 1 行通栏回正）
+    const stack = this.controlsDiv.getBoundingClientRect().height || 4 * 36 + 3 * 6;
+    this.controlsDiv.style.left = `${left + w - 86}px`;
+    this.controlsDiv.style.top = `${top + h - stack - 10}px`;
   }
 
   // ---------- 暖土 GLB 资源 ----------
@@ -1168,6 +1250,7 @@ export class Night3DRenderer {
     window.removeEventListener('pointerup', this.onPointerUp, true);
     window.removeEventListener('pointercancel', this.onPointerCancel, true);
     this.container.removeEventListener('wheel', this.onWheel);
+    this.container.removeEventListener('contextmenu', this.onContextMenu);
     if (this.savedTouchAction !== null) {
       const phaserCanvas = Array.from(this.container.querySelectorAll('canvas'))
         .find(c => c !== this.renderer.domElement);
