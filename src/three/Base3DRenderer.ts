@@ -181,6 +181,8 @@ export class Base3DRenderer implements IBoardItemHost {
   private layout: IWarmLayout | null = null;
   private terrainGroup: THREE.Group | null = null;
   private terrainMeshes = new Map<string, THREE.Object3D>();
+  /** 纸箱封印外观实例（复用地图瓦砾堆 GLB，键 = "row,col"） */
+  private sealMeshes = new Map<string, THREE.Object3D>();
   private groundTileCount = 0;
   private terrainLoaded = false;
   private terrainFallback = false;
@@ -540,9 +542,67 @@ export class Base3DRenderer implements IBoardItemHost {
   refreshCell(row: number, col: number): void {
     if (this.disposed) return;
     const view = this.itemViews[row]?.[col];
-    if (!view) return;
+    if (view) {
+      const item = getItem(this.state.grid, row, col);
+      view.setItem(item, item ? (this.host.taskNeeded?.(item.id) ?? false) : false);
+    }
+    this.syncSealAt(row, col);
+  }
+
+  // ---------- 纸箱封印的 3D 外观（复用地图瓦砾堆模型） ----------
+
+  /**
+   * 封印外观是否已用 3D 模型：地形布局加载完成且有瓦砾模块。
+   * 未就绪时 BoardItemView 仍画 2D 纸箱图（加载窗口内的兜底）。
+   */
+  sealIs3D(): boolean {
+    return this.terrainLoaded && !!this.layout?.modules?.rubble;
+  }
+
+  /** 某格封印外观同步：纸箱 → 瓦砾堆模型；解开/移走 → 移除模型 */
+  private syncSealAt(row: number, col: number): void {
+    const key = `${row},${col}`;
     const item = getItem(this.state.grid, row, col);
-    view.setItem(item, item ? (this.host.taskNeeded?.(item.id) ?? false) : false);
+    const isCarton = !!item && item.st === ItemStatus.Carton;
+    const exist = this.sealMeshes.get(key);
+    if (!isCarton) {
+      if (exist) {
+        this.tscene.remove(exist);
+        this.sealMeshes.delete(key);
+      }
+      return;
+    }
+    if (exist || !this.sealIs3D()) return;
+    const file = this.layout!.modules.rubble;
+    const { x, z } = cellToWorld13(row, col);
+    void this.glbs.load(file).then(tpl => {
+      if (!tpl || this.disposed) return;
+      if (this.sealMeshes.has(key)) return;
+      const now = getItem(this.state.grid, row, col);
+      if (!now || now.st !== ItemStatus.Carton) return; // 异步期间已解开
+      const inst = tpl.clone(true); // 与地形瓦砾共用几何/材质
+      // 每格确定性随机（朝向/缩放/微位移）：32 个同款瓦砾不排成一张"贴瓷砖"
+      const seed = ((row * 73856093) ^ (col * 19349663)) >>> 0;
+      inst.rotation.y = (seed % 8) * (Math.PI / 4);
+      inst.scale.setScalar(0.9 + ((seed >>> 3) % 5) * 0.05);
+      inst.position.set(
+        x + (((seed >>> 5) % 9) - 4) * 0.02,
+        0,
+        z + (((seed >>> 9) % 9) - 4) * 0.02
+      );
+      inst.traverse(obj => { if (obj instanceof THREE.Mesh) { obj.castShadow = true; obj.receiveShadow = true; } });
+      this.tscene.add(inst);
+      this.sealMeshes.set(key, inst);
+    }).catch(() => { /* load 内部已 catch→null */ });
+  }
+
+  /** 全量同步封印外观（syncAll 链路） */
+  private syncSeals(): void {
+    for (let r = 0; r < BASE_ROWS; r++) {
+      for (let c = 0; c < BASE_COLS; c++) {
+        this.syncSealAt(r, c);
+      }
+    }
   }
 
   /** 物品选中高亮（贴格顶 quad；null 清除） */
@@ -634,6 +694,9 @@ export class Base3DRenderer implements IBoardItemHost {
     this.gridHelper.visible = false;
     this.border.visible = false;
     this.syncTerrain();
+    // 封印外观此时才具备 3D 条件：铺上瓦砾堆、并让棋子视图撤掉 2D 纸箱图
+    this.syncSeals();
+    this.refreshItems();
   }
 
   /** 地形特征：以运行时 tile.terrain 为准（付费清除会真实移除），GLB 失败该格留空 */
@@ -690,6 +753,7 @@ export class Base3DRenderer implements IBoardItemHost {
   syncAll(): void {
     if (this.disposed) return;
     this.syncTerrain();
+    this.syncSeals();
     this.syncBuildings();
     this.syncHeroes();
     this.refreshItems();

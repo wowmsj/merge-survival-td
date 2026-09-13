@@ -137,7 +137,7 @@ Object.assign(zhCNRuntimeUi, {
 });
 
 Object.assign(zhCNRuntimeUi, {
-  'game.loadFailed': '加载失败，请刷新\n{error}', 'game.cartonHint': '在相邻格合成两个相同物品，可打开纸箱',
+  'game.loadFailed': '加载失败，请刷新\n{error}', 'game.cartonHint': '在相邻格合成两个相同物品，即可翻开这堆瓦砾',
   'game.bubbleHint': '气泡中的物品不能合成，约 {seconds} 秒后自动破开（变成金币），也可花 {diamonds} 钻立即戳破',
   'game.blueprintUnlocked': '使用蓝图！建筑「{building}」已解锁', 'game.duplicateBlueprint': '重复蓝图已收纳：「{building}」升级材料 +1（基地内升级建筑消耗）',
   'game.rewardItem': '「{item}」{count}', 'game.listSeparator': '、', 'game.taskRewardIntro': '干得漂亮！这是给你的额外奖励。',

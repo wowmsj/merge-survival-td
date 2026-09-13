@@ -296,7 +296,7 @@ Object.assign(enRuntimeUi, {
 });
 
 Object.assign(enRuntimeUi, {
-  'game.loadFailed': 'Load failed. Please refresh.\n{error}', 'game.cartonHint': 'Merge two matching adjacent items to open the carton.',
+  'game.loadFailed': 'Load failed. Please refresh.\n{error}', 'game.cartonHint': 'Merge two matching items next to this rubble pile to dig it open.',
   'game.bubbleHint': 'Items in bubbles cannot merge. It pops in about {seconds}s (into Coins), or spend {diamonds} Diamonds to pop it now.',
   'game.blueprintUnlocked': 'Blueprint used! {building} is unlocked.', 'game.duplicateBlueprint': 'Duplicate Blueprint stored: {building} upgrade material +1 (used for Base upgrades).',
   'game.rewardItem': '{item}{count}', 'game.listSeparator': ', ', 'game.taskRewardIntro': 'Nice work! Here is your extra reward.',

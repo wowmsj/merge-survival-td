@@ -269,6 +269,27 @@ console.log('== 合成 ==');
   assert(getItem(state.grid, 0, 0) === null, '源格清空');
   assert(getItem(state.grid, 0, 2)?.st === ItemStatus.Spider, '十字纸箱破开变蜘蛛网');
 
+  // 封印（3D 里长得像瓦砾堆）不是地形：不能花钱清，只能靠相邻合成打开
+  {
+    const sealState = GameInitializer.initNewGame();
+    const sealPos = findCell(sealState, 10011) ?? findCell(sealState, 10002);
+    // 取任意一个纸箱封印格
+    let cartonPos: { row: number; col: number } | null = null;
+    for (let r = 0; r < sealState.grid.rowNum && !cartonPos; r++) {
+      for (let c = 0; c < sealState.grid.colNum && !cartonPos; c++) {
+        if (sealState.grid.cells[r][c].item?.st === ItemStatus.Carton) cartonPos = { row: r, col: c };
+      }
+    }
+    assert(!!cartonPos, '新开局存在纸箱封印格');
+    const baseSys2 = new BaseSystem(new EconomySystem());
+    sealState.resources.coin = 10000;
+    const coinBefore = sealState.resources.coin;
+    assert(terrainAt(sealState.base, cartonPos!.row, cartonPos!.col) === null, '封印格不是地形（不占 terrain）');
+    assert(!baseSys2.clearTerrain(sealState, cartonPos!.row, cartonPos!.col), '封印格不能花钱清理');
+    assert(sealState.resources.coin === coinBefore, '清理失败不扣金币');
+    assert(!!sealPos, '初始棋盘仍有实体封印物品（非地形）');
+  }
+
   // 满级不可合成 → 交换
   setItem(state.grid, 2, 0, createItemFromConfig(10011));
   setItem(state.grid, 2, 1, createItemFromConfig(10011));
@@ -1516,20 +1537,21 @@ console.log('== 夜晚战斗 ==');
       assert(spawnable.every(p => !!findPathToCore(dayBase, p)), `第 ${wonDay + 1} 夜所有可刷怪边缘格可达核心`);
     }
 
-    // 地形格不可摆放建筑
+    // 地形格不可摆放建筑（破旧建筑已从地图移除：原 12 格改为瓦砾堆，阻挡/寻路形状不变）
     const ts = createInitialGameState();
     unlockAllBuildings(ts);
     ts.resources.coin = 100000;
-    assert(!baseSys.canPlace(ts, 401, 2, 5).ok, '破旧建筑地形格不可摆放');
-    // 金币清理：扣款、地形移除；之后认领 + 走廊满足即可摆放
-    assert(baseSys.clearTerrain(ts, 2, 5), '金币清理破旧建筑成功');
-    assert(ts.resources.coin === 100000 - TERRAIN_CLEAR_COST.shack, '清理破旧建筑扣 300 金币');
-    assert(!terrainAt(ts.base, 2, 5), '清理后地形移除');
-    claimAround(ts.base, 2, 5, 1);
-    assert(baseSys.canPlace(ts, 401, 2, 5).ok, '清理并认领后可摆放');
+    assert(TERRAIN_TABLE.every(c => (c.kind as string) !== 'shack'), '初始地形不再包含破旧建筑');
+    assert(terrainAt(ts.base, 1, 2) === 'rubble', '原破旧建筑格现在是瓦砾堆');
+    assert(!baseSys.canPlace(ts, 401, 2, 3).ok, '瓦砾地形格不可摆放');
+    // 金币清理：扣款、地形移除；之后即可摆放
+    assert(baseSys.clearTerrain(ts, 2, 3), '金币清理瓦砾堆成功');
+    assert(ts.resources.coin === 100000 - TERRAIN_CLEAR_COST.rubble, '清理瓦砾堆扣 100 金币');
+    assert(!terrainAt(ts.base, 2, 3), '清理后地形移除');
+    assert(baseSys.canPlace(ts, 401, 2, 3).ok, '清理后可摆放');
     // 金币不足清理失败，地形保留
     ts.resources.coin = 10;
-    assert(!baseSys.clearTerrain(ts, 1, 2) && terrainAt(ts.base, 1, 2) === 'shack', '金币不足清理失败且地形保留');
+    assert(!baseSys.clearTerrain(ts, 1, 1) && terrainAt(ts.base, 1, 1) === 'rubble', '金币不足清理失败且地形保留');
     // 平地格清理返回 false
     assert(!baseSys.clearTerrain(ts, 6, 6), '平地格无地形可清理');
 

@@ -86,8 +86,8 @@ export type BaseResource = 'medicine' | 'scrap';
 /** 建筑大类 */
 export type BuildingKind = 'core' | 'tower' | 'resource' | 'trap' | 'wall' | 'ruin';
 
-/** 地形类型：rubble 瓦砾堆 / grass 杂草丛 / shack 破旧建筑 / woods 树林 / pond 水池 */
-export type TerrainKind = 'rubble' | 'grass' | 'shack' | 'woods' | 'pond';
+/** 地形类型：rubble 瓦砾堆 / grass 杂草丛 / woods 树林 / pond 水池 */
+export type TerrainKind = 'rubble' | 'grass' | 'woods' | 'pond';
 
 /** 基地建筑实例 */
 export interface IBuilding {

@@ -27,6 +27,8 @@ export interface IBoardItemHost {
   cellWorld(row: number, col: number): { x: number; z: number };
   /** Phaser 纹理 → dataURL（状态覆盖层背景），缺失返回 null */
   textureDataUrl(key: string): string | null;
+  /** 封印（纸箱）是否已由宿主提供 3D 外观（地图瓦砾堆模型）；此时不再画 2D 纸箱图 */
+  sealIs3D?(): boolean;
 }
 
 /** 纹理缺失时的纯色兜底 */
@@ -156,10 +158,10 @@ export class BoardItemView {
     const prop = getProp(item.id);
     const status = item.st ?? 0;
 
-    // 纸箱保持神秘：隐藏 3D 内容，只显示纸箱覆盖层（对齐 ItemSprite 不画图标/名称）
+    // 纸箱保持神秘：隐藏 3D 内容；封印外观优先用宿主的 3D 瓦砾堆模型（2D 纸箱图仅作加载兜底）
     this.content.visible = status !== 2;
-
-    this.setBg(this.sealEl, status === 2 ? 'carton' : null);
+    const carton2d = status === 2 && !(this.host.sealIs3D?.() ?? false);
+    this.setBg(this.sealEl, carton2d ? 'carton' : null);
     // 蜘蛛网：贴格顶 3D quad（随格拖拽），不再是屏幕对齐 div
     if (status === 1) {
       if (!this.spiderMesh) {

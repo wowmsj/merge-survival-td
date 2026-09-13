@@ -21,7 +21,6 @@ interface TerrainStyle {
 const STYLES: Record<TerrainKind, TerrainStyle> = {
   grass: { ground: 0x4d7c3f, edge: 0x38592e, detail: 0x74a858 },
   rubble: { ground: 0x6b625a, edge: 0x4a443e, detail: 0x8a8078 },
-  shack: { ground: 0x6e5a44, edge: 0x4c3e2f, detail: 0x8a7458 },
   woods: { ground: 0x42563a, edge: 0x2e3f28, detail: 0x54704a },
   pond: { ground: 0x2f6f8f, edge: 0xc7a15a, detail: 0x7fd4e8 }
 };
@@ -30,7 +29,6 @@ const STYLES: Record<TerrainKind, TerrainStyle> = {
 const NIGHT_STYLES: Record<TerrainKind, TerrainStyle> = {
   grass: { ground: 0x304d28, edge: 0x23381b, detail: 0x486935 },
   rubble: { ground: 0x443e39, edge: 0x2f2b27, detail: 0x57504a },
-  shack: { ground: 0x463a2c, edge: 0x302820, detail: 0x584a39 },
   woods: { ground: 0x2b3725, edge: 0x1e291b, detail: 0x36472f },
   pond: { ground: 0x1e475b, edge: 0x7d6640, detail: 0x50879a }
 };
@@ -99,14 +97,14 @@ export function drawTerrainTile(
       const h = 5 + rand(row, col, i + 9) * 5;
       g.fillTriangle(x + dx - 3, y + dy + 2, x + dx + 3, y + dy + 2, x + dx, y + dy - h);
     } else {
-      // 瓦砾/破楼：碎石块
+      // 瓦砾：碎石块
       g.fillRect(x + dx - 3, y + dy - 2, 6 + rand(row, col, i + 9) * 4, 4);
     }
   }
   layer.add(g);
 }
 
-/** 该地形是否在地面之上再叠一个主体图标（树林/破楼/瓦砾保留辨识度，草地/水池纯地块） */
+/** 该地形是否在地面之上再叠一个主体图标（树林/瓦砾保留辨识度，草地/水池纯地块） */
 export function terrainHasOverlayIcon(terrain: TerrainKind): boolean {
-  return terrain === 'woods' || terrain === 'shack' || terrain === 'rubble';
+  return terrain === 'woods' || terrain === 'rubble';
 }

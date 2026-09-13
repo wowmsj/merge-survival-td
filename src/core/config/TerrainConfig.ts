@@ -16,11 +16,10 @@ export interface ITerrainCell {
 /** 初始地形布局表 */
 export const TERRAIN_TABLE = terrainJson as ITerrainCell[];
 
-/** 清除地形金币价格：杂草 50 / 瓦砾 100 / 破旧建筑 300 / 树林 400 / 水池 800 */
+/** 清除地形金币价格：杂草 50 / 瓦砾 100 / 树林 400 / 水池 800（破旧建筑已从地图移除） */
 export const TERRAIN_CLEAR_COST: Record<TerrainKind, number> = {
   grass: 50,
   rubble: 100,
-  shack: 300,
   woods: 400,
   pond: 800
 };
@@ -30,7 +29,7 @@ export function terrainAt(base: IBaseState, row: number, col: number): TerrainKi
   return base.tiles?.[row]?.[col]?.terrain ?? null;
 }
 
-/** 地面僵尸可否通行：杂草/树林可过，瓦砾/破旧建筑/水池阻挡 */
+/** 地面僵尸可否通行：杂草/树林可过，瓦砾/水池阻挡 */
 export function isTerrainWalkableForGround(kind: TerrainKind): boolean {
   return kind === 'grass' || kind === 'woods';
 }
