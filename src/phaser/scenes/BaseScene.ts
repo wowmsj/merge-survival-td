@@ -1876,7 +1876,7 @@ export class BaseScene extends Phaser.Scene {
       this.placing = null;
     } else {
       if (this.state.resources.coin < cfg.costCoin) {
-        this.showToast(getText('base.notEnoughCoins', { coins: cfg.costCoin }));
+        this.showToast(getText('base.notEnoughCoins', { coins: cfg.costCoin, have: this.state.resources.coin }));
         return;
       }
       this.placing = cfg.id;

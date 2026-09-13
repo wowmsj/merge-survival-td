@@ -193,7 +193,7 @@ export class BaseSystem {
     }
 
     if (state.resources.coin < cfg.costCoin) {
-      return { ok: false, reason: getText('toast.notEnoughCoinsBuild', { coins: cfg.costCoin }) };
+      return { ok: false, reason: getText('toast.notEnoughCoinsBuild', { coins: cfg.costCoin, have: state.resources.coin }) };
     }
     return { ok: true };
   }

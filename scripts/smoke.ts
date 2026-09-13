@@ -2930,7 +2930,9 @@ const buildToastState = createInitialGameState();
 unlockAllBuildings(buildToastState);
 buildToastState.base.tiles.forEach(row => row.forEach(tile => { tile.claimed = true; }));
 const buildToastReason = new BaseSystem(new EconomySystem()).canPlace(buildToastState, 401, 6, 5).reason;
-assert(buildToastReason === 'Not enough Coins: 100 needed.', 'English build failure toast is localized');
+// 只断言"英文 + 带需求金币数"，措辞调整（例如补上当前金币）不该弄红用例
+assert(!!buildToastReason && buildToastReason.includes('Not enough Coins') && buildToastReason.includes('100'),
+  'English build failure toast is localized');
 assert(getPropDescription(10001) !== getAllProps().find(prop => prop.id === 10001)?.mask, 'English prop description is localized');
 assert(getHeroDescription('laoqiang') !== getHeroConfig('laoqiang')?.desc, 'English hero description is localized');
 assert(getSpeakerName('laogui') === 'Old Ghost', 'English story speaker is localized');

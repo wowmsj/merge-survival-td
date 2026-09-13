@@ -52,6 +52,9 @@ export class HandGuide {
   private container: Phaser.GameObjects.Container;
   private glowG: Phaser.GameObjects.Graphics;
   private popTween?: Phaser.Tweens.Tween;
+  /** 上次按金币渲染横幅时的金币数（见 coinWatch：花钱路径漏发事件时靠它兜底重算） */
+  private lastCoin = -1;
+  private coinWatch: number | null = null;
 
   constructor(scene: Phaser.Scene, state: IGameState) {
     this.scene = scene;
@@ -147,7 +150,19 @@ export class HandGuide {
       eventBus.off(GameEvents.GRID_ITEM_CHANGED, onChanged);
       eventBus.off(GameEvents.BASE_CHANGED, onBaseChanged);
       eventBus.off(GameEvents.RESOURCE_CHANGED, onResource);
+      if (this.coinWatch !== null) {
+        window.clearInterval(this.coinWatch);
+        this.coinWatch = null;
+      }
     });
+
+    // 横幅里的「金币够了 / 先赚钱」依赖金币数，而有几条花钱路径（黑市/商店/兑换）不发 RESOURCE_CHANGED，
+    // 于是横幅会挂着过期的"金币够了"，玩家去建造栏点塔只得到"金币不足"——玩家反馈"没法摆放箭塔"就是它。
+    // 这里每秒对一次金币数，变了就重算（Scene 的 time 事件在本项目 Phaser 版本里不触发，用 setInterval）。
+    this.coinWatch = window.setInterval(() => {
+      if (this.state.resources.coin === this.lastCoin) return;
+      this.refresh();
+    }, 1000);
 
     // 兜底：存档里引导卡在蓝图阶段但发电机已解锁（旧版事件时序问题），跳到待建造；
     // 卡在待建造阶段但发电机已建成（跨场景建造时本场景未监听），直接收尾
@@ -160,6 +175,7 @@ export class HandGuide {
       this.state.handIndex = HAND_DONE;
     }
 
+    this.lastCoin = this.state.resources.coin;
     this.refresh();
   }
 
@@ -263,9 +279,10 @@ export class HandGuide {
       text = getText('guide.unlockTower');
     } else if (idx === TOWER_PENDING) {
       const cost = getBuildingConfig(TOWER_BUILDING)?.costCoin ?? 200;
-      text = this.state.resources.coin >= cost
+      const have = this.state.resources.coin;
+      text = have >= cost
         ? getText('guide.buildTower')
-        : getText('guide.towerCost', { cost });
+        : getText('guide.towerCost', { cost, have });
     } else if (idx === FARM_EMITTER_STAGE) {
       text = getText('guide.powerEmitter');
     } else if (idx === FARM_MERGE_STAGE) {
@@ -275,9 +292,10 @@ export class HandGuide {
     } else if (idx === FARM_PENDING) {
       // 发电机已解锁待建成：金币不够 → 提示做任务赚钱；够了 → 提示去基地盖，并带一句电池转化燃料通电
       const cost = getBuildingConfig(FARM_BUILDING)?.costCoin ?? 300;
-      text = this.state.resources.coin >= cost
+      const have = this.state.resources.coin;
+      text = have >= cost
         ? getText('guide.buildGenerator')
-        : getText('guide.generatorCost', { cost });
+        : getText('guide.generatorCost', { cost, have });
     }
 
     this.bannerG.clear();
