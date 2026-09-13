@@ -2,6 +2,7 @@ import { GameEvents, eventBus } from '../events/EventBus';
 import { IBaseState, IBuilding, IGameState, IResource } from '../types';
 import { buildingAt, claimAround, createDefaultBase, hasKillCorridor, isClaimed } from '../model/Base';
 import { getItem } from '../model/Grid';
+import { itemBlocksGroundZombie } from '../model/Item';
 import {
   getBuildingConfig, getUpgradeCostCoin, getDemolishRefundCoin, getRepairCostCoin,
   hpAtLevel, outputIntervalAtLevel, outputAmountAtLevel, isBuildingUnlocked,
@@ -171,8 +172,8 @@ export class BaseSystem {
     return base.buildings.find(b => getBuildingConfig(b.cfgId)?.kind === 'core')!;
   }
 
-  /** 该格能否摆放 cfgId；不可返回原因文案 */
-  canPlace(state: IGameState, cfgId: number, row: number, col: number): { ok: boolean; reason?: string } {
+  /** 该格能否摆放 cfgId；不可返回原因文案，可摆但会封死僵尸通路时返回 warn（只警告、不拦截） */
+  canPlace(state: IGameState, cfgId: number, row: number, col: number): { ok: boolean; reason?: string; warn?: string } {
     const cfg = getBuildingConfig(cfgId);
     if (!cfg || cfg.kind === 'core') return { ok: false, reason: getText('toast.buildingNotBuildable') };
     if (!isBuildingUnlocked(state, cfgId)) {
@@ -187,15 +188,15 @@ export class BaseSystem {
     if (terrain) return { ok: false, reason: getText('toast.terrainBlocked', { terrain: getText(`terrain.${terrain}`) }) };
 
     if (!isClaimed(base, row, col)) return { ok: false, reason: getText('toast.expandTerritory') };
-    const itemBlocked = (r: number, c: number) => !!getItem(state.grid, r, c);
-    if (cfg.kind !== 'trap' && !hasKillCorridor(base, { row, col }, itemBlocked)) {
-      return { ok: false, reason: getText('toast.killCorridor') };
-    }
 
     if (state.resources.coin < cfg.costCoin) {
       return { ok: false, reason: getText('toast.notEnoughCoinsBuild', { coins: cfg.costCoin, have: state.resources.coin }) };
     }
-    return { ok: true };
+    // 封死最后一条通路不再拦截（玩家反馈"很难留一条路线出来，基本没法摆塔"）：
+    // 僵尸遇到阻碍会拆建筑、也会踩碎挡路棋子，所以"封死"只是换一种打法，不算非法操作 → 只提示。
+    const itemBlocked = (r: number, c: number) => itemBlocksGroundZombie(getItem(state.grid, r, c));
+    const sealed = cfg.kind !== 'trap' && !hasKillCorridor(base, { row, col }, itemBlocked);
+    return sealed ? { ok: true, warn: getText('toast.corridorSealed') } : { ok: true };
   }
 
   /** 摆放建筑（只扣金币，不消耗行动力） */
@@ -222,6 +223,8 @@ export class BaseSystem {
     eventBus.emit(GameEvents.RESOURCE_CHANGED, { type: 'coin', value: state.resources.coin, delta: -cfg.costCoin });
     eventBus.emit(GameEvents.BASE_CHANGED, { row, col });
     eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.buildComplete', { building: getBuildingName(cfg.id) }));
+    // 摆上了但把最后一条通路封死：只提示后果（僵尸会改拆墙 / 踩碎挡路棋子），不阻止建造
+    if (check.warn) eventBus.emit(GameEvents.TOAST_SHOW, check.warn);
     return true;
   }
 

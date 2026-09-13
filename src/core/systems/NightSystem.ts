@@ -1,7 +1,8 @@
 import { GameEvents, eventBus } from '../events/EventBus';
-import { IBaseState, IBuilding, IGameState, IPoint } from '../types';
+import { IBaseState, IBuilding, IGameState, IPoint, ItemStatus } from '../types';
 import { buildingAt, CellBlocker, distFromCenter, findPathToCore, RUIN_COLLAPSE_ORDER, ruinCellsOfSide, RuinSide } from '../model/Base';
 import { getItem } from '../model/Grid';
+import { itemBlocksGroundZombie } from '../model/Item';
 import { terrainAt, isTerrainSpawnable, isTerrainWalkableForGround, isTerrainPassableForBurrow } from '../config/TerrainConfig';
 import { getBuildingConfig, attackAtLevel, MaterialCost, RUIN_ID } from '../config/BuildingConfig';
 import { getZombieConfig, genWaveZombies, getTotalWaves, getZombieLevel, getLevelHpScale, getLevelAttackScale, rollDrops } from '../config/ZombieConfig';
@@ -14,9 +15,10 @@ import { TaskSystem } from './TaskSystem';
 import { BaseSystem, formatGains, hasSupportCoverage, isBuildingPowered, isTowerPoweredAtNight } from './BaseSystem';
 import { getBuildingName, getPropName, getText, getZombieName } from '../i18n';
 
-/** 合成物品格对地面僵尸的阻挡谓词（基地地图直接合成：物品与建筑一样挡路） */
+/** 合成物品格对地面僵尸的阻挡谓词（基地地图直接合成：物品与建筑一样挡路）。
+ *  被僵尸踩碎过的棋子（瓦砾）不再挡路，见 Item.itemBlocksGroundZombie 的说明。 */
 function itemBlocker(state: IGameState): CellBlocker {
-  return (r, c) => !!getItem(state.grid, r, c);
+  return (r, c) => itemBlocksGroundZombie(getItem(state.grid, r, c));
 }
 
 /** 夜晚战斗中的僵尸实例 */
@@ -43,6 +45,8 @@ export interface IZombie {
   stuckMs?: number;
   /** 狂暴中：无视建筑坚固等级（防夜战死锁的兜底） */
   enraged?: boolean;
+  /** 完全走不动的累计毫秒数（周围既无可拆建筑、也无棋子可踩）；超过 FROZEN_DISPEL_MS 就地消散 */
+  frozenMs?: number;
 }
 
 export type BattleStatus = 'fighting' | 'between' | 'won' | 'lost';
@@ -85,6 +89,8 @@ const BETWEEN_WAVES = 3000;
 const SLOW_DURATION = 2000;
 /** 僵尸被拆不动的建筑卡住多久后狂暴（无视坚固等级，防夜战死锁） */
 const ENRAGE_MS = 15000;
+/** 完全走不动（无建筑可拆、无棋子可踩）多久后就地消散：地形+棋子组合卡死的最终兜底 */
+const FROZEN_DISPEL_MS = 5000;
 /** 每晚掉落池出货上限：尸潮翻倍后不能每只僵尸都掉，控制道具产出节奏 */
 const NIGHT_POOL_DROP_CAP = 10;
 /** 每晚核心材料（60024 神秘零件）掉落上限：精英/Boss 保底掉，但第 24 天起精英进随机池后会多只掉落，需封顶 */
@@ -412,6 +418,7 @@ export class NightSystem {
 
     // 前进一步
     if (free.length > 0) {
+      z.frozenMs = 0;
       const next = free[Math.floor(Math.random() * free.length)];
       z.row = next.row;
       z.col = next.col;
@@ -420,15 +427,60 @@ export class NightSystem {
         this.triggerTrap(state, battle, z);
         if (z.hp <= 0) return;
       }
+    } else if (!flying && !burrowed) {
+      // 完全走不动：周围既没有可拆建筑，也没有可走的地形。
+      // 最常见的成因是玩家用**棋子**把核心围死（棋子挡路但不可攻击）——此时踩碎朝向核心的挡路棋子，
+      // 它变成封印瓦砾（玩家合成相邻格即可重新翻开）且不再挡路，夜战才能收敛。
+      z.frozenMs = (z.frozenMs ?? 0) + 250;
+      if (this.crushItemTowardCore(state, z)) {
+        z.moveCd = 250;
+        return;
+      }
+      // 兜底：地形+棋子的组合也可能把人卡死（例如被水池围住）。超过阈值就地消散，保证夜战一定结束。
+      if (z.frozenMs >= FROZEN_DISPEL_MS) {
+        z.hp = 0;
+        return;
+      }
+      z.moveCd = 250;
+      return;
     }
 
     const slowed = z.slowUntil > battle.time;
     z.moveCd = (1000 / cfg.speed) * (slowed ? 2 : 1);
   }
 
+  /**
+   * 踩碎挡路棋子（完全走不动时的出路）：挑「更靠近核心」的相邻格里挡路的棋子，
+   * 踩成封印瓦砾 + 标记 crushed（之后不再挡地面僵尸的路）。玩家合成相邻格即可重新翻开。
+   * 返回是否踩碎了某一格。
+   */
+  private crushItemTowardCore(state: IGameState, z: IZombie): boolean {
+    const d0 = distFromCenter(z.row, z.col);
+    const toward = ([
+      { row: z.row - 1, col: z.col },
+      { row: z.row + 1, col: z.col },
+      { row: z.row, col: z.col - 1 },
+      { row: z.row, col: z.col + 1 }
+    ] as IPoint[])
+      .filter(p => p.row >= 0 && p.row < state.base.rows && p.col >= 0 && p.col < state.base.cols)
+      .filter(p => distFromCenter(p.row, p.col) < d0)
+      .sort((a, b) => distFromCenter(a.row, a.col) - distFromCenter(b.row, b.col));
+    for (const p of toward) {
+      const item = getItem(state.grid, p.row, p.col);
+      if (!item || item.crushed) continue;
+      item.st = ItemStatus.Carton; // 踩碎 = 封印瓦砾（与开局那堆瓦砾同一套：相邻合成可翻开）
+      item.crushed = true;
+      eventBus.emit(GameEvents.NIGHT_ZOMBIE_ATTACK, {
+        fromRow: z.row, fromCol: z.col, toRow: p.row, toCol: p.col
+      });
+      eventBus.emit(GameEvents.TOAST_SHOW, getText('toast.itemCrushed', { item: getPropName(item.id) }));
+      return true;
+    }
+    return false;
+  }
+
   /** 僵尸踏入陷阱格触发 */
-  private triggerTrap(state: IGameState, battle: IBattle, z: IZombie): void {
-    const trap = buildingAt(state.base, z.row, z.col);
+  private triggerTrap(state: IGameState, battle: IBattle, z: IZombie): void {    const trap = buildingAt(state.base, z.row, z.col);
     if (!trap) return;
     const cfg = getBuildingConfig(trap.cfgId);
     if (!cfg || cfg.kind !== 'trap') return;

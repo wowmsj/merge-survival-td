@@ -561,7 +561,9 @@ export class Base3DRenderer implements IBoardItemHost {
       }
     } catch { /* 纹理不可读时回退纯色 */ }
     if (!drawn) {
-      g.fillStyle = texKey === 'route-entry' ? 'rgba(255,107,107,0.9)' : 'rgba(255,209,102,0.9)';
+      g.fillStyle = texKey === 'route-entry' ? 'rgba(255,107,107,0.9)'
+        : texKey === 'route-breach' ? 'rgba(255,146,43,0.95)'
+          : 'rgba(255,209,102,0.9)';
       g.fillRect(0, 0, 140, 140);
     }
     const ctex = new THREE.CanvasTexture(c);
@@ -714,7 +716,7 @@ export class Base3DRenderer implements IBoardItemHost {
         mesh.visible = false;
         continue;
       }
-      mesh.material = this.routeMaterial(cell.spawn ? 'route-entry' : 'route-arrow');
+      mesh.material = this.routeMaterial(cell.breach ? 'route-breach' : cell.spawn ? 'route-entry' : 'route-arrow');
       // 贴图默认朝北（-Z）；按主流向绕 Y 旋转
       mesh.rotation.y = cell.dr === -1 ? 0 : cell.dr === 1 ? Math.PI : cell.dc === 1 ? -Math.PI / 2 : Math.PI / 2;
       const { x, z } = cellToWorld13(cell.row, cell.col);

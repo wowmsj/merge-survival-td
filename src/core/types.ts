@@ -27,6 +27,11 @@ export interface IItemData {
   id: number;
   /** 封印状态：1 蜘蛛网 / 2 纸箱；正常时无此字段 */
   st?: ItemStatus;
+  /**
+   * 被夜战僵尸踩碎过（踩碎时一并变成封印瓦砾，见 st）。
+   * 踩碎的棋子对地面僵尸不再挡路——否则玩家用棋子把核心围死会让夜战永远打不完。
+   */
+  crushed?: boolean;
   /** 发射器剩余点击次数 */
   times?: number;
   /** 有限蓝图发射器已成功放入棋盘的碎片数 */

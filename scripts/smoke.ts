@@ -118,10 +118,15 @@ console.log('== 领地与引流走廊 ==');
   unlockAllBuildings(corridorState);
   corridorState.resources.coin = 10000;
   assert(hasKillCorridor(corridorState.base), '初始基地存在引流走廊');
+  assert((getShortestEntryPathLength(corridorState.base) ?? 0) > 0, '预告可获得最短地面路线长度');
   assert(base.place(corridorState, 401, 4, 12), '还有其他入口时允许封一处入口');
   assert(base.place(corridorState, 401, 5, 12), '还有最后入口时允许继续布防');
-  assert(!base.canPlace(corridorState, 401, 6, 12).ok, '不允许封死最后引流走廊');
-  assert((getShortestEntryPathLength(corridorState.base) ?? 0) > 0, '预告可获得最短地面路线长度');
+  // 玩家反馈"很难留一条路线出来，基本没法摆塔" → 封死最后通路不再拦截，只警告
+  // （僵尸遇到阻碍会拆建筑、也会踩碎挡路棋子，见 NightSystem.crushItemTowardCore）
+  const sealedCheck = base.canPlace(corridorState, 401, 6, 12);
+  assert(sealedCheck.ok && !!sealedCheck.warn, '封死最后引流走廊允许摆放，但返回警告');
+  assert(base.place(corridorState, 401, 6, 12), '封死最后通路也能真的放下建筑');
+  assert((getShortestEntryPathLength(corridorState.base) ?? 0) === 0, '三处入口都封上后地面路线确实为 0');
 }
 
 // ============ 1.5 僵尸路线预览 ============
@@ -177,6 +182,27 @@ console.log('== 僵尸路线预览 ==');
     const before = findPathToCore(emptyBoard.base, start);
     const after = findPathToCore(emptyBoard.base, start, { row: trunk.row, col: trunk.col });
     assert(!!before && !!after && JSON.stringify(before) !== JSON.stringify(after), '改道后具体路线确实发生变化');
+  }
+
+  // 通路封死：不再画箭头，改为标出「僵尸会在哪一格破门」（踩碎棋子 / 拆建筑）
+  {
+    const ringed = createInitialGameState();
+    const core = ringed.base.buildings.find(b => b.cfgId === 1)!;
+    for (let dr = -2; dr <= 2; dr++) {
+      for (let dc = -2; dc <= 2; dc++) {
+        if ((dr === 0 && dc === 0) || Math.abs(dr) + Math.abs(dc) > 2) continue;
+        const r = core.row + dr;
+        const c = core.col + dc;
+        if (r < 0 || r >= 13 || c < 0 || c >= 13) continue;
+        setItem(ringed.grid, r, c, createItemFromConfig(10001));
+      }
+    }
+    const sealedPreview = computeRoutePreview(ringed);
+    assert(!sealedPreview.hasRoute, '核心被棋子围死时预览标记为无通路');
+    assert(sealedPreview.cells.length > 0 && sealedPreview.cells.every(c => !!c.breach), '无通路时只画破门点');
+    assert(sealedPreview.cells.every(c => !c.spawn), '破门点不是刷怪点');
+    assert(sealedPreview.cells.some(c => c.breach === 'item' || c.breach === 'building'),
+      `破门点标注挡路的是棋子还是建筑（${sealedPreview.cells.map(c => c.breach).join('/')}）`);
   }
 
   // 棋子同样挡路：在通路上放一个棋子，路线应绕开该格
@@ -2046,7 +2072,32 @@ console.log('== 夜晚战斗 ==');
     assert(battle.zombies.length === 0, '第 1 晚全歼僵尸');
   }
 
-  // --- 同格不重叠：出生格占满不生成（留队列重试），腾出空格恢复生成；移动不走进占位格 ---
+  // --- 回归：用棋子把核心围死，夜战也必须能打完（改前会永远卡在 fighting：僵尸既走不动也拆不了东西） ---
+  {
+    const state = createInitialGameState();
+    const core = state.base.buildings.find(b => b.cfgId === 1)!;
+    for (let dr = -2; dr <= 2; dr++) {
+      for (let dc = -2; dc <= 2; dc++) {
+        if ((dr === 0 && dc === 0) || Math.abs(dr) + Math.abs(dc) > 2) continue;
+        const r = core.row + dr;
+        const c = core.col + dc;
+        if (r < 0 || r >= 13 || c < 0 || c >= 13) continue;
+        setItem(state.grid, r, c, createItemFromConfig(10001));
+      }
+    }
+    const battle = night.startBattle(state);
+    let steps = 0;
+    while (battle.status !== 'won' && battle.status !== 'lost' && steps < 6000) {
+      night.tick(state, battle, 100);
+      steps++;
+    }
+    assert(battle.status === 'won' || battle.status === 'lost',
+      `核心被棋子围死也能打完夜战（${battle.status}, ${steps} 步）`);
+    let crushed = 0;
+    for (const row of state.grid.cells) for (const cell of row) if (cell.item?.crushed) crushed++;
+    assert(crushed > 0, `被围死时僵尸会踩碎挡路棋子（踩碎 ${crushed} 个，之后不再挡路）`);
+  }
+
   {
     const state = createInitialGameState();
     const battle = night.startBattle(state);

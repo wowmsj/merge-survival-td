@@ -173,6 +173,8 @@ export class BaseScene extends Phaser.Scene {
   get routePreview(): IRoutePreview | null {
     return this.lastPreview;
   }
+  /** 已就"通路封死"提示过一次（通路恢复后重置，避免刷屏） */
+  private sealedRouteAnnounced = false;
 
   private hud!: HUD;
   private taskBar!: TaskBar;
@@ -1150,6 +1152,7 @@ export class BaseScene extends Phaser.Scene {
     if (this.renderer3d) {
       this.routeLayer.removeAll(true);
       this.renderer3d.setRoutePreview(preview.cells);
+      this.announceSealedRoute(preview.hasRoute);
       return;
     }
     this.routeLayer.removeAll(true);
@@ -1161,6 +1164,18 @@ export class BaseScene extends Phaser.Scene {
         .setAlpha(cell.spawn ? 0.95 : 0.85);
       this.routeLayer.add(img);
     }
+    this.announceSealedRoute(preview.hasRoute);
+  }
+
+  /** 通路被封死时提示一次后果（僵尸会改拆墙／踩碎挡路棋子），不刷屏 */
+  private announceSealedRoute(hasRoute: boolean): void {
+    if (hasRoute) {
+      this.sealedRouteAnnounced = false;
+      return;
+    }
+    if (this.sealedRouteAnnounced) return;
+    this.sealedRouteAnnounced = true;
+    this.showToast(getText('toast.corridorSealed'));
   }
 
   private handleCellTap(row: number, col: number): void {

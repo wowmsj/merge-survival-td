@@ -89,6 +89,18 @@ export function itemIsSealed(item: IItemData | null): boolean {
   return item.st === ItemStatus.Carton || item.st === ItemStatus.Spider;
 }
 
+/**
+ * 该格物品是否挡住**地面僵尸**的路：普通/蜘蛛网棋子挡路，被僵尸踩碎的瓦砾不再挡路。
+ *
+ * 为什么要这条：棋子挡路但不可攻击，玩家只要用棋子把核心围一圈，僵尸既走不动也拆不了东西，
+ * 夜战就永远打不完（实测 20000 tick 仍在 fighting）。所以给僵尸留一条"踩碎继续走"的出路。
+ * 夜战/路线预览/摆放判定三处必须用同一份判定，否则预览与实际不一致。
+ */
+export function itemBlocksGroundZombie(item: IItemData | null): boolean {
+  if (!item) return false;
+  return !item.crushed;
+}
+
 /** 物品是否处于点击冷却中（cdSum > 0 表示冷却展示状态） */
 export function itemInCd(item: IItemData | null): boolean {
   return !!item && (item.cdSum ?? 0) > 0;

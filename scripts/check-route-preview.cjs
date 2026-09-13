@@ -179,10 +179,13 @@ async function main() {
     check('再开恢复箭头', (await arrowCount(page, expr)) === base3d.cells);
 
     // ---- 摆放预览：多走廊场景下真指针悬停改道 ----
-    // （新开局只有东边一条走廊，canPlace 会拒绝封死唯一通路；这里模拟第 5 天四边全开后布防）
+    // 把废墟和棋子都清掉，四边全开、棋盘无遮挡 → 悬停任意一格都只会改道，不会断路
     const setup = await page.evaluate(e => {
       const scene = eval(e);
       scene.state.base.buildings = scene.state.base.buildings.filter(b => b.cfgId !== 901); // 拆掉废墟，四边全开
+      for (let r = 0; r < scene.state.grid.rowNum; r++) {
+        for (let c = 0; c < scene.state.grid.colNum; c++) scene.state.grid.cells[r][c].item = null;
+      }
       scene.state.resources.coin = 99999;
       if (!scene.state.unlockedBuildings.includes(101)) scene.state.unlockedBuildings.push(101);
       scene.renderGrid();
@@ -214,6 +217,33 @@ async function main() {
       reroute.blockedStillOnRoute === false && reroute.changed === true && reroute.hasRoute === true, JSON.stringify(reroute));
     await page.screenshot({ path: path.join(SHOTS, 'route-placing-3d.png') });
     await page.screenshot({ path: path.join(SHOTS, 'route-zoom-placing.png'), clip: await gridClip() });
+
+    // ---- 封死最后通路：不再拒绝摆放，预览改为标出破门点 ----
+    {
+      const sealed = await page.evaluate(e => {
+        const scene = eval(e);
+        // 用棋子把核心围一圈（棋子挡地面僵尸）→ 无通路
+        const core = scene.state.base.buildings.find(b => b.cfgId === 1);
+        for (let dr = -2; dr <= 2; dr++) {
+          for (let dc = -2; dc <= 2; dc++) {
+            if ((dr === 0 && dc === 0) || Math.abs(dr) + Math.abs(dc) > 2) continue;
+            const r = core.row + dr;
+            const c = core.col + dc;
+            if (r < 0 || r >= 13 || c < 0 || c >= 13) continue;
+            scene.state.grid.cells[r][c].item = { id: 10001 };
+          }
+        }
+        scene.renderGrid();
+        const p = scene.routePreview;
+        return {
+          hasRoute: p.hasRoute,
+          breaches: p.cells.filter(c => c.breach).map(c => `${c.row},${c.col}:${c.breach}`),
+          arrows: p.cells.length
+        };
+      }, expr);
+      check('通路封死后预览标记为无通路', sealed.hasRoute === false, JSON.stringify(sealed));
+      check('无通路时改为标出破门点（棋子/建筑）', sealed.breaches.length > 0, JSON.stringify(sealed));
+    }
 
     // 摆下一座塔：路线应稳定为「占用后」的结果
     const placed = await page.evaluate((e) => {
