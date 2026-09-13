@@ -126,6 +126,13 @@ export class WarmOrbitCamera {
   private halfExtent = 6.5;
   /** 回正/开局的默认倍率：默认角度下基地刚好铺满且四角不越界（fitDefaultZoom 写入） */
   private defaultZoom = ORBIT_DEFAULT_ZOOM;
+  /** 视口（3D 画布）与取景框（世界窗口）尺寸、取景框中心相对视口中心的偏移（setFraming 写入） */
+  private viewportW = 1;
+  private viewportH = 1;
+  private frameW = 1;
+  private frameH = 1;
+  private shiftX = 0;
+  private shiftY = 0;
 
   constructor(fov = 50, aspect = 1) {
     this.camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 100);
@@ -249,47 +256,80 @@ export class WarmOrbitCamera {
   }
 
   /**
-   * 数值法取景：把基地角点（含建筑顶高、平移余量）投到最不利视角
-   * （方位 45° 水平投影最长；俯仰取下限/默认/上限），保证任意角度 zoom=1 不溢出
+   * 取景参数：视口 = 3D 画布（铺满整屏），取景框 = 世界窗口（游戏里的网格矩形）。
+   *
+   * 3D 层铺满整屏 + viewOffset 把视锥中心挪到取景框中心：默认构图与以前完全一致（基地落在网格矩形里），
+   * 但放大时基地可以溢出到取景框之外（画到艺术背景、甚至 UI 之上），不再被一条看不见的框线切掉。
+   * 玩家反馈的"场景被界面盖掉一块"就是那条框线（= 3D 画布 overflow:hidden 的边界）。
    */
-  fit(width: number, height: number, halfW: number, halfH: number, topY = 1.8): void {
-    this.camera.aspect = width / height;
+  setFraming(viewportW: number, viewportH: number, frameW: number, frameH: number, frameCx: number, frameCy: number): void {
+    this.viewportW = Math.max(1, viewportW);
+    this.viewportH = Math.max(1, viewportH);
+    this.frameW = Math.max(1, frameW);
+    this.frameH = Math.max(1, frameH);
+    this.shiftX = frameCx - this.viewportW / 2;
+    this.shiftY = frameCy - this.viewportH / 2;
+    this.camera.aspect = this.viewportW / this.viewportH;
+    // 正 shift = 内容向该方向平移（three 内部把 offset 当视锥平移量，符号相反）
+    this.camera.setViewOffset(this.viewportW, this.viewportH, -this.shiftX, -this.shiftY, this.viewportW, this.viewportH);
+    this.camera.updateProjectionMatrix();
+  }
+
+  /** 取景框中心（屏幕 px），供 e2e 校验基地是否落在世界窗口里 */
+  get frameCenter(): { x: number; y: number } {
+    return { x: this.viewportW / 2 + this.shiftX, y: this.viewportH / 2 + this.shiftY };
+  }
+
+  /**
+   * 数值法取景：迭代求 baseDist，让最不利视角（方位 45° 奇数倍；俯仰下限/默认/上限）下
+   * 「基地 + 平移余量」刚好落在**取景框**内。用真实投影探针迭代，因此自动把 viewOffset 算进去
+   * （手推对称视锥的公式在有偏移时不再成立）。
+   */
+  fit(halfW: number, halfH: number, topY = 1.8): void {
     this.halfExtent = Math.max(halfW, halfH); // 平移范围随地图尺寸放大
-    const tanH = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
-    const tanW = tanH * this.camera.aspect;
     const gx = halfW + ORBIT_PAN_LIMIT;
     const gz = halfH + ORBIT_PAN_LIMIT;
-    let need = 0;
-    const u = new THREE.Vector3();
-    const fwd = new THREE.Vector3();
-    const right = new THREE.Vector3();
-    const up = new THREE.Vector3();
-    const v = new THREE.Vector3();
-    for (const az of [Math.PI / 4, -Math.PI * 3 / 4]) {
-      for (const el of [ORBIT_MIN_ELEVATION, ORBIT_DEFAULT_ELEVATION, ORBIT_MAX_ELEVATION]) {
-        u.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
-        fwd.copy(u).negate();
-        right.set(Math.cos(az), 0, -Math.sin(az));
-        up.crossVectors(right, fwd);
-        for (const sy of [0, topY]) {
-          for (const sx of [-gx, gx]) {
-            for (const sz of [-gz, gz]) {
-              v.set(sx, sy, sz).sub(this.homeTarget);
-              need = Math.max(need,
-                Math.abs(v.dot(right)) / tanW - v.dot(fwd),
-                Math.abs(v.dot(up)) / tanH - v.dot(fwd));
-            }
-          }
+    const keepAz = this.azimuth, keepEl = this.elevation, keepZoom = this.zoom;
+    this.zoom = ORBIT_MIN_ZOOM;
+    let dist = Math.max(1, this.baseDist);
+    for (let i = 0; i < 8; i++) {
+      this.baseDist = dist;
+      let worst = 0;
+      for (const az of [Math.PI / 4, -Math.PI * 3 / 4]) {
+        for (const el of [ORBIT_MIN_ELEVATION, ORBIT_DEFAULT_ELEVATION, ORBIT_MAX_ELEVATION]) {
+          this.azimuth = az;
+          this.elevation = el;
+          this.apply();
+          const p = this.fitProbe(gx, gz, topY);
+          worst = Math.max(worst, p.maxNdcX, p.maxNdcY);
         }
       }
+      if (Math.abs(worst - 1) < 0.005) break;
+      dist = THREE.MathUtils.clamp(dist * worst, 1, 500); // NDC 与距离近似成反比，两步即收敛
     }
-    this.baseDist = need * 1.05;
+    this.baseDist = dist * 1.02; // 2% 余量
+    // 远平面跟着取景距离走：地图扩大后 baseDist 会变大，写死 100 会把基地裁掉
+    this.camera.far = Math.max(100, this.baseDist * 2.5);
+    this.camera.near = Math.max(0.1, this.baseDist / 500);
     this.camera.updateProjectionMatrix();
+    this.azimuth = keepAz;
+    this.elevation = keepEl;
+    this.zoom = keepZoom;
     this.apply();
   }
 
-  /** 取景探针：基地四角（含建筑顶高）投影的最大 |NDC|，≤1 即无溢出（e2e 验收用） */
+  /**
+   * 取景探针：基地四角（含建筑顶高）投影后换算成**取景框**内的 |NDC|，≤1 即完整落在世界窗口里。
+   * 换算必须以取景框中心为原点（取景框不在画布中心，只做缩放会算歪，导致取景距离迭代发散）。
+   */
   fitProbe(halfW: number, halfH: number, topY = 1.8): { maxNdcX: number; maxNdcY: number } {
+    // 取景迭代里会连续改相机姿态但中间不渲染，project() 用的 matrixWorldInverse 必须先手动刷新，
+    // 否则探针读到的是上一轮姿态（曾因此把取景距离迭代到 500 的钳位、基地缩成一点）
+    this.camera.updateMatrixWorld();
+    const cx = this.frameCenter.x;
+    const cy = this.frameCenter.y;
+    const hx = this.frameW / 2;
+    const hy = this.frameH / 2;
     const v = new THREE.Vector3();
     let mx = 0;
     let my = 0;
@@ -297,12 +337,21 @@ export class WarmOrbitCamera {
       for (const x of [-halfW, halfW]) {
         for (const z of [-halfH, halfH]) {
           v.set(x, y, z).project(this.camera);
-          mx = Math.max(mx, Math.abs(v.x));
-          my = Math.max(my, Math.abs(v.y));
+          const px = (v.x + 1) / 2 * this.viewportW;
+          const py = (1 - v.y) / 2 * this.viewportH;
+          mx = Math.max(mx, Math.abs(px - cx) / hx);
+          my = Math.max(my, Math.abs(py - cy) / hy);
         }
       }
     }
     return { maxNdcX: mx, maxNdcY: my };
+  }
+
+  /** 基地中心投影到视口 px（e2e 校验 viewOffset 是否把基地摆回取景框中心） */
+  projectCenter(): { x: number; y: number } {
+    this.camera.updateMatrixWorld();
+    const v = this.homeTarget.clone().project(this.camera);
+    return { x: (v.x + 1) / 2 * this.viewportW, y: (1 - v.y) / 2 * this.viewportH };
   }
 }
 

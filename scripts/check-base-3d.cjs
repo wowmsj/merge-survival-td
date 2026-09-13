@@ -304,6 +304,60 @@ async function main() {
         Math.max(probeIn.maxNdcX, probeIn.maxNdcY) >= 0.85, JSON.stringify(probeIn));
     }
 
+    // ---- 3D 场景铺满整屏并在 UI 之上：放大后基地画到网格矩形之外，不再被那条看不见的框线切掉 ----
+    {
+      const st = await page.evaluate(() => {
+        const f = window.__base3d.framing();
+        const canvas = document.querySelector('canvas[data-base3d]');
+        const input = document.querySelector('[data-base3d-input]');
+        const root = canvas.parentElement;
+        const kids = Array.from(root.children).map(el => el.tagName + (el.dataset.base3dInput ? '#input' : el.dataset.base3d ? '#canvas' : ''));
+        return {
+          canvas: { w: Math.round(f.canvasRect.width), h: Math.round(f.canvasRect.height) },
+          input: { w: Math.round(f.inputRect.width), h: Math.round(f.inputRect.height) },
+          vw: window.innerWidth, vh: window.innerHeight,
+          frame: f.frame, projected: f.projected,
+          kids,
+          inputPointer: input ? getComputedStyle(input).pointerEvents : 'missing',
+          canvasPointer: canvas ? getComputedStyle(canvas).pointerEvents : 'missing'
+        };
+      });
+      check('3D 渲染画布铺满整屏（放大后有溢出空间）',
+        st.canvas.w === st.vw && st.canvas.h === st.vh, JSON.stringify(st.canvas));
+      check('渲染画布不吃事件、输入层只盖网格矩形（UI 照常可点）',
+        st.canvasPointer === 'none' && st.inputPointer === 'auto' && st.input.w < st.vw,
+        JSON.stringify(st));
+      check('viewOffset：基地中心投影正好落在网格矩形中心',
+        Math.abs(st.projected.x - st.frame.x) < 2 && Math.abs(st.projected.y - st.frame.y) < 2,
+        `proj=${JSON.stringify(st.projected)} frame=${JSON.stringify(st.frame)}`);
+
+      // 放大两档 → 基地溢出网格矩形（旧版正是在这里被 overflow:hidden 切掉一块）
+      const zoomInBtn = page.locator('button[data-base3d-ctl="zoom-in"]');
+      await zoomInBtn.click();
+      await page.waitForTimeout(120);
+      await zoomInBtn.click();
+      await page.waitForTimeout(300);
+      const sp = await page.evaluate(() => ({
+        zoom: window.__base3d.camera().zoom,
+        probe: window.__base3d.fit(6.75, 2.6)
+      }));
+      check('放大后基地溢出网格矩形（3D 画到 UI 之上，不再被裁）',
+        sp.probe.maxNdcX > 1.05, JSON.stringify(sp));
+      await page.screenshot({ path: path.join(SHOTS, 'base3d-zoom-spill.png') });
+      await page.locator('button[data-base3d-ctl="reset"]').click();
+      await page.waitForTimeout(200);
+
+      // 视角按钮仍锚在网格矩形右下角（不能跑到屏幕角落压住卡片栏/菜单）
+      const btn = await page.evaluate(() => {
+        const g = document.querySelector('button[data-base3d-ctl="zoom-in"]').parentElement.getBoundingClientRect();
+        const f = window.__base3d.framing();
+        return { gx: g.right, gy: g.bottom, frameRight: f.frame.x + f.inputRect.width / 2, frameBottom: f.frame.y + f.inputRect.height / 2 };
+      });
+      check('视角按钮锚在网格矩形右下角（不压卡片栏）',
+        Math.abs(btn.gx - (btn.frameRight - 8)) < 3 && Math.abs(btn.gy - (btn.frameBottom - 8)) < 3,
+        JSON.stringify(btn));
+    }
+
     // ---- 拖棋子到画布边缘 → 地图自动平移（地图扩大后把棋子搬到屏幕外格子的唯一办法）----
     {
       await resetCam(75);

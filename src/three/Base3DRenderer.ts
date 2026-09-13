@@ -176,6 +176,10 @@ export class Base3DRenderer implements IBoardItemHost {
 
   private root: HTMLDivElement;      // fixed 容器（对齐网格矩形）
   private canvas: HTMLCanvasElement;
+  /** 输入层：只盖网格矩形的透明层（渲染画布 pointer-events:none，UI 事件照常） */
+  private inputLayer: HTMLDivElement;
+  /** 视角按钮组（锚在网格矩形右下角，随窗口尺寸重排） */
+  private viewControls: HTMLDivElement;
   readonly overlayLayer: HTMLDivElement;
   private renderer: THREE.WebGLRenderer;
   private tscene: THREE.Scene;
@@ -261,16 +265,23 @@ export class Base3DRenderer implements IBoardItemHost {
     this.canvas = this.renderer.domElement;
     this.canvas.dataset.base3d = '1';
 
-    // fixed 容器对齐 Phaser 画布上的 13×13 网格矩形；弹窗打开时整体隐藏
+    // fixed 容器铺满整屏（3D 场景在最顶层）；弹窗打开时整体隐藏
     this.root = document.createElement('div');
-    this.root.style.cssText = 'position:fixed;z-index:5;pointer-events:none;overflow:hidden;';
+    this.root.style.cssText = 'position:fixed;left:0;top:0;z-index:5;pointer-events:none;overflow:hidden;';
     document.body.appendChild(this.root);
-    this.canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:auto;touch-action:none;';
+    // 渲染画布铺满整屏但不收事件：放大后基地可以画到艺术背景/字面 UI 之上，不再被网格矩形切掉
+    this.canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;touch-action:none;';
     this.root.appendChild(this.canvas);
+    // 输入层：严格只盖网格矩形（保持原有交互范围，HUD/菜单/卡片栏不受影响）
+    this.inputLayer = document.createElement('div');
+    this.inputLayer.dataset.base3dInput = '1';
+    this.inputLayer.style.cssText = 'position:absolute;pointer-events:auto;touch-action:none;';
+    this.root.appendChild(this.inputLayer);
     this.overlayLayer = document.createElement('div');
     this.overlayLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
     this.root.appendChild(this.overlayLayer);
-    makeViewControls(this.root, 'base3dCtl', {
+    // 视角按钮组：锚在网格矩形右下角（root 现在铺满整屏，默认的 right/bottom 会跑到屏幕角落压住卡片栏）
+    this.viewControls = makeViewControls(this.root, 'base3dCtl', {
       rotateLeft: () => this.orbit.nudgeAzimuth(ORBIT_ROTATE_STEP),
       rotateRight: () => this.orbit.nudgeAzimuth(-ORBIT_ROTATE_STEP),
       tiltUp: () => this.orbit.nudgeElevation(ORBIT_TILT_STEP),
@@ -278,7 +289,7 @@ export class Base3DRenderer implements IBoardItemHost {
       reset: () => this.orbit.resetView(),
       zoomIn: () => this.orbit.setZoom(this.orbit.zoom * 1.25),
       zoomOut: () => this.orbit.setZoom(this.orbit.zoom / 1.25)
-    });
+    }, 'position:absolute;display:grid;grid-template-columns:repeat(2,36px);gap:6px;pointer-events:none;');
 
     // 程序化兜底网格/边界（§8 暖褐格线不纯黑；GLB 地基就位后隐藏）
     const gridSize = Math.max(BASE_COLS, BASE_ROWS);
@@ -321,14 +332,15 @@ export class Base3DRenderer implements IBoardItemHost {
     this.layoutRect(gridRect);
     void this.initWarmTerrain();
 
-    this.canvas.addEventListener('pointerdown', this.onPointerDown);
-    this.canvas.addEventListener('pointermove', this.onPointerMove);
-    this.canvas.addEventListener('pointerup', this.onPointerUp);
-    this.canvas.addEventListener('pointercancel', this.onPointerCancel);
-    this.canvas.addEventListener('pointerleave', this.onPointerCancel);
-    this.canvas.addEventListener('wheel', this.onWheel, { passive: false });
-    // 右键拖动 = 旋转：屏蔽画布右键菜单，否则一按就弹菜单打断手势
-    this.canvas.addEventListener('contextmenu', this.onContextMenu);
+    // 输入挂在「只盖网格矩形」的输入层上（渲染画布 pointer-events:none，不吃 UI 事件）
+    this.inputLayer.addEventListener('pointerdown', this.onPointerDown);
+    this.inputLayer.addEventListener('pointermove', this.onPointerMove);
+    this.inputLayer.addEventListener('pointerup', this.onPointerUp);
+    this.inputLayer.addEventListener('pointercancel', this.onPointerCancel);
+    this.inputLayer.addEventListener('pointerleave', this.onPointerCancel);
+    this.inputLayer.addEventListener('wheel', this.onWheel, { passive: false });
+    // 右键拖动 = 旋转：屏蔽右键菜单，否则一按就弹菜单打断手势
+    this.inputLayer.addEventListener('contextmenu', this.onContextMenu);
 
     this.syncAll();
 
@@ -365,6 +377,14 @@ export class Base3DRenderer implements IBoardItemHost {
         }),
         fit: (halfExtent?: number, topY?: number) =>
           this.orbit.fitProbe(halfExtent ?? BASE_COLS / 2, halfExtent ?? BASE_ROWS / 2, topY ?? 1.8),
+        /** 取景框（世界窗口 = 网格矩形）与基地中心投影，校验 viewOffset 有没有把基地摆回框中心 */
+        framing: () => ({
+          frame: this.orbit.frameCenter,
+          projected: this.orbit.projectCenter(),
+          baseDist: this.orbit.baseDist,
+          inputRect: this.inputLayer.getBoundingClientRect().toJSON(),
+          canvasRect: this.canvas.getBoundingClientRect().toJSON()
+        }),
         dialogOpen: () => this.host.inputBlocked(),
         cellToScreen: (row: number, col: number) => {
           const { x, z } = cellToWorld13(row, col);
@@ -393,22 +413,40 @@ export class Base3DRenderer implements IBoardItemHost {
     }
   }
 
-  /** 按 Phaser 画布缩放把网格设计矩形换算成 fixed CSS 矩形，并重取景 */
+  /**
+   * 布局：3D 渲染画布铺满**整屏**（在 UI 之上），输入层只盖网格矩形，取景框 = 网格矩形。
+   *
+   * 这样基地放大后可以画到网格矩形之外（艺术背景、甚至 HUD/卡片栏之上）——
+   * 玩家反馈"场景左右两侧被界面盖掉一块"就是旧版把画布限制在网格矩形、又被 overflow:hidden 裁掉的结果。
+   */
   layoutRect(gridRect: { left: number; top: number; size: number }): void {
     const gameCanvas = this.scene.game.canvas;
     const rect = gameCanvas.getBoundingClientRect();
     const scale = rect.width / 1080;
-    const left = rect.left + gridRect.left * scale;
-    const top = rect.top + gridRect.top * scale;
+    const vw = Math.max(1, window.innerWidth);
+    const vh = Math.max(1, window.innerHeight);
+    // 渲染画布：整屏
+    this.root.style.width = `${vw}px`;
+    this.root.style.height = `${vh}px`;
+    this.renderer.setSize(Math.round(vw), Math.round(vh));
+    // 输入层与取景框：网格矩形（世界窗口）
+    const fx = rect.left + gridRect.left * scale;
+    const fy = rect.top + gridRect.top * scale;
     const size = gridRect.size * scale;
-    this.root.style.left = `${left}px`;
-    this.root.style.top = `${top}px`;
-    this.root.style.width = `${size}px`;
-    this.root.style.height = `${size}px`;
-    this.renderer.setSize(Math.round(size), Math.round(size));
-    this.orbit.fit(size, size, BASE_COLS / 2 + 0.6, BASE_ROWS / 2 + 0.6);
+    this.inputLayer.style.left = `${fx}px`;
+    this.inputLayer.style.top = `${fy}px`;
+    this.inputLayer.style.width = `${size}px`;
+    this.inputLayer.style.height = `${size}px`;
+    // 视角按钮组贴网格矩形右下角（与旧版位置一致，不压卡片栏）
+    const cw = this.viewControls.getBoundingClientRect().width || 78;
+    const ch = this.viewControls.getBoundingClientRect().height || 162;
+    this.viewControls.style.left = `${fx + size - cw - 8}px`;
+    this.viewControls.style.top = `${fy + size - ch - 8}px`;
+    // 取景：视口整屏、取景框网格矩形（viewOffset 把基地摆回网格矩形中心）
+    this.orbit.setFraming(vw, vh, size, size, fx + size / 2, fy + size / 2);
+    this.orbit.fit(BASE_COLS / 2 + 0.6, BASE_ROWS / 2 + 0.6);
     // 默认视角：按「底座 + 建筑顶高」在默认角度下的投影顶到刚好不裁切
-    // （画布 overflow:hidden，写死放大倍率会把基地左右两侧切掉一块）
+    // （写死放大倍率会把基地左右两侧切出世界窗口）
     this.orbit.fitDefaultZoom(BASE_COLS / 2 + 0.25, BASE_ROWS / 2 + 0.25, 2.6);
     if (!this.viewInitialized) {
       this.viewInitialized = true;
@@ -1059,7 +1097,7 @@ export class Base3DRenderer implements IBoardItemHost {
     if (this.disposed || this.host.inputBlocked()) return;
     this.lastActionTime = Date.now();
     this.stopIdleHint();
-    this.canvas.setPointerCapture(e.pointerId);
+    this.inputLayer.setPointerCapture(e.pointerId);
     this.pointers.set(e.pointerId, { sx: e.clientX, sy: e.clientY, px: e.clientX, py: e.clientY });
     if (this.pointers.size === 2) {
       this.endItemDrag(); // 第二指落下：取消进行中的物品拖拽（棋子复位）
@@ -1494,13 +1532,13 @@ export class Base3DRenderer implements IBoardItemHost {
     if (this.disposed) return;
     this.disposed = true;
     this.clearCoreHold();
-    this.canvas.removeEventListener('pointerdown', this.onPointerDown);
-    this.canvas.removeEventListener('pointermove', this.onPointerMove);
-    this.canvas.removeEventListener('pointerup', this.onPointerUp);
-    this.canvas.removeEventListener('pointercancel', this.onPointerCancel);
-    this.canvas.removeEventListener('pointerleave', this.onPointerCancel);
-    this.canvas.removeEventListener('wheel', this.onWheel);
-    this.canvas.removeEventListener('contextmenu', this.onContextMenu);
+    this.inputLayer.removeEventListener('pointerdown', this.onPointerDown);
+    this.inputLayer.removeEventListener('pointermove', this.onPointerMove);
+    this.inputLayer.removeEventListener('pointerup', this.onPointerUp);
+    this.inputLayer.removeEventListener('pointercancel', this.onPointerCancel);
+    this.inputLayer.removeEventListener('pointerleave', this.onPointerCancel);
+    this.inputLayer.removeEventListener('wheel', this.onWheel);
+    this.inputLayer.removeEventListener('contextmenu', this.onContextMenu);
     this.routeMeshes = [];
     this.routeGroup.clear();
     this.tscene.remove(this.routeGroup);
