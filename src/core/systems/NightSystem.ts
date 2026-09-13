@@ -1,5 +1,5 @@
 import { GameEvents, eventBus } from '../events/EventBus';
-import { IBaseState, IBuilding, IGameState } from '../types';
+import { IBaseState, IBuilding, IGameState, IPoint } from '../types';
 import { buildingAt, CellBlocker, distFromCenter, findPathToCore, RUIN_COLLAPSE_ORDER, ruinCellsOfSide, RuinSide } from '../model/Base';
 import { getItem } from '../model/Grid';
 import { terrainAt, isTerrainSpawnable, isTerrainWalkableForGround, isTerrainPassableForBurrow } from '../config/TerrainConfig';
@@ -257,20 +257,9 @@ export class NightSystem {
   private spawnZombie(state: IGameState, battle: IBattle, cfgId: number): boolean {
     const cfg = getZombieConfig(cfgId);
     if (!cfg) return false;
-    // 只在没有建筑的边缘格刷出：被废墟/建筑封死的方向不会来怪
-    // （新开局北/西/南三边整排废墟 + 东边部分废墟 → 第一夜只从东边 3 格缺口进攻）
-    // 同格不重叠：已被僵尸占住的格子不刷；全被占住时返回 false（调用方稍候重试）
-    // 边缘格被瓦砾/破旧建筑/水池地形堵住时不刷（杂草/树林可以，从林中爬出）
-    const open = getOpenEdgeCells(state.base, itemBlocker(state));
-    const pool = (open.length > 0 ? open : allEdgeCells(state.base))
-      .filter(c => {
-        const terrain = terrainAt(state.base, c.row, c.col);
-        return (!terrain || isTerrainSpawnable(terrain)) && !this.zombieAt(battle, c.row, c.col);
-      });
-    // 只从能走到核心的格子刷怪：被瓦砾/破楼地形围死的口袋格（如西北角）刷出来
-    // 会永远卡住——兜底直线移动不能进地形格，而地形又不是建筑、拆不了
-    const reachable = pool.filter(c => findPathToCore(state.base, c, undefined, itemBlocker(state)));
-    const spawnPool = reachable.length > 0 ? reachable : pool;
+    // 刷怪点判定见 getSpawnCells（与白天路线预览共用同一套规则）；
+    // 同格不重叠：已被僵尸占住的格子本轮不刷，全被占住时返回 false（调用方稍候重试）
+    const spawnPool = getSpawnCells(state).filter(c => !this.zombieAt(battle, c.row, c.col));
     if (spawnPool.length === 0) return false;
     const cell = spawnPool[Math.floor(Math.random() * spawnPool.length)];
 
@@ -643,6 +632,25 @@ function allEdgeCells(base: IBaseState): { row: number; col: number }[] {
     cells.push({ row: i, col: 0 }, { row: i, col: base.cols - 1 });
   }
   return cells;
+}
+
+/**
+ * 当前可刷怪边缘格（夜战刷怪与白天「僵尸路线预览」共用同一套判定）：
+ *   1. 边缘格上没有建筑、没有合成物品（废墟/建筑/棋子都会挡住入口）；
+ *   2. 该格地形可刷（杂草/树林可，瓦砾/破楼/水池不可）；
+ *   3. 该格能走到核心——被地形围死的口袋格刷出来会永久卡住，不作为刷怪点。
+ * 若一条路都不通（理论不可达：hasKillCorridor 会阻止玩家封死），退回地形可刷的开放边缘格。
+ */
+export function getSpawnCells(state: IGameState): IPoint[] {
+  const blocked = itemBlocker(state);
+  const open = getOpenEdgeCells(state.base, blocked);
+  const pool = (open.length > 0 ? open : allEdgeCells(state.base))
+    .filter(c => {
+      const terrain = terrainAt(state.base, c.row, c.col);
+      return !terrain || isTerrainSpawnable(terrain);
+    });
+  const reachable = pool.filter(c => findPathToCore(state.base, c, undefined, blocked));
+  return reachable.length > 0 ? reachable : pool;
 }
 
 /** 没有建筑（且无合成物品，itemBlocked 提供时）的边缘格：僵尸今晚只会从这些格子刷出 */

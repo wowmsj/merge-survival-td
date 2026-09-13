@@ -32,6 +32,7 @@ import { getAllBuildingConfigs, getBuildingConfig, outputIntervalAtLevel, getBui
 import { getAllZombieConfigs } from '../src/core/config/ZombieConfig';
 import { getPowerMax } from '../src/core/config/TableConfig';
 import { BASE_CENTER, createDefaultBase, findPathToCore, getShortestEntryPathLength, isClaimed, claimAround, hasKillCorridor, RUIN_COLLAPSE_ORDER, ruinCellsOfSide } from '../src/core/model/Base';
+import { computeRoutePreview } from '../src/core/systems/RoutePreview';
 import { TERRAIN_CLEAR_COST, TERRAIN_TABLE, terrainAt, isTerrainSpawnable } from '../src/core/config/TerrainConfig';
 import { applyCoreAura, getCoreAuraChance, getCoreTier, getItemTier } from '../src/core/config/MergeCoreConfig';
 import { useBlueprint, ensureUnlockedBuildings } from '../src/core/systems/UnlockSystem';
@@ -107,6 +108,70 @@ console.log('== 领地与引流走廊 ==');
   assert(base.place(corridorState, 401, 5, 12), '还有最后入口时允许继续布防');
   assert(!base.canPlace(corridorState, 401, 6, 12).ok, '不允许封死最后引流走廊');
   assert((getShortestEntryPathLength(corridorState.base) ?? 0) > 0, '预告可获得最短地面路线长度');
+}
+
+// ============ 1.5 僵尸路线预览 ============
+console.log('== 僵尸路线预览 ==');
+{
+  /** 沿箭头从某格一路走到核心（最多 40 步），返回是否到达 */
+  const traceToCore = (preview: ReturnType<typeof computeRoutePreview>, from: { row: number; col: number }): boolean => {
+    const arrows = new Map(preview.cells.map(c => [`${c.row},${c.col}`, c]));
+    let cur = { row: from.row, col: from.col };
+    for (let i = 0; i < 40; i++) {
+      if (preview.core && cur.row === preview.core.row && cur.col === preview.core.col) return true;
+      const cell = arrows.get(`${cur.row},${cur.col}`);
+      if (!cell) return false;
+      cur = { row: cur.row + cell.dr, col: cur.col + cell.dc };
+    }
+    return false;
+  };
+
+  const state = GameInitializer.initNewGame();
+  const preview = computeRoutePreview(state);
+  assert(preview.hasRoute && preview.spawnCells.length > 0, `新开局存在刷怪点与路线（${preview.spawnCells.length} 个刷怪点）`);
+  assert(!!preview.core && preview.core.row === BASE_CENTER && preview.core.col === BASE_CENTER, '路线终点为核心格');
+  assert(preview.spawnCells.every(p => !preview.cells.some(c => c.row === p.row && c.col === p.col && !c.spawn)),
+    '刷怪点在路线上都带 spawn 标记');
+  assert(preview.spawnCells.every(p => preview.cells.some(c => c.row === p.row && c.col === p.col)), '每个刷怪点都出现在路线里');
+  assert(preview.cells.every(c => c.flow >= 1), '每个路线格至少被 1 条路线经过');
+  assert(!preview.cells.some(c => c.row === preview.core!.row && c.col === preview.core!.col), '核心格不画箭头');
+  assert(preview.spawnCells.every(p => traceToCore(preview, p)), '沿箭头可从每个刷怪点走到核心（方向聚合正确）');
+  const maxFlow = Math.max(...preview.cells.map(c => c.flow));
+  assert(maxFlow > preview.spawnCells.length * 0.5, `路线向内汇聚（最高经过 ${maxFlow} 条）`);
+
+  // 新开局只从东边缺口进攻：刷怪点全在最右列
+  assert(preview.spawnCells.every(p => p.col === state.base.cols - 1), '新开局刷怪点只在东侧缺口');
+
+  // 摆放预览：把最繁忙的格设为将建建筑 → 若它是唯一走廊则全体断路（布防面板据此警示）
+  const choke = preview.cells.find(c => c.flow === maxFlow)!;
+  const blockedPreview = computeRoutePreview(state, { row: choke.row, col: choke.col });
+  assert(blockedPreview.cells.every(c => !(c.row === choke.row && c.col === choke.col)), '假设占用后路线绕开该格');
+  // 开局棋盘塞满棋子且走廊唯一：堵住汇聚格即断路（这正是需要提示玩家的危险操作）
+  assert(!blockedPreview.hasRoute || blockedPreview.spawnCells.length > 0, '堵住汇聚格后要么绕路要么断路');
+
+  // 多走廊场景（空棋盘）：堵掉主干格，三条路线都应改道且不断路
+  {
+    const emptyBoard = createInitialGameState();
+    const openPreview = computeRoutePreview(emptyBoard);
+    const openMax = Math.max(...openPreview.cells.map(c => c.flow));
+    const trunk = openPreview.cells.find(c => c.flow === openMax)!;
+    assert(!!trunk, '空棋盘存在主干路线格');
+    const rerouted = computeRoutePreview(emptyBoard, { row: trunk.row, col: trunk.col });
+    assert(rerouted.hasRoute, '堵掉主干格后仍有通路（僵尸改道）');
+    assert(rerouted.cells.every(c => !(c.row === trunk.row && c.col === trunk.col)), '改道后不再经过被占格');
+    const start = openPreview.spawnCells[0];
+    const before = findPathToCore(emptyBoard.base, start);
+    const after = findPathToCore(emptyBoard.base, start, { row: trunk.row, col: trunk.col });
+    assert(!!before && !!after && JSON.stringify(before) !== JSON.stringify(after), '改道后具体路线确实发生变化');
+  }
+
+  // 棋子同样挡路：在通路上放一个棋子，路线应绕开该格
+  const itemState = GameInitializer.initNewGame();
+  const midCandidates = preview.cells.filter(c => !preview.spawnCells.some(p => p.row === c.row && p.col === c.col));
+  const mid = midCandidates[0];
+  setItem(itemState.grid, mid.row, mid.col, createItemFromConfig(10001));
+  const itemPreview = computeRoutePreview(itemState);
+  assert(itemPreview.cells.every(c => !(c.row === mid.row && c.col === mid.col)), '通路上放棋子后路线绕开该格');
 }
 
 // ============ 1. 初始化 ============

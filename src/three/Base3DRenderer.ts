@@ -29,6 +29,7 @@ import {
 } from '../core/config/PropConfig';
 import { getHeroName, getText } from '../core/i18n';
 import { BoardItemView, IBoardItemHost } from './BoardItemView';
+import type { IRouteCell } from '../core/systems/RoutePreview';
 import {
   WARM_LAYOUT_URL, cellToWorld13, worldToCell13, applyWarmRendererSettings, createWarmScene,
   WarmOrbitCamera, WarmGlbCache, makeZoomControls, disposeObjectTree,
@@ -72,6 +73,8 @@ const RUIN_GLBS = ['warm_ruin.glb', 'warm_ruin_1.glb', 'warm_ruin_2.glb'];
 // ---------- 物品层常量 ----------
 /** 棋子放置高度（地基顶 0 + 防贴面闪烁，同棋盘 CELL_Y） */
 const ITEM_Y = 0.162;
+/** 僵尸路线箭头贴地高度：在地面之上、棋子(0.162)/落点提示(0.065)之下 */
+const ROUTE_Y = 0.055;
 /** 拖拽抬升高度（拖拽跟随平面同高，棋子视觉正好贴在指针下） */
 const DRAG_Y = 0.9;
 const DRAG_THRESHOLD = 8;
@@ -146,6 +149,8 @@ export interface IBase3DHost {
   onCellTap(row: number, col: number): void;
   /** 长按格子（基地核心格 ≥480ms）→ 打开核心面板；缺省则长按无效果 */
   onCellLongPress?(row: number, col: number): void;
+  /** 摆放模式下悬停格变化（含 null = 移出网格）→ 用于「放这里之后僵尸改走哪」的路线预览 */
+  onCellHover?(row: number | null, col: number | null): void;
   /** 物品拖拽落点（源格≠目标格）→ BaseScene.handleItemDrop → MergeSystem.moveOrMerge */
   onItemDrop(src: IPoint, target: IPoint): void;
   /** 当前待摆放建筑配置（null=非摆放模式；塔类带 range 用于悬停范围圈） */
@@ -185,6 +190,11 @@ export class Base3DRenderer implements IBoardItemHost {
   private buildingViews = new Map<string, IBuildingView>();
   private heroViews = new Map<string, IHeroView>();
   private placementHints = new THREE.Group();
+  /** 僵尸路线箭头（贴地 quad 池，复用避免每次重建） */
+  private routeGroup = new THREE.Group();
+  private routeMeshes: THREE.Mesh[] = [];
+  /** 上一次上报的悬停格（避免重复重算路线） */
+  private lastHoverCell: string | null = null;
   private hoverRing: THREE.Mesh | null = null;
   private selectedRing: THREE.Mesh | null = null;
 
@@ -268,6 +278,10 @@ export class Base3DRenderer implements IBoardItemHost {
 
     this.placementHints.renderOrder = 2;
     this.tscene.add(this.placementHints);
+
+    // 僵尸路线箭头层（贴地，压在选择框/落点提示之下，免得挡住交互提示）
+    this.routeGroup.renderOrder = 1;
+    this.tscene.add(this.routeGroup);
 
     // 物品选中框（贴格顶 3D quad，随透视贴合地面）
     this.selectMesh = new THREE.Mesh(this.quadGeo, this.quadMaterial('cell-select'));
@@ -452,6 +466,42 @@ export class Base3DRenderer implements IBoardItemHost {
     return this.quadMaterial('spider', true);
   }
 
+  /**
+   * 僵尸路线箭头材质：与 quadMaterial 分开的原因有两条——
+   *   1. 贴图按 sRGB 声明：quadMaterial 未声明 colorSpace，sRGB 画面会把金色洗成灰紫；
+   *   2. toneMapped=false：暖土场景开了 ACES 色调映射，不关掉箭头会发灰、失去警示色。
+   * 两处都会让箭头「看不出是箭头」，所以这里单独建材质。
+   */
+  private routeMaterial(texKey: string): THREE.Material {
+    const cacheKey = `${texKey}#route`;
+    const cached = this.quadMaterialCache.get(cacheKey);
+    if (cached) return cached;
+    const c = document.createElement('canvas');
+    c.width = c.height = 280; // 2× 超采样，与 quadMaterial 一致
+    const g = c.getContext('2d')!;
+    g.scale(2, 2);
+    let drawn = false;
+    try {
+      if (this.scene.textures.exists(texKey)) {
+        const img = this.scene.textures.get(texKey).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+        g.drawImage(img, 0, 0, 140, 140);
+        drawn = true;
+      }
+    } catch { /* 纹理不可读时回退纯色 */ }
+    if (!drawn) {
+      g.fillStyle = texKey === 'route-entry' ? 'rgba(255,107,107,0.9)' : 'rgba(255,209,102,0.9)';
+      g.fillRect(0, 0, 140, 140);
+    }
+    const ctex = new THREE.CanvasTexture(c);
+    ctex.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.MeshBasicMaterial({
+      map: ctex, transparent: true, depthWrite: false, toneMapped: false, opacity: 0.92
+    });
+    this.quadMaterialCache.set(cacheKey, mat);
+    this.quadDisposables.push(ctex, mat);
+    return mat;
+  }
+
   /** 可合成提示材质：加粗绿框 + 淡绿底 */
   private hintMaterial(): THREE.Material {
     const cached = this.quadMaterialCache.get('hint-bold');
@@ -509,6 +559,38 @@ export class Base3DRenderer implements IBoardItemHost {
 
   playMergeEffect(pos: IPoint): void {
     this.itemViews[pos.row]?.[pos.col]?.playMerge();
+  }
+
+  /**
+   * 僵尸路线箭头层：把（白天布防算好的）路线格画成贴地箭头。
+   * 每格一个 quad（复用池），方向靠 rotation.y 旋转；刷怪点用另一种颜色的箭头。
+   * 传 null / 空数组即隐藏整层。
+   */
+  setRoutePreview(cells: IRouteCell[] | null): void {
+    if (this.disposed) return;
+    const list = cells ?? [];
+    // 按需扩池
+    while (this.routeMeshes.length < list.length) {
+      const mesh = new THREE.Mesh(this.quadGeo, this.routeMaterial('route-arrow'));
+      mesh.renderOrder = 1;
+      mesh.visible = false;
+      this.routeGroup.add(mesh);
+      this.routeMeshes.push(mesh);
+    }
+    for (let i = 0; i < this.routeMeshes.length; i++) {
+      const mesh = this.routeMeshes[i];
+      const cell = list[i];
+      if (!cell) {
+        mesh.visible = false;
+        continue;
+      }
+      mesh.material = this.routeMaterial(cell.spawn ? 'route-entry' : 'route-arrow');
+      // 贴图默认朝北（-Z）；按主流向绕 Y 旋转
+      mesh.rotation.y = cell.dr === -1 ? 0 : cell.dr === 1 ? Math.PI : cell.dc === 1 ? -Math.PI / 2 : Math.PI / 2;
+      const { x, z } = cellToWorld13(cell.row, cell.col);
+      mesh.position.set(x, ROUTE_Y, z);
+      mesh.visible = true;
+    }
   }
 
   playSpawnEffect(pos: IPoint): void {
@@ -1161,9 +1243,33 @@ export class Base3DRenderer implements IBoardItemHost {
   private hoverRingRange = 0;
   private updateHover(e: PointerEvent): void {
     const cfg = this.host.placingCfg();
-    const cell = cfg && cfg.kind === 'tower' && cfg.range ? this.eventCell(e) : null;
-    const ok = !!cfg && !!cell && !!cfg.range && this.host.canPlaceAt(cell!.row, cell!.col);
-    if (!ok || !cfg || !cell || !cfg.range) {
+    // 路线改道预览：摆放模式下把悬停格当作「将建建筑」重算路线（非摆放模式恒为 null）
+    if (this.host.onCellHover) {
+      const hoverCell = cfg ? this.eventCell(e) : null;
+      const key = hoverCell ? `${hoverCell.row},${hoverCell.col}` : null;
+      if (key !== this.lastHoverCell) {
+        this.lastHoverCell = key;
+        this.host.onCellHover(hoverCell?.row ?? null, hoverCell?.col ?? null);
+      }
+    }
+    const cell = cfg ? this.eventCell(e) : null;
+    const placeable = !!cfg && !!cell && this.host.canPlaceAt(cell.row, cell.col);
+    // 摆放模式悬停格高亮：2D 有整片绿框，3D 至少把当前这一格标出来（同时指示改道预览的落点）
+    if (cfg && cell && placeable) {
+      if (!this.hoverQuad) {
+        this.hoverQuad = new THREE.Mesh(this.quadGeo, this.quadMaterial('cell-select'));
+        this.hoverQuad.renderOrder = 2;
+        this.tscene.add(this.hoverQuad);
+      }
+      const { x, z } = cellToWorld13(cell.row, cell.col);
+      this.hoverQuad.visible = true;
+      this.hoverQuad.position.set(x, 0.07, z);
+    } else if (this.hoverQuad && !this.dragView) {
+      this.hoverQuad.visible = false;
+    }
+    const ringCell = cfg && cfg.kind === 'tower' && cfg.range && placeable ? cell : null;
+    const ok = !!cfg && !!ringCell && !!cfg!.range;
+    if (!ok || !cfg || !ringCell || !cfg.range) {
       if (this.hoverRing) this.hoverRing.visible = false;
       return;
     }
@@ -1178,7 +1284,7 @@ export class Base3DRenderer implements IBoardItemHost {
       this.tscene.add(this.hoverRing);
     }
     this.hoverRing.visible = true;
-    const { x, z } = cellToWorld13(cell.row, cell.col);
+    const { x, z } = cellToWorld13(ringCell.row, ringCell.col);
     this.hoverRing.position.set(x, 0.05, z);
   }
 
@@ -1244,6 +1350,9 @@ export class Base3DRenderer implements IBoardItemHost {
     this.canvas.removeEventListener('pointercancel', this.onPointerCancel);
     this.canvas.removeEventListener('pointerleave', this.onPointerCancel);
     this.canvas.removeEventListener('wheel', this.onWheel);
+    this.routeMeshes = [];
+    this.routeGroup.clear();
+    this.tscene.remove(this.routeGroup);
 
     if (__DEV_FEATURES__) {
       const w = window as unknown as Record<string, { owner?: unknown } | number | undefined>;

@@ -12,6 +12,7 @@ import { LevelSystem } from '../../core/systems/LevelSystem';
 import { TaskSystem } from '../../core/systems/TaskSystem';
 import { BaseSystem, canDefendFlyingEnemies, formatGains, formatResourceGains, getPowerInfo, hasSupportCoverage, isTowerPoweredAtNight } from '../../core/systems/BaseSystem';
 import { CoreSystem } from '../../core/systems/CoreSystem';
+import { computeRoutePreview, IRoutePreview } from '../../core/systems/RoutePreview';
 import { zoneOf, BaseZone, buildingAt, findCoreBuilding, getShortestEntryPathLength, BASE_COLS } from '../../core/model/Base';
 import { getItem } from '../../core/model/Grid';
 import { itemInCd, itemIsBubble } from '../../core/model/Item';
@@ -61,6 +62,8 @@ declare const __DEV_FEATURES__: boolean;
 
 /** 顶栏（天数/核心/迎接夜晚）中线 Y：压在任务条（HUD 下 98px）之下 */
 const TOP_BAR_Y = HUD_BOTTOM + 140;
+/** 顶栏「路线」开关中心 x（夹在天数/核心血量与「迎接夜晚」之间） */
+const ROUTE_BTN_X = 730;
 const GRID_TOP = TOP_BAR_Y + 40;
 const GRID_LEFT = 24;
 const CELL = 66;
@@ -82,6 +85,19 @@ const BASE_3D_STORAGE_KEY = 'merge_survival_td_base_3d';
 
 /** 核心格长按判定时长（ms）：短按=选中/发射，长按=打开核心面板 */
 const CORE_HOLD_MS = 480;
+
+/** 路线箭头显示开关的存档 key */
+const ROUTE_STORAGE_KEY = 'merge_survival_td_route';
+/** 路线箭头纹理边长（设计像素；格子 66，留边避免相邻格箭头挤在一起） */
+const ROUTE_TEX_SIZE = 96;
+
+/** 主流向 → 2D 精灵角度（Phaser 角度为顺时针，0 = 朝上=北） */
+function routeAngle(dr: number, dc: number): number {
+  if (dr === -1) return 0;
+  if (dc === 1) return 90;
+  if (dr === 1) return 180;
+  return 270;
+}
 
 /** 冷却剩余毫秒 → m:ss（核心信息卡/格子角标共用） */
 function formatCdRemain(ms: number): string {
@@ -141,6 +157,22 @@ export class BaseScene extends Phaser.Scene {
   /** 核心格长按计时（长按 = 打开核心面板，短按 = 发射） */
   private coreHoldTimer: number | null = null;
   private coreHoldFired = false;
+
+  // ============ 僵尸路线预览 ============
+  /** 路线箭头层（2D 网格用；3D 由 Base3DRenderer 画贴地 quad） */
+  private routeLayer!: Phaser.GameObjects.Container;
+  /** 是否显示路线箭头（持久化在 localStorage） */
+  private routeVisible = true;
+  /** 摆放模式下指针悬停格：作为「将建建筑」参与路线重算（改道预览） */
+  private hoverCell: IPoint | null = null;
+  private routeToggleBg?: Phaser.GameObjects.Graphics;
+  private routeToggleText?: Phaser.GameObjects.Text;
+  private lastPreview: IRoutePreview | null = null;
+
+  /** 最近一次算出的僵尸路线（调试与 e2e 断言用） */
+  get routePreview(): IRoutePreview | null {
+    return this.lastPreview;
+  }
 
   private hud!: HUD;
   private taskBar!: TaskBar;
@@ -375,6 +407,9 @@ export class BaseScene extends Phaser.Scene {
         fontSize: '24px', color: '#ffd43b', fontStyle: 'bold'
       }).setOrigin(0.5);
 
+      // 僵尸路线显示开关（默认开；箭头随布局实时重算）
+      this.ensureRouteToggle();
+
       const nightBtn = this.add.graphics();
       // 保留橙色语义：暗橙底 + 橙描边
       drawUiBox(nightBtn, 940, TOP_BAR_Y, 220, 52, {
@@ -391,10 +426,16 @@ export class BaseScene extends Phaser.Scene {
 
       this.gridLayer = this.add.container(0, 0);
       this.paletteLayer = this.add.container(0, 0);
+      // 僵尸路线箭头层：压在格子/建筑之上、弹窗(500)与范围圈(40)之下
+      this.routeLayer = this.add.container(0, 0).setDepth(20);
       this.dialogLayer = this.add.container(0, 0).setDepth(500);
 
       this.rangeHint = this.add.graphics().setDepth(40).setVisible(false);
       this.selectedRangeHint = this.add.graphics().setDepth(40).setVisible(false);
+
+      // 路线箭头纹理（2D 用精灵、3D 用贴格 quad 材质，同一套纹理保证两套渲染一致）
+      this.routeVisible = localStorage.getItem(ROUTE_STORAGE_KEY) !== '0';
+      this.ensureRouteTextures();
 
       // 3D 网格（暖土 GLB）：画布只覆盖 13×13 网格矩形，默认开启（唯一主场景，物品层只存在于 3D）；
       // localStorage 显式设 '0' 时回退 2D 调试网格（无物品层，仅排查用）
@@ -410,6 +451,7 @@ export class BaseScene extends Phaser.Scene {
             const core = findCoreBuilding(this.state.base);
             if (core && core.row === row && core.col === col) this.openCorePanel();
           },
+          onCellHover: (row, col) => this.handleCellHover(row, col),
           onItemDrop: (src, target) => this.handleItemDrop(src, target),
           taskNeeded: (id) => this.taskSystem.isTaskNeedWithId(this.state, id),
           placingCfg: () => (this.placing !== null ? getBuildingConfig(this.placing) ?? null : null),
@@ -447,6 +489,7 @@ export class BaseScene extends Phaser.Scene {
       // 防御塔摆放时显示攻击范围圈
       this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
         this.updateRangeHint(pointer);
+        this.updateRouteHoverFromPointer(pointer);
       });
 
       const onBaseChanged = () => {
@@ -466,6 +509,8 @@ export class BaseScene extends Phaser.Scene {
 
       // 物品层事件 → 3D 棋子层局部刷新（摆放/部署模式下顺带全量同步，刷新合法格提示）
       const afterItemChange = () => {
+        // 棋子与建筑一样挡路：棋子变化后重算路线箭头
+        this.renderRoutePreview();
         if (this.placing !== null || this.placingHero !== null) this.renderGrid();
       };
       const onItemChanged = (data: { pos: IPoint }) => {
@@ -706,6 +751,7 @@ export class BaseScene extends Phaser.Scene {
   private renderGrid(): void {
     if (this.renderer3d) {
       this.renderer3d.syncAll(); // 3D 网格：地形/建筑/英雄/摆放提示全量同步
+      this.renderRoutePreview();
       return;
     }
     this.gridLayer.removeAll(true);
@@ -765,6 +811,8 @@ export class BaseScene extends Phaser.Scene {
         }
       }
     }
+    // 铺完格子再画路线箭头（棋盘/地形/建筑/棋子都会影响寻路）
+    this.renderRoutePreview();
   }
 
   /** 展示用供电判定：防御塔按夜战口径（夜里塔优先，白天塔不开火，白天缺电不影响战斗） */
@@ -986,6 +1034,133 @@ export class BaseScene extends Phaser.Scene {
       status,
       actions
     };
+  }
+
+  // ============ 僵尸路线预览 ============
+
+  /** 生成两张朝上的箭头纹理：普通路线（金）与刷怪入口（红）。2D/3D 共用 */
+  private ensureRouteTextures(): void {
+    this.makeRouteTexture('route-arrow', 0xffd166);
+    this.makeRouteTexture('route-entry', 0xff6b6b);
+  }
+
+  private makeRouteTexture(key: string, color: number): void {
+    if (this.textures.exists(key)) return;
+    const S = ROUTE_TEX_SIZE;
+    const g = this.add.graphics();
+    // 朝上的粗箭头：大三角头 + 短杆；先画深色描边再画本体，保证在 3D 地表上也看得清
+    const draw = (fill: number, k: number): void => {
+      const tip = S * 0.07 * k;
+      const headW = S * 0.66 * k;
+      const headY = S * 0.5 * k;
+      const shaftW = S * 0.22 * k;
+      const shaftH = S * 0.4 * k;
+      g.fillStyle(fill, 1);
+      g.fillTriangle(S / 2, tip, S / 2 - headW / 2, headY, S / 2 + headW / 2, headY);
+      g.fillRect(S / 2 - shaftW / 2, headY - 1, shaftW, shaftH);
+    };
+    draw(0x10121c, 1.26);
+    draw(color, 1);
+    g.generateTexture(key, S, S);
+    g.destroy();
+  }
+
+  /** 顶栏「路线」开关（默认开，状态持久化） */
+  private ensureRouteToggle(): void {
+    const x = ROUTE_BTN_X;
+    const y = TOP_BAR_Y;
+    const w = 150;
+    const h = 52;
+    this.routeToggleBg = this.add.graphics().setDepth(100);
+    this.routeToggleBg.setInteractive(new Phaser.Geom.Rectangle(x - w / 2, y - h / 2, w, h), Phaser.Geom.Rectangle.Contains);
+    this.routeToggleBg.on('pointerdown', () => this.routeToggleBg?.setAlpha(0.7));
+    this.routeToggleBg.on('pointerup', () => {
+      this.routeToggleBg?.setAlpha(1);
+      this.toggleRoute();
+    });
+    this.routeToggleBg.on('pointerout', () => this.routeToggleBg?.setAlpha(1));
+    this.routeToggleText = this.add.text(x, y, '', {
+      fontSize: '24px', color: '#ffffff', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(101);
+    this.paintRouteToggle();
+  }
+
+  private paintRouteToggle(): void {
+    if (!this.routeToggleBg || !this.routeToggleText) return;
+    drawUiBox(this.routeToggleBg, ROUTE_BTN_X, TOP_BAR_Y, 150, 52, {
+      fill: this.routeVisible ? 0x1c3a2a : 0x33231a,
+      fillAlpha: 0.92,
+      stroke: this.routeVisible ? 0x51cf66 : UI_ORANGE,
+      strokeAlpha: 0.8,
+      radius: 12
+    });
+    this.routeToggleText.setText(getText(this.routeVisible ? 'base.routeOn' : 'base.routeOff'));
+  }
+
+  private toggleRoute(): void {
+    this.routeVisible = !this.routeVisible;
+    localStorage.setItem(ROUTE_STORAGE_KEY, this.routeVisible ? '1' : '0');
+    this.paintRouteToggle();
+    this.renderRoutePreview();
+  }
+
+  /** 摆放模式悬停格变化（2D 由 pointermove、3D 由渲染器回调）→ 重算「放这里之后」的路线 */
+  private handleCellHover(row: number | null, col: number | null): void {
+    let next = row === null || col === null ? null : { row, col };
+    // 放不下去的格子不改道，预览按当前布局显示
+    if (next && this.placing !== null && !this.baseSystem.canPlace(this.state, this.placing, next.row, next.col).ok) {
+      next = null;
+    }
+    const same = (this.hoverCell?.row ?? -1) === (next?.row ?? -1) && (this.hoverCell?.col ?? -1) === (next?.col ?? -1);
+    if (same) return;
+    this.hoverCell = next;
+    this.renderRoutePreview();
+  }
+
+  /** 2D 网格：把指针位置换算成格子并上报（3D 走渲染器的 onCellHover 回调） */
+  private updateRouteHoverFromPointer(pointer: Phaser.Input.Pointer): void {
+    if (this.renderer3d) return;
+    if (this.placing === null) {
+      this.handleCellHover(null, null);
+      return;
+    }
+    const col = Math.floor((pointer.x - GRID_LEFT) / (CELL + GAP));
+    const row = Math.floor((pointer.y - GRID_TOP) / (CELL + GAP));
+    const base = this.state.base;
+    if (row < 0 || row >= base.rows || col < 0 || col >= base.cols) {
+      this.handleCellHover(null, null);
+      return;
+    }
+    this.handleCellHover(row, col);
+  }
+
+  /**
+   * 重算并绘制僵尸路线箭头。
+   * 摆放模式下把悬停格当作「将建建筑」算，玩家能直接看到放下去之后僵尸会改走哪条路。
+   */
+  private renderRoutePreview(): void {
+    const extraBlocked = this.placing !== null ? this.hoverCell : null;
+    const preview = computeRoutePreview(this.state, extraBlocked);
+    this.lastPreview = preview;
+    if (!this.routeVisible) {
+      this.routeLayer.removeAll(true);
+      this.renderer3d?.setRoutePreview(null);
+      return;
+    }
+    if (this.renderer3d) {
+      this.routeLayer.removeAll(true);
+      this.renderer3d.setRoutePreview(preview.cells);
+      return;
+    }
+    this.routeLayer.removeAll(true);
+    for (const cell of preview.cells) {
+      const { x, y } = this.cellXY(cell.row, cell.col);
+      const img = this.add.image(x, y, cell.spawn ? 'route-entry' : 'route-arrow')
+        .setDisplaySize(CELL * 0.82, CELL * 0.82)
+        .setAngle(routeAngle(cell.dr, cell.dc))
+        .setAlpha(cell.spawn ? 0.95 : 0.85);
+      this.routeLayer.add(img);
+    }
   }
 
   private handleCellTap(row: number, col: number): void {
@@ -1706,6 +1881,7 @@ export class BaseScene extends Phaser.Scene {
       }
       this.placing = cfg.id;
     }
+    this.hoverCell = null; // 切换摆放模式后旧的悬停格作废
     this.renderGrid();
     this.renderPalette();
   }
