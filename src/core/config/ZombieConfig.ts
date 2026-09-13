@@ -115,15 +115,27 @@ export function getLevelAttackScale(level: number): number {
 }
 
 /**
+ * 某一波的僵尸**基础数量**（不含末波保底追加；与 genWaveZombies 的数量公式同一处）
+ *
+ * 单独拆出来给夜战预告用：预告要报一个稳定数字，不能靠调用 genWaveZombies 数长度——
+ * 那条路径会随机抽类型，而"末波保底精英"是「末位不是精英才追加」，长度因此会 ±1 抖动
+ * （smoke 的「第 28 天预告：总数含保底精英」曾 4 次里红 1 次）。
+ */
+export function getWaveCount(day: number, wave: number): number {
+  const stage = getThreatStage(day);
+  const debutNight = stage.day === day && !!stage.debut;
+  // 数量系数：基础 ×2（割草尸潮手感，血量同步降 1/3 平衡），第 4/5 天再翻倍
+  const scale = day >= 5 ? 8 : day >= 4 ? 4 : 2;
+  return Math.max(2, Math.floor((2 + Math.ceil(day * 0.6) + wave) * scale * (debutNight ? 0.8 : 1)));
+}
+
+/**
  * 生成某一波的僵尸 id 队列
  * @param wave 从 1 开始
  */
 export function genWaveZombies(day: number, wave: number, totalWaves: number): number[] {
   const stage = getThreatStage(day);
-  const debutNight = stage.day === day && !!stage.debut;
-  // 数量系数：基础 ×2（割草尸潮手感，血量同步降 1/3 平衡），第 4/5 天再翻倍
-  const scale = day >= 5 ? 8 : day >= 4 ? 4 : 2;
-  const count = Math.max(2, Math.floor((2 + Math.ceil(day * 0.6) + wave) * scale * (debutNight ? 0.8 : 1)));
+  const count = getWaveCount(day, wave);
   const pool = stage.ids.map(id => ZOMBIE_MAP.get(id)).filter((z): z is IZombieConfig => !!z);
 
   const result: number[] = [];
@@ -201,10 +213,12 @@ function zombieTag(z: IZombieConfig): string {
 export function getNightPreview(day: number): INightPreview {
   const waves = getTotalWaves(day);
   const stage = getThreatStage(day);
-  let total = 0;
-  for (let w = 1; w <= waves; w++) total += genWaveZombies(day, w, waves).length;
   const bossLast = isBossNight(day);
   const eliteLast = !bossLast && day >= 6;
+  // 总数走确定性公式（不抽随机类型）：基础数量求和 + 末波保底精英/Boss
+  let total = 0;
+  for (let w = 1; w <= waves; w++) total += getWaveCount(day, w);
+  total += bossLast || eliteLast ? 1 : 0;
   const types: INightPreviewType[] = stage.ids
     .map(id => ZOMBIE_MAP.get(id))
     .filter((z): z is IZombieConfig => !!z)
