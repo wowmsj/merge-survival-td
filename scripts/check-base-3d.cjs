@@ -284,9 +284,24 @@ async function main() {
       check('⌂ 回正 → 方位角/俯仰/缩放/平移全部复位',
         Math.abs(b5.azimuth - Math.atan2(-10, -10)) < 1e-6 &&
         Math.abs(b5.elevation - 52 * Math.PI / 180) < 1e-6 &&
-        Math.abs(b5.zoom - 1.6) < 1e-6 &&
+        Math.abs(b5.zoom - b5.defaultZoom) < 1e-6 &&
         panOffset(b5) < 1e-6,
         JSON.stringify(b5));
+      check('默认倍率 > 1（按投影顶到刚好不裁切，不是保守的 zoom=1）',
+        b5.defaultZoom > 1.1 && b5.defaultZoom <= b5.maxZoom, `defaultZoom=${b5.defaultZoom}`);
+    }
+
+    // ---- 默认视角必须完整显示基地：底座四角（含建筑顶高）不越界，不能被画布 overflow:hidden 裁掉 ----
+    {
+      const probe = await page.evaluate(() => {
+        window.__base3d.owner.orbit.resetView();
+        return window.__base3d.fit(6.75, 2.6); // 6.75 = 13/2 + 底座外沿；2.6 ≈ 最高建筑顶
+      });
+      check('默认视角基地完整不裁切（底座四角在画面内）',
+        probe.maxNdcX <= 1 && probe.maxNdcY <= 1, JSON.stringify(probe));
+      const probeIn = await page.evaluate(() => window.__base3d.fit(6.5, 1.8));
+      check('默认视角把基地顶到足够大（边长占用 ≥ 85%）',
+        Math.max(probeIn.maxNdcX, probeIn.maxNdcY) >= 0.85, JSON.stringify(probeIn));
     }
 
     // ---- 拖棋子到画布边缘 → 地图自动平移（地图扩大后把棋子搬到屏幕外格子的唯一办法）----

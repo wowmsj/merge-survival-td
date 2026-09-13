@@ -209,6 +209,8 @@ export class Base3DRenderer implements IBoardItemHost {
   private camDragging = false;
   /** 单指相机手势模式：true = 旋转（鼠标右键/中键拖动），false = 平移地图（触摸与左键） */
   private camRotate = false;
+  /** 首次布局时把相机压到「默认不裁切」倍率；之后窗口尺寸变化不打断玩家当前视角 */
+  private viewInitialized = false;
   /** 拖棋子时靠近画布边缘自动平移地图：上一帧时间戳（按 dt 计步，帧率无关） */
   private lastFrameTs = 0;
   private downCell: { row: number; col: number } | null = null;
@@ -352,6 +354,7 @@ export class Base3DRenderer implements IBoardItemHost {
           azimuth: this.orbit.azimuth,
           elevation: this.orbit.elevation,
           zoom: this.orbit.zoom,
+          defaultZoom: this.orbit.homeZoom,
           targetX: this.orbit.target.x,
           targetZ: this.orbit.target.z,
           panLimit: this.orbit.panLimit,
@@ -360,7 +363,8 @@ export class Base3DRenderer implements IBoardItemHost {
           minZoom: ORBIT_MIN_ZOOM,
           maxZoom: ORBIT_MAX_ZOOM
         }),
-        fit: () => this.orbit.fitProbe(BASE_COLS / 2, BASE_ROWS / 2),
+        fit: (halfExtent?: number, topY?: number) =>
+          this.orbit.fitProbe(halfExtent ?? BASE_COLS / 2, halfExtent ?? BASE_ROWS / 2, topY ?? 1.8),
         dialogOpen: () => this.host.inputBlocked(),
         cellToScreen: (row: number, col: number) => {
           const { x, z } = cellToWorld13(row, col);
@@ -403,6 +407,13 @@ export class Base3DRenderer implements IBoardItemHost {
     this.root.style.height = `${size}px`;
     this.renderer.setSize(Math.round(size), Math.round(size));
     this.orbit.fit(size, size, BASE_COLS / 2 + 0.6, BASE_ROWS / 2 + 0.6);
+    // 默认视角：按「底座 + 建筑顶高」在默认角度下的投影顶到刚好不裁切
+    // （画布 overflow:hidden，写死放大倍率会把基地左右两侧切掉一块）
+    this.orbit.fitDefaultZoom(BASE_COLS / 2 + 0.25, BASE_ROWS / 2 + 0.25, 2.6);
+    if (!this.viewInitialized) {
+      this.viewInitialized = true;
+      this.orbit.setZoom(this.orbit.homeZoom);
+    }
   }
 
   // ---------- IBoardItemHost（棋子视图宿主能力） ----------

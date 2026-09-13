@@ -103,13 +103,15 @@ export const ORBIT_DEFAULT_ELEVATION = THREE.MathUtils.degToRad(52);
 export const ORBIT_DEFAULT_AZIMUTH = Math.atan2(-10, -10);
 export const ORBIT_MIN_ZOOM = 1;
 export const ORBIT_MAX_ZOOM = 3;
-/** 默认放大倍率：zoom=1 是「全景恰好铺满」，默认再放大一档 */
-export const ORBIT_DEFAULT_ZOOM = 1.6;
+/** 初始/兜底倍率；真实默认值由 fitDefaultZoom() 按「默认角度下基地不裁切」算出（见 homeZoom） */
+export const ORBIT_DEFAULT_ZOOM = 1;
 /** 双指平移范围下限（世界单位）；真实范围见 WarmOrbitCamera.panLimit（随缩放/地图尺寸放大） */
 export const ORBIT_PAN_LIMIT = 1.0;
 /** 视角按钮步进：点一下水平旋转 15°、俯仰 12°；按住则连续步进 */
 export const ORBIT_ROTATE_STEP = THREE.MathUtils.degToRad(15);
 export const ORBIT_TILT_STEP = THREE.MathUtils.degToRad(12);
+/** 默认视角留白系数：按投影反推的最大倍率再收 2%，保证底座四角刚好在画面内 */
+const HOME_ZOOM_MARGIN = 0.98;
 
 export class WarmOrbitCamera {
   readonly camera: THREE.PerspectiveCamera;
@@ -122,9 +124,16 @@ export class WarmOrbitCamera {
   private readonly homeTarget = new THREE.Vector3(0, 0, 0.3);
   /** 地图半边长（fit 写入）：平移范围要跟着地图尺寸走，地图扩大后仍能平移到边缘 */
   private halfExtent = 6.5;
+  /** 回正/开局的默认倍率：默认角度下基地刚好铺满且四角不越界（fitDefaultZoom 写入） */
+  private defaultZoom = ORBIT_DEFAULT_ZOOM;
 
   constructor(fov = 50, aspect = 1) {
     this.camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 100);
+  }
+
+  /** 默认倍率（回正按钮/开局用）：由 fitDefaultZoom 按实际投影算出，地图扩大后自动跟着变 */
+  get homeZoom(): number {
+    return this.defaultZoom;
   }
 
   /**
@@ -185,9 +194,34 @@ export class WarmOrbitCamera {
   resetView(): void {
     this.azimuth = ORBIT_DEFAULT_AZIMUTH;
     this.elevation = ORBIT_DEFAULT_ELEVATION;
-    this.zoom = ORBIT_DEFAULT_ZOOM;
+    this.zoom = this.defaultZoom;
     this.target.copy(this.homeTarget);
     this.apply();
+  }
+
+  /**
+   * 定默认倍率：在**默认角度**下把基地（含底座与建筑顶高）投影一遍，取最大 |NDC| 反推倍率。
+   *
+   * 为什么不能直接用固定值：fit() 的 baseDist 是按最不利角度（俯仰下限/上限）留的余量，
+   * 默认角度还有富余——固定放大到 1.6 会让基地左右两侧被画布 `overflow:hidden` 裁掉一块。
+   * 这里按真实投影顶到「刚好不裁切」，所以默认永远是完整基地；想更大再用 ＋/滚轮（那时裁切是玩家主动的），
+   * 地图扩大或画布尺寸变化后也会自动重算。
+   */
+  fitDefaultZoom(halfW: number, halfH: number, topY = 1.8): number {
+    const keep = this.zoom;
+    // 透视投影下 NDC 与倍率不成正比（相机距离变了，近远点缩放不同），迭代三次收敛到刚好留白
+    let z = ORBIT_MIN_ZOOM;
+    for (let i = 0; i < 3; i++) {
+      this.zoom = z;
+      this.apply();
+      const probe = this.fitProbe(halfW, halfH, topY);
+      const maxNdc = Math.max(probe.maxNdcX, probe.maxNdcY, 1e-3);
+      z = THREE.MathUtils.clamp(z * HOME_ZOOM_MARGIN / maxNdc, ORBIT_MIN_ZOOM, ORBIT_MAX_ZOOM);
+    }
+    this.defaultZoom = z;
+    this.zoom = keep;
+    this.apply();
+    return this.defaultZoom;
   }
 
   /** 单指/鼠标左键拖动：平移（内容跟随手指，范围随缩放与地图尺寸自适应） */
