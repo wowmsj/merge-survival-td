@@ -483,6 +483,14 @@ async function main() {
     check('正常读图视角（回正后）迷雾完全隐藏（不压暗 HUD/卡片栏）',
       worldHome.fogOpacity === 0, JSON.stringify(worldHome));
 
+    // ---- 内城/外城地板颜色区分 ----
+    const zones = await page.evaluate(() => window.__base3d.zones());
+    console.log('zones:', JSON.stringify(zones));
+    check('内城/外城地板确实分色（3D 地基材质颜色不同）',
+      zones.loaded === true && !!zones.inner && !!zones.outer && zones.inner !== zones.outer,
+      JSON.stringify(zones));
+    await page.screenshot({ path: path.join(SHOTS, 'base3d-zones.png') });
+
     await page.mouse.move(center.x, center.y);
     await page.mouse.wheel(0, -400);
     const camWheel = await readCam();

@@ -145,6 +145,14 @@ const camera = new THREE.OrthographicCamera(
 四角 NDC 0.98）。⌂ 回正与开局都用它；地图扩大/窗口变化会自动重算。
 验收：`check-base-3d.cjs`「默认视角基地完整不裁切」+「边长占用 ≥ 85%」。
 
+**内城/外城地板分色**：地基瓦片（布局 `tiles` 的 GLB）在克隆后按 `isInnerCity(row,col)` 换材质——
+内城保持原色（`INNER_FLOOR_TINT = 0xffffff`，明亮的合成区），外城环带乘一层偏灰暖褐
+（`OUTER_FLOOR_TINT = 0xa8927c`，更暗更"土"的防御环带）。材质按「源材质 + 区域」缓存复用
+（`zoneMats`），最多几份，不会给 169 格各克隆一份。无 GLB 的兜底路径叠一块 9×9 浅色板（`innerPlate`），
+2D 兜底页（`base_3d=0`）同一口径给格子上色（内城 0xfff2dd / 外城 0xc0a98d）。
+色调只能"乘"（0..1 压暗），所以取「内城原色 + 外城压暗」而不是两边各自提亮。
+验收：`check-base-3d.cjs`「内城/外城地板确实分色（3D 地基材质颜色不同）」，调试钩子 `__base3d.zones()`。
+
 **世界层与战争迷雾（P3）**：`WORLD_SIZE = 64`、`WORLD_CITY_ORIGIN = 25`（`src/core/model/Base.ts`）——
 逻辑世界 64×64，城市 13×13 居中（世界格 25..37），城市之外不可交互/不可建/不刷怪；
 `state.grid` 仍是 13×13，**不改存档结构**。渲染只加**一个**大平面（`Base3DRenderer.buildWorld`）：

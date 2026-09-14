@@ -13,7 +13,7 @@ import { TaskSystem } from '../../core/systems/TaskSystem';
 import { BaseSystem, canDefendFlyingEnemies, formatGains, formatResourceGains, getPowerInfo, isTowerPoweredAtNight } from '../../core/systems/BaseSystem';
 import { CoreSystem } from '../../core/systems/CoreSystem';
 import { computeRoutePreview, IRoutePreview } from '../../core/systems/RoutePreview';
-import { zoneOf, BaseZone, buildingAt, findCoreBuilding, getShortestEntryPathLength, BASE_COLS } from '../../core/model/Base';
+import { isInnerCity, buildingAt, findCoreBuilding, getShortestEntryPathLength, BASE_COLS } from '../../core/model/Base';
 import { getItem } from '../../core/model/Grid';
 import { itemInCd, itemIsBubble } from '../../core/model/Item';
 import { getProp, isClickSpawner, PROP_IDS } from '../../core/config/PropConfig';
@@ -758,13 +758,12 @@ export class BaseScene extends Phaser.Scene {
     for (let row = 0; row < base.rows; row++) {
       for (let col = 0; col < base.cols; col++) {
         const { x, y } = this.cellXY(row, col);
-        const zone = zoneOf(row, col);
 
         const cell = this.add.image(x, y, 'cell-bg')
           .setDisplaySize(CELL, CELL);
-        // 区域着色：内圈偏绿（资源区），外圈偏红（防御区）
-        if (zone === BaseZone.Inner) cell.setTint(0x9fd8a8);
-        else if (zone === BaseZone.Outer) cell.setTint(0xd8a89f);
+        // 内城/外城地板颜色区分（与 3D 地基同口径）：内城明亮（合成区）、外城偏灰暖褐（防御环带）
+        if (isInnerCity(row, col)) cell.setTint(0xfff2dd);
+        else cell.setTint(0xc0a98d);
         if (!base.tiles?.[row]?.[col]?.claimed) cell.setTint(0x4b4d55).setAlpha(0.55);
         this.gridLayer.add(cell);
 

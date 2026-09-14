@@ -21,10 +21,17 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { IGameState, IBuilding, IPoint, ItemStatus } from '../core/types';
 import { getBuildingConfig, IBuildingConfig } from '../core/config/BuildingConfig';
 import { getHeroConfig } from '../core/config/HeroConfig';
-import { BASE_COLS, BASE_ROWS, INNER_CITY_MAX, INNER_CITY_MIN, WORLD_CITY_ORIGIN, WORLD_SIZE, findCoreBuilding } from '../core/model/Base';
+import { BASE_COLS, BASE_ROWS, INNER_CITY_MAX, INNER_CITY_MIN, WORLD_CITY_ORIGIN, WORLD_SIZE, findCoreBuilding, isInnerCity } from '../core/model/Base';
 
 /** 战争迷雾渲染盘的边长（世界单位）：远大于逻辑世界（64），保证缩到最小时雾铺满视野、看不见盘边界 */
 const WORLD_FOG_SPAN = 120;
+
+/**
+ * 内城/外城地板色调：地基瓦片的贴图是暖沙色，色调只能"乘"（0..1 只能压暗不能提亮），
+ * 所以内城保持原色（明亮的合成区），外城乘一层偏灰的暖褐（更暗、更"土"的防御环带）。
+ */
+const INNER_FLOOR_TINT = 0xffffff;
+const OUTER_FLOOR_TINT = 0xa8927c;
 import { getItem } from '../core/model/Grid';
 import { itemCanDrag, itemIsBubble } from '../core/model/Item';
 import {
@@ -199,6 +206,8 @@ export class Base3DRenderer implements IBoardItemHost {
   private terrainFallback = false;
   private gridHelper: THREE.GridHelper;
   private border: THREE.Mesh;
+  /** 兜底内城浅色板（仅在没有 GLB 地基时显示） */
+  private innerPlate: THREE.Mesh | null = null;
 
   private buildingViews = new Map<string, IBuildingView>();
   private heroViews = new Map<string, IHeroView>();
@@ -240,6 +249,11 @@ export class Base3DRenderer implements IBoardItemHost {
   private worldFogTex: THREE.Texture | null = null;
   /** 迷雾材质：透明度随缩放淡入淡出（update() 里改） */
   private fogMat: THREE.MeshBasicMaterial | null = null;
+  /** 内城/外城地板材质（按源材质 + 区域共享，避免 169 份材质） */
+  private zoneMats = new Map<string, THREE.Material>();
+  /** 各取一个代表网格，供 e2e 断言内外城地板颜色确实不同 */
+  private innerFloorMesh: THREE.Mesh | null = null;
+  private outerFloorMesh: THREE.Mesh | null = null;
   readonly billboardQuat = new THREE.Quaternion();
   /** 状态贴片共享几何（格顶 quad，1 格见方）；实例级，dispose 时释放 */
   readonly quadGeo: THREE.BufferGeometry = new THREE.PlaneGeometry(0.946, 0.946).rotateX(-Math.PI / 2);
@@ -311,6 +325,19 @@ export class Base3DRenderer implements IBoardItemHost {
     );
     this.border.position.y = 0.05;
     this.tscene.add(this.border);
+
+    // 无 GLB 地基时的兜底：内城再叠一块略高的浅色板，保证内外城地板颜色仍然能区分
+    {
+      const inner = INNER_CITY_MAX - INNER_CITY_MIN + 1; // 9
+      const innerCenter = (INNER_CITY_MIN + INNER_CITY_MAX) / 2; // 6
+      const innerMat = new THREE.MeshStandardMaterial({ color: 0x8d7358, roughness: 0.82, metalness: 0.05 });
+      const innerPlate = new THREE.Mesh(new THREE.BoxGeometry(inner, 0.08, inner), innerMat);
+      const world = cellToWorld13(innerCenter, innerCenter);
+      innerPlate.position.set(world.x, 0.09, world.z);
+      this.innerPlate = innerPlate;
+      this.tscene.add(innerPlate);
+      this.quadDisposables.push(innerPlate.geometry, innerMat);
+    }
 
     // 内城/外城分界：中央 9×9 的内城描一圈金线（内城只合成，炮塔只能建在外城环带）
     {
@@ -411,6 +438,22 @@ export class Base3DRenderer implements IBoardItemHost {
           canvasRect: this.canvas.getBoundingClientRect().toJSON()
         }),
         dialogOpen: () => this.host.inputBlocked(),
+        /** 内城/外城地板颜色（e2e 断言两区确实不同色） */
+        zones: () => {
+          const hex = (m: THREE.Mesh | null): string | null => {
+            const mat = m && (Array.isArray(m.material) ? m.material[0] : m.material);
+            const col = (mat as THREE.MeshStandardMaterial | undefined)?.color;
+            return col ? `#${col.getHexString()}` : null;
+          };
+          return {
+            inner: hex(this.innerFloorMesh),
+            outer: hex(this.outerFloorMesh),
+            innerTint: `#${new THREE.Color(INNER_FLOOR_TINT).getHexString()}`,
+            outerTint: `#${new THREE.Color(OUTER_FLOOR_TINT).getHexString()}`,
+            innerPlateVisible: !!this.innerPlate?.visible,
+            loaded: this.terrainLoaded
+          };
+        },
         /** 世界层/战争迷雾：世界尺寸、城市位置、雾贴图上「城内透明 / 城外不透明」的实测像素 */
         world: () => {
           const fog = this.worldFogTex?.image as HTMLCanvasElement | undefined;
@@ -871,6 +914,7 @@ export class Base3DRenderer implements IBoardItemHost {
         const { x, z } = cellToWorld13(tile.row, tile.col);
         inst.position.set(x, 0, z);
         inst.traverse(obj => { if (obj instanceof THREE.Mesh) { obj.castShadow = true; obj.receiveShadow = true; } });
+        this.applyZoneTint(inst, tile.row, tile.col); // 内城/外城地板颜色区分
         group.add(inst);
         this.groundTileCount++;
       }).catch(() => { /* load 内部已 catch→null */ })
@@ -885,10 +929,38 @@ export class Base3DRenderer implements IBoardItemHost {
     this.terrainLoaded = true;
     this.gridHelper.visible = false;
     this.border.visible = false;
+    if (this.innerPlate) this.innerPlate.visible = false; // GLB 地基自带内外城分色，兜底板让位
     this.syncTerrain();
     // 封印外观此时才具备 3D 条件：铺上瓦砾堆、并让棋子视图撤掉 2D 纸箱图
     this.syncSeals();
     this.refreshItems();
+  }
+
+  /**
+   * 内城/外城地板颜色区分：把地基瓦片的材质按区域换成共享的染色克隆。
+   *
+   * 内城（中央 9×9，合成区）保持原色（明亮）；外城环带乘一层偏灰暖褐（更暗更土）。
+   * 材质按「源材质 + 区域」缓存复用，所以最多只有几份材质，不会给 169 格各克隆一份。
+   */
+  private applyZoneTint(root: THREE.Object3D, row: number, col: number): void {
+    const inner = isInnerCity(row, col);
+    root.traverse(obj => {
+      if (!(obj instanceof THREE.Mesh)) return;
+      const src = Array.isArray(obj.material) ? obj.material[0] : obj.material;
+      if (!src || !(src as THREE.MeshStandardMaterial).color) return;
+      const key = `${src.uuid}#${inner ? 'in' : 'out'}`;
+      let mat = this.zoneMats.get(key);
+      if (!mat) {
+        const clone = (src as THREE.MeshStandardMaterial).clone();
+        clone.color.multiply(new THREE.Color(inner ? INNER_FLOOR_TINT : OUTER_FLOOR_TINT));
+        this.zoneMats.set(key, clone);
+        this.quadDisposables.push(clone);
+        mat = clone;
+      }
+      obj.material = mat;
+      if (inner && !this.innerFloorMesh) this.innerFloorMesh = obj;
+      if (!inner && !this.outerFloorMesh) this.outerFloorMesh = obj;
+    });
   }
 
   /** 地形特征：以运行时 tile.terrain 为准（付费清除会真实移除），GLB 失败该格留空 */
