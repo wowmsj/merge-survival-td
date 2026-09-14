@@ -459,9 +459,29 @@ async function main() {
       camZoom.panLimit > 1.001, `limit=${camZoom.panLimit.toFixed(2)}`);
     for (let i = 0; i < 10; i++) await zoomOut.click();
     const camZoomOut = await readCam();
-    check('－ 按钮缩小并钳位下限（zoom=1 全景恰好铺满）', camZoomOut.zoom === camZoomOut.minZoom, `zoom=${camZoomOut.zoom}`);
-    check('zoom=1 时平移范围收回到取景余量（全景不会被推出画面）',
+    check('－ 按钮缩小并钳位下限', camZoomOut.zoom === camZoomOut.minZoom, `zoom=${camZoomOut.zoom}`);
+    check('缩放下限能缩到看见城市外的战争迷雾（< 0.5，城市约 1/3 屏）',
+      camZoomOut.minZoom > 0.2 && camZoomOut.minZoom < 0.5 && camZoomOut.zoom < 0.5,
+      `min=${camZoomOut.minZoom} zoom=${camZoomOut.zoom}`);
+    check('缩到最小时平移范围收回到取景余量（城市不会被推出画面）',
       Math.abs(camZoomOut.panLimit - 1) < 1e-6, `limit=${camZoomOut.panLimit}`);
+
+    // ---- 世界层：64×64 世界、城市 13×13 居中、城市外是战争迷雾 ----
+    const world = await page.evaluate(() => window.__base3d.world());
+    console.log('world:', JSON.stringify(world));
+    check('世界尺寸 64×64，城市 13×13 居中（原点格 25）',
+      world.size === 64 && world.cityOrigin === 25, JSON.stringify(world));
+    check('迷雾贴图：城市内透明、城市外近不透明',
+      world.fogCityAlpha !== null && world.fogCityAlpha < 0.05 &&
+      world.fogOutsideAlpha !== null && world.fogOutsideAlpha > 0.85, JSON.stringify(world));
+    check('缩到最小时迷雾显形（fogOpacity > 0.5）', world.fogOpacity > 0.5, JSON.stringify(world));
+    // 缩到最小时城市变小、迷雾占据画面（截图留证）
+    await page.screenshot({ path: path.join(SHOTS, 'base3d-fog-world.png') });
+    await page.locator('button[data-base3d-ctl="reset"]').click();
+    await page.waitForTimeout(300);
+    const worldHome = await page.evaluate(() => window.__base3d.world());
+    check('正常读图视角（回正后）迷雾完全隐藏（不压暗 HUD/卡片栏）',
+      worldHome.fogOpacity === 0, JSON.stringify(worldHome));
 
     await page.mouse.move(center.x, center.y);
     await page.mouse.wheel(0, -400);

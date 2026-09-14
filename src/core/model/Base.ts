@@ -26,6 +26,15 @@ export function isOuterCity(row: number, col: number): boolean {
   return row >= 0 && row < BASE_ROWS && col >= 0 && col < BASE_COLS && !isInnerCity(row, col);
 }
 
+/**
+ * 世界尺寸（战争迷雾）：64×64，城市 13×13 居中。
+ * 目前只用于渲染（地面 + 迷雾），`state.grid` 仍是 13×13，不影响存档与寻路；
+ * 城市之外不可交互、不可建、不刷怪，留给后续"城市扩张"。
+ */
+export const WORLD_SIZE = 64;
+/** 城市在世界里的起始格（(64−13)/2 = 25，城市占 25..37） */
+export const WORLD_CITY_ORIGIN = Math.floor((WORLD_SIZE - BASE_COLS) / 2);
+
 /** 建筑摆放区域 */
 export enum BaseZone {
   /** 核心格 */

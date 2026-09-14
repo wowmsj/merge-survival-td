@@ -145,6 +145,25 @@ const camera = new THREE.OrthographicCamera(
 四角 NDC 0.98）。⌂ 回正与开局都用它；地图扩大/窗口变化会自动重算。
 验收：`check-base-3d.cjs`「默认视角基地完整不裁切」+「边长占用 ≥ 85%」。
 
+**世界层与战争迷雾（P3）**：`WORLD_SIZE = 64`、`WORLD_CITY_ORIGIN = 25`（`src/core/model/Base.ts`）——
+逻辑世界 64×64，城市 13×13 居中（世界格 25..37），城市之外不可交互/不可建/不刷怪；
+`state.grid` 仍是 13×13，**不改存档结构**。渲染只加**一个**大平面（`Base3DRenderer.buildWorld`）：
+程序化 canvas 雾贴图（1024²，`FOG_SPAN = 120` 世界单位）→ 整张近不透明暖灰雾 + 云絮噪点，
+中央按**城市尺寸**打洞（destination-out + 14px 模糊，13 格 + 每边 1.5 格余量），
+外缘再用径向渐变把 alpha 渐隐到 0（否则缩到最小时会看见一块"雾的方盘"边界）。
+draw call 不随世界尺寸增长（不是 4096 个格模型）。城市脚下的地面继续用背景美术，不另铺地面。
+
+**雾只在缩出去看世界时显示**：3D 层在 UI 之上，常显的雾会把顶栏/卡片栏一起压暗，
+所以 `fogMat.opacity = clamp((0.95 − zoom)/0.35, 0, 1) × 0.95`（`update()` 里每帧按缩放写）——
+`zoom ≥ 0.95` 完全不显示（正常读图视角与旧版逐像素一致），`zoom ≤ 0.6` 全强度。
+配套把缩放下限 `ORBIT_MIN_ZOOM` 从 1 放到 **0.35**，城市缩到约 1/3 屏、四周是雾。
+注意两处"拿 1 当基准"的地方**不能**跟着改成下限，否则取景全歪（都踩过）：
+`fit()` 迭代时固定 `this.zoom = ORBIT_DEFAULT_ZOOM`、`fitDefaultZoom()` 起点也用 `ORBIT_DEFAULT_ZOOM`；
+`camera.far` 改成 `max(100, baseDist × 2.6 / ORBIT_MIN_ZOOM)`（原来只按 baseDist×2.5，缩到 0.35 时
+相机距离 ≈2.9 倍，城市会被远平面裁掉）。
+验收：`check-base-3d.cjs`「世界尺寸 64×64，城市 13×13 居中」「迷雾贴图：城市内透明、城市外近不透明」
+「缩到最小时迷雾显形」「正常读图视角（回正后）迷雾完全隐藏」，截图 `screenshots/base3d-fog-world.png`。
+
 **放大上限 = 可用宽度的 2 倍**（`ORBIT_MAX_ZOOM_FACTOR = 2`，绝对上限 `ORBIT_MAX_ZOOM = 8`）：
 `fitMaxZoom(底座半边长, 顶高, 可用宽度, 倍数)` 同法迭代，可用宽度 = `min(窗口宽, 游戏画布宽)`
 （宽屏桌面上游戏画布只占中间一条，按窗口宽算会把 UI 全盖住）。玩家明确要求"场景能放大到超过屏幕范围、

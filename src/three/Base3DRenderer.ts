@@ -21,7 +21,10 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { IGameState, IBuilding, IPoint, ItemStatus } from '../core/types';
 import { getBuildingConfig, IBuildingConfig } from '../core/config/BuildingConfig';
 import { getHeroConfig } from '../core/config/HeroConfig';
-import { BASE_COLS, BASE_ROWS, INNER_CITY_MAX, INNER_CITY_MIN, findCoreBuilding } from '../core/model/Base';
+import { BASE_COLS, BASE_ROWS, INNER_CITY_MAX, INNER_CITY_MIN, WORLD_CITY_ORIGIN, WORLD_SIZE, findCoreBuilding } from '../core/model/Base';
+
+/** 战争迷雾渲染盘的边长（世界单位）：远大于逻辑世界（64），保证缩到最小时雾铺满视野、看不见盘边界 */
+const WORLD_FOG_SPAN = 120;
 import { getItem } from '../core/model/Grid';
 import { itemCanDrag, itemIsBubble } from '../core/model/Item';
 import {
@@ -233,6 +236,10 @@ export class Base3DRenderer implements IBoardItemHost {
   private texUrlCache = new Map<string, string | null>();
   private quadMaterialCache = new Map<string, THREE.Material>();
   private quadDisposables: { dispose(): void }[] = [];
+  /** 战争迷雾贴图（懒生成 + 复用；dispose 由 quadDisposables 负责） */
+  private worldFogTex: THREE.Texture | null = null;
+  /** 迷雾材质：透明度随缩放淡入淡出（update() 里改） */
+  private fogMat: THREE.MeshBasicMaterial | null = null;
   readonly billboardQuat = new THREE.Quaternion();
   /** 状态贴片共享几何（格顶 quad，1 格见方）；实例级，dispose 时释放 */
   readonly quadGeo: THREE.BufferGeometry = new THREE.PlaneGeometry(0.946, 0.946).rotateX(-Math.PI / 2);
@@ -321,7 +328,9 @@ export class Base3DRenderer implements IBoardItemHost {
       this.tscene.add(frame);
     }
 
-    this.placementHints.renderOrder = 2;
+    // 世界层（战争迷雾）：64×64 地面 + 城市之外近不透明的雾，城市 13×13 居中
+    this.buildWorld();
+
     this.tscene.add(this.placementHints);
 
     // 僵尸路线箭头层（贴地，压在选择框/落点提示之下，免得挡住交互提示）
@@ -402,6 +411,32 @@ export class Base3DRenderer implements IBoardItemHost {
           canvasRect: this.canvas.getBoundingClientRect().toJSON()
         }),
         dialogOpen: () => this.host.inputBlocked(),
+        /** 世界层/战争迷雾：世界尺寸、城市位置、雾贴图上「城内透明 / 城外不透明」的实测像素 */
+        world: () => {
+          const fog = this.worldFogTex?.image as HTMLCanvasElement | undefined;
+          let city: number[] | null = null;
+          let outside: number[] | null = null;
+          if (fog) {
+            const g = fog.getContext('2d');
+            if (g) {
+              const center = fog.width / 2;
+              city = Array.from(g.getImageData(center, center, 1, 1).data);
+              // 城外的采样点要落在"雾盘有效范围内"：贴图外缘有一圈渐隐（避免看见雾盘边界），
+              // 取正上方 0.28 处（离中心 0.22 < 渐隐起点 0.3）才是真正的不透明雾。
+              outside = Array.from(g.getImageData(center, Math.round(fog.height * 0.28), 1, 1).data);
+            }
+          }
+          return {
+            size: WORLD_SIZE,
+            cityOrigin: WORLD_CITY_ORIGIN,
+            fogSpan: WORLD_FOG_SPAN,
+            cellToWorld: cellToWorld13(0, 0),
+            cityCornerWorld: cellToWorld13(0, 0),
+            fogOpacity: this.fogMat?.opacity ?? 0,
+            fogCityAlpha: city ? city[3] / 255 : null,
+            fogOutsideAlpha: outside ? outside[3] / 255 : null
+          };
+        },
         cellToScreen: (row: number, col: number) => {
           const { x, z } = cellToWorld13(row, col);
           const v = new THREE.Vector3(x, 0, z).project(this.orbit.camera);
@@ -560,6 +595,75 @@ export class Base3DRenderer implements IBoardItemHost {
    *   2. toneMapped=false：暖土场景开了 ACES 色调映射，不关掉箭头会发灰、失去警示色。
    * 两处都会让箭头「看不出是箭头」，所以这里单独建材质。
    */
+  /**
+   * 世界层（战争迷雾）：64×64 世界里，城市（13×13，居中）之外罩一层近不透明的雾。
+   *
+   * 玩家要求"整个地图 64×64，但只有 13×13 属于玩家，其他位置在战争迷雾中"。实现要点：
+   * - **只有一个大平面**（雾），不是 4096 个格模型——draw call 不随世界尺寸增长；
+   * - 城市范围内不打雾（贴图中央打洞 + 26px 模糊），所以城市完全清晰、出城 1~2 格开始起雾；
+   * - 不铺自己的地面：城市脚下的地面继续用现有背景美术（刚换的那张沙漠图），
+   *   雾只是罩在城市之外，缩到最小时看起来就是"迷雾里的一座城"；
+   * - 城市之外不可交互/不可建/不刷怪：格坐标映射只认 0..12，越界本来就忽略。
+   */
+  private buildWorld(): void {
+    const fogGeo = new THREE.PlaneGeometry(WORLD_FOG_SPAN, WORLD_FOG_SPAN).rotateX(-Math.PI / 2);
+    const fogMat = new THREE.MeshBasicMaterial({
+      map: this.worldFogTexture(), transparent: true, depthWrite: false, toneMapped: false, opacity: 0
+    });
+    const fog = new THREE.Mesh(fogGeo, fogMat);
+    fog.position.y = 0.16;
+    fog.renderOrder = 0.6;
+    this.tscene.add(fog);
+    this.fogMat = fogMat;
+    this.quadDisposables.push(fogGeo, fogMat);
+  }
+
+  /**
+   * 战争迷雾贴图（1024²）：整张近不透明的暖灰雾 + 云絮噪点，城市范围打一个带模糊的洞。
+   * 雾盘比"逻辑世界"（64）大得多（FOG_SPAN=120，±60 单位），这样缩到最小时雾铺满整个视野、
+   * 看不见盘的边界；洞按**城市**尺寸折算（13 格 + 每边 1.5 格余量），所以城市清晰、出城就开始起雾。
+   */
+  private worldFogTexture(): THREE.Texture {
+    if (this.worldFogTex) return this.worldFogTex;
+    const size = 1024;
+    const pxPerCell = size / WORLD_FOG_SPAN; // ≈8.5
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const g = c.getContext('2d')!;
+    g.fillStyle = 'rgba(58,48,42,0.94)';
+    g.fillRect(0, 0, size, size);
+    for (let i = 0; i < 260; i++) {
+      const r = 20 + Math.random() * 90;
+      g.globalAlpha = 0.05 + Math.random() * 0.07;
+      g.fillStyle = Math.random() < 0.5 ? 'rgba(120,104,92,1)' : 'rgba(30,24,20,1)';
+      g.beginPath();
+      g.arc(Math.random() * size, Math.random() * size, r, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.globalAlpha = 1;
+    const inner = (BASE_COLS + 3) * pxPerCell;
+    const x0 = (size - inner) / 2;
+    g.globalCompositeOperation = 'destination-out';
+    g.filter = 'blur(14px)';
+    g.fillStyle = '#000';
+    g.fillRect(x0, x0, inner, inner);
+    g.filter = 'none';
+    g.globalCompositeOperation = 'source-over';
+    // 外缘柔化：雾盘边缘渐隐到 0，避免缩小到最小时看见一块"雾的方盘"边界（读作自然的雾散）
+    const rad = g.createRadialGradient(size / 2, size / 2, size * 0.3, size / 2, size / 2, size * 0.52);
+    rad.addColorStop(0, 'rgba(0,0,0,0)');
+    rad.addColorStop(1, 'rgba(0,0,0,1)');
+    g.globalCompositeOperation = 'destination-out';
+    g.fillStyle = rad;
+    g.fillRect(0, 0, size, size);
+    g.globalCompositeOperation = 'source-over';
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    this.quadDisposables.push(tex);
+    this.worldFogTex = tex;
+    return tex;
+  }
+
   private routeMaterial(texKey: string): THREE.Material {
     const cacheKey = `${texKey}#route`;
     const cached = this.quadMaterialCache.get(cacheKey);
@@ -1506,6 +1610,12 @@ export class Base3DRenderer implements IBoardItemHost {
       this.root.style.visibility = blocked ? 'hidden' : 'visible';
     }
     if (blocked) return;
+    // 战争迷雾随缩放淡入：正常读图视角（zoom ≥ 0.95）完全不显示——否则这层雾会把
+    // 顶栏/卡片栏一起罩暗（3D 层在 UI 之上）；缩出去看世界（< 0.95）时才逐渐显现。
+    if (this.fogMat) {
+      const t = Math.min(1, Math.max(0, (0.95 - this.orbit.zoom) / 0.35));
+      this.fogMat.opacity = t * 0.95;
+    }
     this.checkIdleHint(Date.now());
     this.autoPanWhileDragging(Date.now());
 

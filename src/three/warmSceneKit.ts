@@ -101,7 +101,11 @@ export const ORBIT_MAX_ELEVATION = THREE.MathUtils.degToRad(75);
 /** 默认视角：约 52° 俯角斜 45°，基地铺满视野的读图视角（玩家指定的默认构图） */
 export const ORBIT_DEFAULT_ELEVATION = THREE.MathUtils.degToRad(52);
 export const ORBIT_DEFAULT_AZIMUTH = Math.atan2(-10, -10);
-export const ORBIT_MIN_ZOOM = 1;
+/**
+ * 缩放下限：0.35 = 能把城市缩到约 1/3 屏，看见它被战争迷雾包围（64×64 世界层）。
+ * zoom=1 仍是"城市恰好铺满取景框"的读图视角（默认与 ⌂ 用的就是它）。
+ */
+export const ORBIT_MIN_ZOOM = 0.35;
 /** 缩放绝对上限（相对 fitMaxZoom 算出的"铺满可用宽度"的倍数由 ORBIT_MAX_ZOOM_FACTOR 决定） */
 export const ORBIT_MAX_ZOOM = 8;
 /** 放大上限倍数：基地最多放到"可用宽度"的 2 倍（再多就只剩一格在屏幕里，没有意义） */
@@ -229,8 +233,11 @@ export class WarmOrbitCamera {
    */
   fitDefaultZoom(halfW: number, halfH: number, topY = 1.8): number {
     const keep = this.zoom;
-    // 透视投影下 NDC 与倍率不成正比（相机距离变了，近远点缩放不同），迭代三次收敛到刚好留白
-    let z = ORBIT_MIN_ZOOM;
+    // 透视投影下 NDC 与倍率不成正比（相机距离变了，近远点缩放不同），迭代三次收敛到刚好留白。
+    // 起点必须是 ORBIT_DEFAULT_ZOOM（=1，"城市恰好铺满取景框"的锚点），**不能**用 ORBIT_MIN_ZOOM：
+    // 缩放下限现在允许缩到 0.35 看战争迷雾，起点若跟着变成 0.35，三次迭代会收敛到 0.41 这种错值
+    // （迭代是 z ← z×margin/maxNdc，maxNdc≈k/z 时近似二次收敛，起点离解太远就跑到别的根上）。
+    let z = ORBIT_DEFAULT_ZOOM;
     for (let i = 0; i < 3; i++) {
       this.zoom = z;
       this.apply();
@@ -328,7 +335,10 @@ export class WarmOrbitCamera {
     const gx = halfW + ORBIT_PAN_LIMIT;
     const gz = halfH + ORBIT_PAN_LIMIT;
     const keepAz = this.azimuth, keepEl = this.elevation, keepZoom = this.zoom;
-    this.zoom = ORBIT_MIN_ZOOM;
+    // 迭代期间固定在"全景基准倍率"（ORBIT_DEFAULT_ZOOM=1）上量 NDC：**不能**用 ORBIT_MIN_ZOOM——
+    // 缩放下限现在允许 0.35（看战争迷雾），用它当基准会让探针在 1/0.35 的距离上量，baseDist 越算越近，
+    // 结果 zoom=1 时基地比画面大 2 倍多（e2e「zoom=1 无溢出」会红）。
+    this.zoom = ORBIT_DEFAULT_ZOOM;
     let dist = Math.max(1, this.baseDist);
     for (let i = 0; i < 8; i++) {
       this.baseDist = dist;
@@ -346,8 +356,9 @@ export class WarmOrbitCamera {
       dist = THREE.MathUtils.clamp(dist * worst, 1, 500); // NDC 与距离近似成反比，两步即收敛
     }
     this.baseDist = dist * 1.02; // 2% 余量
-    // 远平面跟着取景距离走：地图扩大后 baseDist 会变大，写死 100 会把基地裁掉
-    this.camera.far = Math.max(100, this.baseDist * 2.5);
+    // 远平面要跟着取景距离走，**并且要覆盖缩放下限**：缩小到 ORBIT_MIN_ZOOM（0.35，看战争迷雾）时
+    // 相机距离是 baseDist/0.35 ≈ 2.9 倍，只按 baseDist×2.5 设会把城市和世界地面一起裁掉（缩出去只剩背景）。
+    this.camera.far = Math.max(100, this.baseDist * 2.6 / ORBIT_MIN_ZOOM);
     this.camera.near = Math.max(0.1, this.baseDist / 500);
     this.camera.updateProjectionMatrix();
     this.azimuth = keepAz;
