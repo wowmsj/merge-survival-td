@@ -122,12 +122,20 @@ async function enterBase(page) {
         }
         return null;
       },
-      /** 未认领格（弹回测试；建筑/地形不影响「弹回」结论） */
+      /** 未认领格（弹回测试；建筑/地形不影响「弹回」结论）
+       *  开局整块 13×13 都已认领，所以这里先手动取消一格认领，再造出「未认领格」。 */
       findUnclaimed() {
         for (let r = 0; r < 13; r++) for (let c = 0; c < 13; c++) {
-          if (!this.claimed(r, c) && !this.building(r, c)) return [r, c];
+          if (!this.building(r, c)) {
+            this.setClaimed(r, c, false);
+            return [r, c];
+          }
         }
         return null;
+      },
+      setClaimed(r, c, value) {
+        const tile = window.__base3d.state.base.tiles?.[r]?.[c];
+        if (tile) tile.claimed = value;
       },
       put(r, c, item) {
         window.__base3d.state.grid.cells[r][c].item = item;

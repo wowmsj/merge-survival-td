@@ -1,6 +1,6 @@
 import { GameEvents, eventBus } from '../events/EventBus';
 import { IBaseState, IBuilding, IGameState, IResource } from '../types';
-import { buildingAt, claimAround, createDefaultBase, hasKillCorridor, isClaimed } from '../model/Base';
+import { buildingAt, claimAround, createDefaultBase, hasKillCorridor, isClaimed, isOuterCity } from '../model/Base';
 import { getItem } from '../model/Grid';
 import { itemBlocksGroundZombie } from '../model/Item';
 import {
@@ -95,9 +95,14 @@ export function isBuildingPoweredAtNight(state: IGameState, building: IBuilding,
   return true;
 }
 
-/** 防御塔夜战供电判定的兼容入口。 */
-export function isTowerPoweredAtNight(state: IGameState, building: IBuilding, now: number = Date.now()): boolean {
-  return isBuildingPoweredAtNight(state, building, now);
+/**
+ * 防御塔夜战供电判定：**永远通电**。
+ *
+ * 玩家要求砍掉电力/雷达依赖（资源建筑与雷达站都不再能建），所以塔不再缺电、也不再需要雷达覆盖对空——
+ * 否则拆掉电站后塔会变哑，飞行僵尸完全无解。电力系统本身（风力发电站那套）保留给旧代码/测试用。
+ */
+export function isTowerPoweredAtNight(_state: IGameState, _building: IBuilding, _now: number = Date.now()): boolean {
+  return true;
 }
 
 /** 指定支撑建筑是否覆盖格子；夜战时使用夜战供电优先级。 */
@@ -109,13 +114,9 @@ export function hasSupportCoverage(state: IGameState, support: SupportKind, row:
   });
 }
 
-/** 夜战中是否存在能攻击飞行敌人的已供电防御塔。 */
+/** 夜战是否有能打飞行敌人的塔：塔默认对空（雷达站已移出建造栏），只要有塔就算有防空。 */
 export function canDefendFlyingEnemies(state: IGameState): boolean {
-  return state.base.buildings.some(building => {
-    const cfg = getBuildingConfig(building.cfgId);
-    if (cfg?.kind !== 'tower' || !isTowerPoweredAtNight(state, building)) return false;
-    return building.cfgId !== 101 || hasSupportCoverage(state, 'radar', building.row, building.col, true);
-  });
+  return state.base.buildings.some(building => getBuildingConfig(building.cfgId)?.kind === 'tower');
 }
 
 /** 行动力消耗：升级（SURVIVAL_BUILD_DESIGN.md 6.2）；建造/修复不消耗行动力（修复改收金币） */
@@ -189,13 +190,17 @@ export class BaseSystem {
 
     if (!isClaimed(base, row, col)) return { ok: false, reason: getText('toast.expandTerritory') };
 
+    // 只允许建造炮塔（城墙/资源/陷阱已砍掉），且只能建在外城环带（内城 9×9 只做合成）
+    if (cfg.kind !== 'tower') return { ok: false, reason: getText('toast.onlyTowers') };
+    if (!isOuterCity(row, col)) return { ok: false, reason: getText('toast.outerCityOnly') };
+
     if (state.resources.coin < cfg.costCoin) {
       return { ok: false, reason: getText('toast.notEnoughCoinsBuild', { coins: cfg.costCoin, have: state.resources.coin }) };
     }
     // 封死最后一条通路不再拦截（玩家反馈"很难留一条路线出来，基本没法摆塔"）：
     // 僵尸遇到阻碍会拆建筑、也会踩碎挡路棋子，所以"封死"只是换一种打法，不算非法操作 → 只提示。
     const itemBlocked = (r: number, c: number) => itemBlocksGroundZombie(getItem(state.grid, r, c));
-    const sealed = cfg.kind !== 'trap' && !hasKillCorridor(base, { row, col }, itemBlocked);
+    const sealed = !hasKillCorridor(base, { row, col }, itemBlocked);
     return sealed ? { ok: true, warn: getText('toast.corridorSealed') } : { ok: true };
   }
 

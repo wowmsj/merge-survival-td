@@ -8,7 +8,7 @@ import { CoreSystem } from '../src/core/systems/CoreSystem';
 import { CORE_LEVEL_MAX, getCoreCdSecondsAt, getCoreProductsAt, getCorePropId, getCoreTimesAt, getCoreUpgradeCost, isCoreMaterial } from '../src/core/config/CoreConfig';
 import { setItem, getItem } from '../src/core/model/Grid';
 import { createItemFromConfig } from '../src/core/model/Item';
-import { ItemStatus, IGameState, IItemData } from '../src/core/types';
+import { ItemStatus, IBuilding, IGameState, IItemData } from '../src/core/types';
 import { BagSystem } from '../src/core/systems/BagSystem';
 import { EconomySystem } from '../src/core/systems/EconomySystem';
 import { SpecialItemSystem } from '../src/core/systems/SpecialItemSystem';
@@ -28,10 +28,10 @@ import { GameEvents, eventBus } from '../src/core/events/EventBus';
 import { IStoryBeat, STORY_BEATS, getMainStoryBeats, getUnlockCondition, hasTaskStoryBeat, getMetCharacters } from '../src/core/config/StoryConfig';
 import { genWaveZombies, getTotalWaves, getZombieConfig, getNightPreview, getZombieLevel, rollDrops } from '../src/core/config/ZombieConfig';
 import { getAllProps, getMergeChain, getMergeChainSpawner, getMergeNextId, getSpawnerProductView, isMergeChainTop, isMaxBadgeItem, isClickSpawner, getClickProducts, getProp, isToolSeriesItem, isRetiredCoreProp } from '../src/core/config/PropConfig';
-import { getAllBuildingConfigs, getBuildingConfig, outputIntervalAtLevel, getBuildableList, RUIN_ID, getRepairCostCoin } from '../src/core/config/BuildingConfig';
+import { getAllBuildingConfigs, getBuildingConfig, outputIntervalAtLevel, getBuildableList, hpAtLevel, RUIN_ID, getRepairCostCoin } from '../src/core/config/BuildingConfig';
 import { getAllZombieConfigs } from '../src/core/config/ZombieConfig';
 import { getPowerMax } from '../src/core/config/TableConfig';
-import { BASE_CENTER, createDefaultBase, findPathToCore, getShortestEntryPathLength, isClaimed, claimAround, hasKillCorridor, RUIN_COLLAPSE_ORDER, ruinCellsOfSide } from '../src/core/model/Base';
+import { BASE_CENTER, createDefaultBase, findPathToCore, getShortestEntryPathLength, isClaimed, claimAround, hasKillCorridor, isInnerCity, isOuterCity, RUIN_COLLAPSE_ORDER, ruinCellsOfSide } from '../src/core/model/Base';
 import { computeRoutePreview } from '../src/core/systems/RoutePreview';
 import { TERRAIN_CLEAR_COST, TERRAIN_TABLE, terrainAt, isTerrainSpawnable } from '../src/core/config/TerrainConfig';
 import { applyCoreAura, getCoreAuraChance, getCoreTier, getItemTier } from '../src/core/config/MergeCoreConfig';
@@ -46,6 +46,22 @@ function unlockAllBuildings(state: { unlockedBuildings: number[] }) {
 /** 注入一座风力发电站（Lv1 providePower 6）；放在西北角 (2,2)，远离东侧进攻路线。 */
 function addFueledGenerator(state: IGameState) {
   state.base.buildings.push({ cfgId: 203, level: 1, hp: 150, maxHp: 150, row: 2, col: 2 });
+}
+
+/**
+ * 直接落一座建筑并扣金币（**跳过 canPlace 的新规则**：现在只允许炮塔、且只能建在外城）。
+ * 电力/产出/拆修这些"旧机制"用例仍要能造墙和资源站来验证，所以这里绕过摆放规则；
+ * 摆放规则本身另有专门用例（内城不可建塔 / 非炮塔不可建造）。
+ */
+function forcePlace(state: IGameState, cfgId: number, row: number, col: number): boolean {
+  const cfg = getBuildingConfig(cfgId);
+  if (!cfg || state.resources.coin < cfg.costCoin) return false;
+  state.resources.coin -= cfg.costCoin;
+  const hp = hpAtLevel(cfg, 1);
+  const building: IBuilding = { cfgId, level: 1, hp, maxHp: hp, row, col };
+  if (cfg.kind === 'resource') building.lastProduceAt = Date.now();
+  state.base.buildings.push(building);
+  return true;
 }
 
 let passed = 0;
@@ -108,9 +124,17 @@ console.log('== 领地与引流走廊 ==');
 {
   const baseState = createDefaultBase();
   assert(isClaimed(baseState, BASE_CENTER, BASE_CENTER), '核心区域初始已占领');
-  assert(!isClaimed(baseState, 0, 0), '远端角落初始未占领');
-  const claimed = claimAround(baseState, BASE_CENTER - 5, BASE_CENTER, 1);
-  assert(claimed > 0 && isClaimed(baseState, BASE_CENTER - 6, BASE_CENTER), '前哨向外扩张领地');
+  // 开局整块 13×13 都归玩家（内城 9×9 + 外城环带），炮塔要能直接建在外城
+  assert(isClaimed(baseState, 0, 0) && isClaimed(baseState, 12, 12), '开局整块 13×13 都已认领');
+  assert(isInnerCity(BASE_CENTER, BASE_CENTER) && !isInnerCity(0, 0) && isOuterCity(0, 0), '内城/外城划分正确（中央 9×9 是内城）');
+  // 扩张领地机制本身仍可用：手动取消外圈一格认领后再扩张
+  baseState.tiles[0][0].claimed = false;
+  baseState.tiles[0][5].claimed = false;
+  baseState.tiles[0][6].claimed = false;
+  baseState.tiles[0][7].claimed = false;
+  assert(!isClaimed(baseState, 0, 0), '手动取消后未占领');
+  const claimed = claimAround(baseState, 1, BASE_CENTER, 1);
+  assert(claimed > 0 && isClaimed(baseState, 0, BASE_CENTER), '前哨向外扩张领地');
 
   const corridorState = createInitialGameState();
   for (const row of corridorState.base.tiles) for (const tile of row) tile.claimed = true;
@@ -119,13 +143,13 @@ console.log('== 领地与引流走廊 ==');
   corridorState.resources.coin = 10000;
   assert(hasKillCorridor(corridorState.base), '初始基地存在引流走廊');
   assert((getShortestEntryPathLength(corridorState.base) ?? 0) > 0, '预告可获得最短地面路线长度');
-  assert(base.place(corridorState, 401, 4, 12), '还有其他入口时允许封一处入口');
-  assert(base.place(corridorState, 401, 5, 12), '还有最后入口时允许继续布防');
+  assert(base.place(corridorState, 101, 4, 12), '还有其他入口时允许封一处入口');
+  assert(base.place(corridorState, 101, 5, 12), '还有最后入口时允许继续布防');
   // 玩家反馈"很难留一条路线出来，基本没法摆塔" → 封死最后通路不再拦截，只警告
   // （僵尸遇到阻碍会拆建筑、也会踩碎挡路棋子，见 NightSystem.crushItemTowardCore）
-  const sealedCheck = base.canPlace(corridorState, 401, 6, 12);
+  const sealedCheck = base.canPlace(corridorState, 101, 6, 12);
   assert(sealedCheck.ok && !!sealedCheck.warn, '封死最后引流走廊允许摆放，但返回警告');
-  assert(base.place(corridorState, 401, 6, 12), '封死最后通路也能真的放下建筑');
+  assert(base.place(corridorState, 101, 6, 12), '封死最后通路也能真的放下建筑');
   assert((getShortestEntryPathLength(corridorState.base) ?? 0) === 0, '三处入口都封上后地面路线确实为 0');
 }
 
@@ -1172,28 +1196,30 @@ console.log('== 基地建造 ==');
   // 金币不足不能建（木墙 401 需要 100 金币）
   const coinBefore = state.resources.coin;
   state.resources.coin = 0;
-  assert(!base.place(state, 401, 6, 5), '金币不足摆放失败');
+  assert(!base.place(state, 101, 5, 12), '金币不足摆放失败');
   state.resources.coin = coinBefore;
 
-  // 按区域规则摆放
+  // 新摆放规则：只有炮塔、且只能建在外城环带（内城 9×9 只做合成）
   assert(!base.place(state, 101, BASE_CENTER, BASE_CENTER), '核心格不可摆放');
-  assert(base.canPlace(state, 101, 6, 5).ok, '防御塔可建在内圈');
-  assert(base.canPlace(state, 202, 5, 12).ok, '资源建筑可建在外圈');
+  assert(!base.canPlace(state, 101, 6, 5).ok, '内城不可建塔（内城只合成）');
+  assert(base.canPlace(state, 101, 5, 12).ok, '外城可以建塔');
+  assert(!base.canPlace(state, 202, 5, 12).ok, '非炮塔建筑（资源站）已不可建造');
+  assert(!base.canPlace(state, 401, 5, 12).ok, '非炮塔建筑（城墙）已不可建造');
 
-  // 建造扣金币：木墙 = 100 金币
-  const wallCoinBefore = state.resources.coin;
-  assert(base.place(state, 401, 6, 5), '木墙摆放在内圈空格');
-  assert(state.resources.coin === wallCoinBefore - 100, '建造木墙扣 100 金币');
-  assert(!base.place(state, 401, 6, 5), '重复格不可摆放');
+  // 建造扣金币：炮塔 = 200 金币（(4,12)：外城环带）
+  const towerCoinBefore = state.resources.coin;
+  assert(base.place(state, 101, 4, 12), '炮塔摆放在外城空格');
+  assert(state.resources.coin === towerCoinBefore - 200, '建造炮塔扣 200 金币');
+  assert(!base.place(state, 101, 4, 12), '重复格不可摆放');
 
   // 箭塔 = 200 金币（(5,12)：东边缺口的外圈格）
   const arrowCoinBefore = state.resources.coin;
   assert(base.place(state, 101, 5, 12), '箭塔摆放在外圈');
   assert(state.resources.coin === arrowCoinBefore - 200, '建造箭塔扣 200 金币');
 
-  // 医疗站 = 250 金币
+  // 医疗站 = 250 金币（资源建筑已不可建造，旧机制用例直接落一座）
   const farmCoinBefore = state.resources.coin;
-  assert(base.place(state, 202, 6, 4), '医疗站摆放在内圈');
+  assert(forcePlace(state, 202, 6, 4), '医疗站落位（旧机制用例，绕过新摆放规则）');
   assert(state.resources.coin === farmCoinBefore - 250, '建造医疗站扣 250 金币');
 
   // 升级：1→2 消耗 250 金币 + 1 张重复蓝图，血量 ×1.5
@@ -1248,14 +1274,15 @@ console.log('== 基地建造 ==');
   base.tickProduction(state, t0 + 2 * 3600 * 1000);
   assert(state.resources.medicine === 10, '药品产出受上限 10 限制');
 
-  // 仓库（205）增加药品储量上限
+  // 仓库（205）增加药品储量上限 —— 资源建筑已不能建造，这里直接验证配置项本身
   assert(state.resources.medicineMax === 10, '默认药品上限 10');
-  assert(base.place(state, 205, 6, 3), '仓库摆放成功');
-  assert(state.resources.medicineMax === 40, '仓库增加药品上限');
+  assert(getBuildingConfig(205)?.capResource === 'medicineMax' && getBuildingConfig(205)?.capAmount === 30,
+    '仓库配置为药品储量上限 +30（摆放生效逻辑随资源建筑一起停用）');
+  forcePlace(state, 205, 6, 3); // 旧机制用例：落位本身不报错
 
   // 收集站 207 产出低级合成材料，发到棋盘（满则进卡片）
   addFueledGenerator(state); // 本段验证产出，补一座发电站避免前序建筑占满新的 6 点容量。
-  assert(base.place(state, 207, 5, 5), '收集站摆放成功');
+  assert(forcePlace(state, 207, 5, 5), '收集站落位（旧机制用例）');
   const collector = state.base.buildings.find(b => b.row === 5 && b.col === 5)!;
   const boardCountBefore = state.grid.cells.flat().filter(c => c.item).length + state.cardArr.length;
   const tCollect = collector.lastProduceAt!;
@@ -1279,7 +1306,15 @@ console.log('== 基地建造 ==');
   // 建造不消耗行动力（只扣金币）。先清掉收集站产出落到基地格上的材料——物品占格会阻挡摆放（基地合成新规则）
   state.grid.cells.forEach(row => row.forEach(cell => { cell.item = null; }));
   const powerBefore = state.resources.power;
-  assert(base.place(state, 402, 6, 8), '石墙摆放成功');
+  assert(forcePlace(state, 402, 6, 8), '石墙落位（旧机制用例，绕过新摆放规则）');
+  // 建造不消耗行动力：用真 place 摆一座炮塔（找一个当前合法的外城格，不写死坐标）
+  let apCell: { row: number; col: number } | null = null;
+  for (let r = 0; r < 13 && !apCell; r++) {
+    for (let c = 0; c < 13; c++) {
+      if (base.canPlace(state, 101, r, c).ok) { apCell = { row: r, col: c }; break; }
+    }
+  }
+  assert(!!apCell && base.place(state, 101, apCell.row, apCell.col), '炮塔摆放在外城（行动力用例）');
   assert(state.resources.power === powerBefore, '建造不消耗行动力');
 
   // 修复：受损建筑回满血，收金币（造价一半 × 损坏比例），不耗行动力
@@ -1357,7 +1392,7 @@ console.log('== 电力系统 ==');
   assert(getPowerInfo(state).cap === 9, '发电机升级电力 ×1.5 取整（6→9）');
   gen.level = 1;
 
-  // 缺电塔夜晚不攻击（僵尸只在第 6 座缺电塔射程内）；夜战口径塔优先：只算塔时全部通电
+  // 塔永久通电：不再受电力容量/发电设施影响（玩家要求砍掉电力依赖）
   const state2 = createInitialGameState();
   addFueledGenerator(state2);
   state2.base.buildings.push({ cfgId: 202, level: 1, hp: 150, maxHp: 150, row: 6, col: 4 }); // 医疗站先盖
@@ -1366,11 +1401,11 @@ console.log('== 电力系统 ==');
   }
   const towers2 = state2.base.buildings.filter(b => b.cfgId === 101);
   const farmNp = state2.base.buildings.find(b => b.cfgId === 202)!;
-  // 白天口径：医疗站(2)+塔(10) 累计超出 6 → 第 3 座塔缺电；夜战只给塔供电 → 前 3 座通电。
+  // 白天口径仍然按顺序分配（电力系统本身保留），但塔的夜战口径恒为通电
   assert(isBuildingPowered(state2, farmNp) && !isBuildingPowered(state2, towers2[2]), '白天按摆放顺序：医疗站通电、第 3 座塔缺电');
-  assert(towers2.slice(0, 3).every(b => isTowerPoweredAtNight(state2, b)) && !isTowerPoweredAtNight(state2, towers2[3]), '夜战塔优先：前 3 座塔通电');
+  assert(towers2.every(b => isTowerPoweredAtNight(state2, b)), '炮塔永久通电（不再依赖电力分配）');
 
-  // 缺电塔夜晚不攻击 → 通电后恢复
+  // 拆掉发电设施后塔照样开火，且不再弹「缺电」提示
   const battle = night.startBattle(state2);
   battle.status = 'fighting';
   battle.wave = 1;
@@ -1379,11 +1414,8 @@ console.log('== 电力系统 ==');
   const offPowerToast = eventBus.on(GameEvents.TOAST_SHOW, (message: string) => powerToasts.push(message));
   battle.zombies.push({ uid: 997, cfgId: 1, hp: 60, maxHp: 60, row: 0, col: 5, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 });
   night.tick(state2, battle, 100);
-  assert(battle.zombies[0]?.hp === 60, '缺电塔夜晚不攻击');
-  assert(powerToasts.some(message => message === getText('toast.towerNoPower')), '缺电箭塔提示原因');
-  addFueledGenerator(state2);
-  night.tick(state2, battle, 100);
-  assert(battle.zombies[0] !== undefined && battle.zombies[0].hp < 60, '通电后塔恢复攻击');
+  assert((battle.zombies[0]?.hp ?? 60) < 60, '没有发电设施时炮塔照样开火');
+  assert(!powerToasts.some(message => message === getText('toast.towerNoPower')), '不再出现「缺电」提示');
   offPowerToast();
 
   // 缺电资源建筑不产出且不推进 lastProduceAt；通电后补产（不吞离线时间）
@@ -1413,7 +1445,7 @@ console.log('== 阵地组合 ==');
     state.base.buildings.push({ cfgId: 208, level: 1, hp: 180, maxHp: 180, row: 2, col: 2 });
     for (let i = 0; i < 5; i++) state.base.buildings.push({ cfgId: 101, level: 1, hp: 400, maxHp: 400, row: 0, col: i * 2 });
     const towers = state.base.buildings.filter(b => b.cfgId === 101);
-    assert(towers.slice(0, 2).every(tower => isTowerPoweredAtNight(state, tower)) && !isTowerPoweredAtNight(state, towers[2]), '夜间弹药库优先于防御塔供电');
+    assert(towers.every(tower => isTowerPoweredAtNight(state, tower)), '塔全部永久通电（弹药库/电力分配不再影响塔）');
   }
 
   // 弹药库覆盖内的箭塔攻速 +50%。
@@ -1430,21 +1462,21 @@ console.log('== 阵地组合 ==');
     assert(Math.abs((battle.towerCds['2,4'] ?? 0) - 1000 / (1.2 * 1.5)) < 0.01, '弹药库令覆盖内箭塔攻速提升 50%');
   }
 
-  // 箭塔必须在雷达覆盖内才能对空；雷达也让钻地敌提前显形。
+  // 塔默认对空：雷达站已移出建造栏，箭塔不需要任何支撑就能打飞行敌。
   {
     const state = createInitialGameState();
     addFueledGenerator(state);
     state.base.buildings.push({ cfgId: 101, level: 1, hp: 400, maxHp: 400, row: 2, col: 4 });
-    assert(!canDefendFlyingEnemies(state), '无雷达覆盖的箭塔无法防御飞行敌人');
+    assert(canDefendFlyingEnemies(state), '有塔即可防御飞行敌人（默认对空）');
     const battle = night.startBattle(state);
     battle.status = 'fighting';
     battle.wave = 1;
     battle.zombies.push({ uid: 9976, cfgId: 7, hp: 100, maxHp: 100, row: 2, col: 6, moveCd: 1e9, attackCd: 1e9, slowUntil: 0 });
     night.tick(state, battle, 100);
-    assert(battle.zombies[0]?.hp === 100, '无雷达覆盖的箭塔不能攻击飞行敌人');
+    assert((battle.zombies[0]?.hp ?? 100) < 100, '没有雷达站也能攻击飞行敌人');
   }
 
-  // 雷达覆盖内的箭塔优先射击飞行敌，钻地敌直接显形。
+  // 雷达站（旧档/旧代码遗留）仍在时，箭塔同样优先射击飞行敌、钻地敌直接显形。
   {
     const state = createInitialGameState();
     addFueledGenerator(state);
@@ -1586,12 +1618,16 @@ console.log('== 夜晚战斗 ==');
     ts.resources.coin = 100000;
     assert(TERRAIN_TABLE.every(c => (c.kind as string) !== 'shack'), '初始地形不再包含破旧建筑');
     assert(terrainAt(ts.base, 1, 2) === 'rubble', '原破旧建筑格现在是瓦砾堆');
-    assert(!baseSys.canPlace(ts, 401, 2, 3).ok, '瓦砾地形格不可摆放');
-    // 金币清理：扣款、地形移除；之后即可摆放
+    assert(!baseSys.canPlace(ts, 101, 2, 3).ok, '瓦砾地形格不可摆放');
+    // 金币清理：扣款、地形移除；之后即可摆放（用外城有地形的格验证：内城本来就不让建塔）
+    const outerTerrain = TERRAIN_TABLE.find(c => isOuterCity(c.row, c.col) && !(c.row === 1 && c.col === 1))!;
+    assert(!!outerTerrain && !baseSys.canPlace(ts, 101, outerTerrain.row, outerTerrain.col).ok,
+      '外城地形格清理前不可建塔');
     assert(baseSys.clearTerrain(ts, 2, 3), '金币清理瓦砾堆成功');
     assert(ts.resources.coin === 100000 - TERRAIN_CLEAR_COST.rubble, '清理瓦砾堆扣 100 金币');
     assert(!terrainAt(ts.base, 2, 3), '清理后地形移除');
-    assert(baseSys.canPlace(ts, 401, 2, 3).ok, '清理后可摆放');
+    assert(baseSys.clearTerrain(ts, outerTerrain.row, outerTerrain.col), '外城地形也能清理');
+    assert(baseSys.canPlace(ts, 101, outerTerrain.row, outerTerrain.col).ok, '外城地形清理后可建塔');
     // 金币不足清理失败，地形保留
     ts.resources.coin = 10;
     assert(!baseSys.clearTerrain(ts, 1, 1) && terrainAt(ts.base, 1, 1) === 'rubble', '金币不足清理失败且地形保留');
@@ -2855,15 +2891,15 @@ console.log('== 蓝图解锁 ==');
     offBp();
   }
 
-  // --- 用例 2：未解锁建筑 canPlace=false；解锁后 true ---
+  // --- 用例 2：未解锁建筑 canPlace=false；解锁后 true（用炮塔验证蓝图门槛） ---
   {
     const state = createInitialGameState();
     state.resources.coin = 10000;
-    const locked = base.canPlace(state, 401, 6, 5);
+    const locked = base.canPlace(state, 101, 5, 12);
     assert(!locked.ok && (locked.reason ?? '').includes('未解锁'), '未解锁建筑 canPlace=false');
-    state.unlockedBuildings.push(401);
-    assert(base.canPlace(state, 401, 6, 5).ok, '解锁后 canPlace=true');
-    assert(base.place(state, 401, 6, 5), '解锁后摆放成功');
+    state.unlockedBuildings.push(101);
+    assert(base.canPlace(state, 101, 5, 12).ok, '解锁后 canPlace=true');
+    assert(base.place(state, 101, 5, 12), '解锁后摆放成功');
     // 无 blueprint 字段的核心/废墟恒解锁（核心不可建造规则不受影响）
     assert(!base.canPlace(state, 1, 6, 4).ok, '核心仍不可建造');
   }
@@ -2931,7 +2967,7 @@ console.log('== 蓝图解锁 ==');
     assert(!ensureUnlockedBuildings(state), '字段已存在不重复兜底');
     // 兜底后旧档建筑可正常升级/摆放同类
     state.resources.coin = 10000;
-    assert(base.canPlace(state, 101, 6, 5).ok, '旧档已解锁建筑可再建');
+    assert(base.canPlace(state, 101, 5, 12).ok, '旧档已解锁建筑可再建（外城炮塔）');
   }
 }
 
@@ -2965,8 +3001,8 @@ assert(baseSceneSource.includes('private nightEndStory: { won: boolean; day: num
 assert(baseSceneSource.includes('this.storySystem.checkNightEnd(this.state, this.nightEndStory.won, this.nightEndStory.day);'), '基地场景在剧情弹窗就绪后触发夜战剧情');
 assert(baseSceneSource.includes('getZombieName(t.id)') && baseSceneSource.includes("getText(`zombie.tag.${t.id}`)"), 'Night preview uses localized zombie accessors');
 assert(baseSceneSource.includes('canDefendFlyingEnemies(this.state)') && baseSceneSource.includes("getText('base.noAntiAirWarning')"), 'Night preview warns when flying enemies exceed the current air defense');
-assert(baseSceneSource.includes("building.cfgId === 101 && staffed && hasSupportCoverage(this.state, 'radar'"), '基地页雷达覆盖内箭塔显示对空角标');
-assert(nightSceneSource.includes("b.cfgId === 101 && powered && hasSupportCoverage(this.state, 'radar'"), '夜战页雷达覆盖内箭塔显示对空角标');
+assert(baseSceneSource.includes('building.cfgId === 101 && staffed'), '基地页箭塔显示对空角标（默认对空）');
+assert(nightSceneSource.includes('b.cfgId === 101 && powered'), '夜战页箭塔显示对空角标（默认对空）');
 assert(getText('base.antiAir') !== 'base.antiAir', '对空角标文案已本地化');
 assert(baseSceneSource.includes('getRecommendedMarketItem(this.state.day)') && baseSceneSource.includes("getText('base.marketComplete'"), 'Night preview and market expose the recommended complete blueprint');
 assert(getText('base.marketComplete') !== 'base.marketComplete' && getText('base.recommendedCounter') !== 'base.recommendedCounter', 'Complete blueprint UI text is localized');
@@ -2980,9 +3016,9 @@ assert(monsterPanelSource.includes('getAllZombieConfigs()') && monsterPanelSourc
 const buildToastState = createInitialGameState();
 unlockAllBuildings(buildToastState);
 buildToastState.base.tiles.forEach(row => row.forEach(tile => { tile.claimed = true; }));
-const buildToastReason = new BaseSystem(new EconomySystem()).canPlace(buildToastState, 401, 6, 5).reason;
+const buildToastReason = new BaseSystem(new EconomySystem()).canPlace(buildToastState, 101, 5, 12).reason;
 // 只断言"英文 + 带需求金币数"，措辞调整（例如补上当前金币）不该弄红用例
-assert(!!buildToastReason && buildToastReason.includes('Not enough Coins') && buildToastReason.includes('100'),
+assert(!!buildToastReason && buildToastReason.includes('Not enough Coins') && buildToastReason.includes('200'),
   'English build failure toast is localized');
 assert(getPropDescription(10001) !== getAllProps().find(prop => prop.id === 10001)?.mask, 'English prop description is localized');
 assert(getHeroDescription('laoqiang') !== getHeroConfig('laoqiang')?.desc, 'English hero description is localized');

@@ -527,17 +527,15 @@ export class NightSystem {
       battle.towerCds[key] = (battle.towerCds[key] ?? 0) - dt;
       if (battle.towerCds[key] > 0) continue;
 
-      // 雷达覆盖的箭塔优先处理飞行目标；其他塔按最近距离索敌。
+      // 塔默认对空：箭塔优先打飞行敌、电磁塔能打钻地敌（雷达站已移出建造栏，不再判覆盖）
       let target: IZombie | null = null;
       let best = Infinity;
       let bestPriority = Infinity;
-      const radarArrow = b.cfgId === 101 && hasSupportCoverage(state, 'radar', b.row, b.col, true);
       for (const z of battle.zombies) {
         const zCfg = getZombieConfig(z.cfgId);
-        if (z.burrowed && !(b.cfgId === 103 && hasSupportCoverage(state, 'radar', z.row, z.col, true))) continue;
-        if (b.cfgId === 101 && (zCfg?.moveType === 'burrow' || (zCfg?.moveType === 'fly' && !radarArrow))) continue;
+        if (z.burrowed && b.cfgId !== 103) continue;
+        const priority = b.cfgId === 101 && zCfg?.moveType === 'fly' ? 0 : 1;
         const d = Math.max(Math.abs(z.row - b.row), Math.abs(z.col - b.col));
-        const priority = radarArrow && zCfg?.moveType === 'fly' ? 0 : 1;
         if (d <= cfg.range && (priority < bestPriority || (priority === bestPriority && d < best))) {
           bestPriority = priority;
           best = d;

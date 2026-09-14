@@ -6,7 +6,25 @@ import { TERRAIN_TABLE, terrainAt, isTerrainWalkableForGround } from '../config/
 export const BASE_ROWS = 13;
 export const BASE_COLS = 13;
 export const BASE_CENTER = Math.floor(BASE_ROWS / 2); // 6
-export const INITIAL_CLAIM_RADIUS = 5;
+/** 开局认领范围：整块 13×13 都归玩家（外城环带要能直接布防） */
+export const INITIAL_CLAIM_RADIUS = 6;
+
+/**
+ * 内城范围（含两端）：中央 9×9（行列 2..10）。
+ * 内城只做合成（棋子摆在这里）；**炮塔只能建在外城环带**，见 BaseSystem.canPlace。
+ */
+export const INNER_CITY_MIN = 2;
+export const INNER_CITY_MAX = BASE_ROWS - 3; // 10
+
+/** 该格是否属于内城（9×9） */
+export function isInnerCity(row: number, col: number): boolean {
+  return row >= INNER_CITY_MIN && row <= INNER_CITY_MAX && col >= INNER_CITY_MIN && col <= INNER_CITY_MAX;
+}
+
+/** 该格是否属于外城（13×13 里内城之外的一圈环带，宽度 2） */
+export function isOuterCity(row: number, col: number): boolean {
+  return row >= 0 && row < BASE_ROWS && col >= 0 && col < BASE_COLS && !isInnerCity(row, col);
+}
 
 /** 建筑摆放区域 */
 export enum BaseZone {

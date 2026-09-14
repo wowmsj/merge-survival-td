@@ -10,7 +10,7 @@ import { BagSystem } from '../../core/systems/BagSystem';
 import { SpecialItemSystem } from '../../core/systems/SpecialItemSystem';
 import { LevelSystem } from '../../core/systems/LevelSystem';
 import { TaskSystem } from '../../core/systems/TaskSystem';
-import { BaseSystem, canDefendFlyingEnemies, formatGains, formatResourceGains, getPowerInfo, hasSupportCoverage, isTowerPoweredAtNight } from '../../core/systems/BaseSystem';
+import { BaseSystem, canDefendFlyingEnemies, formatGains, formatResourceGains, getPowerInfo, isTowerPoweredAtNight } from '../../core/systems/BaseSystem';
 import { CoreSystem } from '../../core/systems/CoreSystem';
 import { computeRoutePreview, IRoutePreview } from '../../core/systems/RoutePreview';
 import { zoneOf, BaseZone, buildingAt, findCoreBuilding, getShortestEntryPathLength, BASE_COLS } from '../../core/model/Base';
@@ -117,15 +117,11 @@ const CARD_GAP_Y = 8;
 const CARDS_TOP = 1532;
 const PAGE_BAR_Y = 1900;
 
-/** 建造栏页签：4 个建筑分类 + 英雄（hero 非建筑分类，单独处理） */
+/** 建造栏页签：只留防御塔（城墙/资源/陷阱/英雄派遣已按玩家要求砍掉） */
 type TabKey = Exclude<BuildingKind, 'core' | 'ruin'> | 'hero';
 
 const TABS: { kind: TabKey; labelKey: string }[] = [
-  { kind: 'tower', labelKey: 'base.tab.tower' },
-  { kind: 'resource', labelKey: 'base.tab.resource' },
-  { kind: 'trap', labelKey: 'base.tab.trap' },
-  { kind: 'wall', labelKey: 'base.tab.wall' },
-  { kind: 'hero', labelKey: 'base.tab.hero' }
+  { kind: 'tower', labelKey: 'base.tab.tower' }
 ];
 
 /**
@@ -468,7 +464,7 @@ export class BaseScene extends Phaser.Scene {
             const powered = cfg ? this.staffedForDisplay(b, cfg) : true;
             return {
               powered,
-              antiAir: b.cfgId === 101 && powered && hasSupportCoverage(this.state, 'radar', b.row, b.col, true)
+              antiAir: b.cfgId === 101 && powered // 塔默认对空（雷达站已移出建造栏）
             };
           }
         }, BASE_GRID_RECT);
@@ -888,8 +884,8 @@ export class BaseScene extends Phaser.Scene {
       this.gridLayer.add(badgeText);
     }
 
-    // 对空角标：通电箭塔处于通电雷达覆盖内，左上角亮蓝「对空/AA」
-    if (building.cfgId === 101 && staffed && hasSupportCoverage(this.state, 'radar', building.row, building.col, true)) {
+    // 对空角标：箭塔默认对空（雷达站已移出建造栏），左上角亮蓝「对空/AA」
+    if (building.cfgId === 101 && staffed) {
       const badge = this.add.graphics();
       badge.fillStyle(0x1971c2, 0.95);
       badge.fillRoundedRect(x - CELL / 2 + 2, y - CELL / 2 + 2, 44, 22, 6);

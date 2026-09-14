@@ -1,7 +1,7 @@
 import { IGameState, IPoint, ItemStatus, PlayMode } from '../types';
 import { canHostItem, createInitialGameState } from '../model/GameState';
 import { findEmptyCell, setItem } from '../model/Grid';
-import { BASE_CENTER } from '../model/Base';
+import { BASE_CENTER, isInnerCity } from '../model/Base';
 import { createItemFromConfig } from '../model/Item';
 import { BOARD_INIT } from '../config/TableConfig';
 import { TaskSystem } from '../systems/TaskSystem';
@@ -19,6 +19,7 @@ export class GameInitializer {
     const state = createInitialGameState(playMode);
 
     // 中央 7×7 象限候选格（排除核心行/列两条走廊），行优先扫描保证确定性
+    // 内城 = 中央 9×9：棋子只落内城，外城环带留给炮塔（见 Base.isInnerCity）
     const quadrant: IPoint[] = [];
     for (let r = BASE_CENTER - 3; r <= BASE_CENTER + 3; r++) {
       for (let c = BASE_CENTER - 3; c <= BASE_CENTER + 3; c++) {
@@ -36,7 +37,11 @@ export class GameInitializer {
       const st = row.status > 0 ? (row.status as ItemStatus) : undefined;
       const clickPropId = row.clickPropId ? (row.clickPropId as number[]) : undefined;
       const item = createItemFromConfig(row.propId, st, clickPropId, state);
-      let pos = quadrant.find(p => canHostItem(state, p.row, p.col)) ?? null;
+      const inInner = (r: number, c: number) =>
+        isInnerCity(r, c) && r !== BASE_CENTER && c !== BASE_CENTER && canHostItem(state, r, c);
+      // 先塞内城（合成区）；内城放不下（地形/走廊占格）时才溢出到外城，保证 41 个初始棋子一个不少
+      let pos = quadrant.find(p => inInner(p.row, p.col)) ?? null;
+      if (!pos) pos = findEmptyCell(state.grid, inInner);
       if (!pos) pos = findEmptyCell(state.grid, (r, c) => canHostItem(state, r, c));
       if (pos) setItem(state.grid, pos.row, pos.col, item);
     }

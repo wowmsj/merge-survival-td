@@ -12,7 +12,7 @@ import { getZombieConfig } from '../../core/config/ZombieConfig';
 import { getHeroConfig } from '../../core/config/HeroConfig';
 import { addFullscreenBg, showSceneToast, makeUiButton } from '../ui/UiWidgets';
 import { KIND_COLORS, KIND_ICON_KEYS, buildingIconKey } from '../config/BuildingKindStyle';
-import { hasSupportCoverage, isBuildingPoweredAtNight } from '../../core/systems/BaseSystem';
+import { isBuildingPoweredAtNight } from '../../core/systems/BaseSystem';
 import { terrainAt } from '../../core/config/TerrainConfig';
 import { drawTerrainTile, terrainHasOverlayIcon } from '../ui/TerrainTiles';
 
@@ -231,8 +231,8 @@ export class NightScene extends Phaser.Scene {
         this.buildingLayer.add(badgeText);
       }
 
-      // 对空角标：通电箭塔处于通电雷达覆盖内，左上角亮蓝「对空/AA」
-      if (b.cfgId === 101 && powered && hasSupportCoverage(this.state, 'radar', b.row, b.col, true)) {
+      // 对空角标：箭塔默认对空（雷达站已移出建造栏，不再判覆盖），左上角亮蓝「对空/AA」
+      if (b.cfgId === 101 && powered) {
         const badge = this.add.graphics();
         badge.fillStyle(0x1971c2, 0.95);
         badge.fillRoundedRect(x - CELL / 2 + 2, y - CELL / 2 + 2, 44, 22, 6);

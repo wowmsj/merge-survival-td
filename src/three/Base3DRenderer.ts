@@ -21,7 +21,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { IGameState, IBuilding, IPoint, ItemStatus } from '../core/types';
 import { getBuildingConfig, IBuildingConfig } from '../core/config/BuildingConfig';
 import { getHeroConfig } from '../core/config/HeroConfig';
-import { BASE_COLS, BASE_ROWS, findCoreBuilding } from '../core/model/Base';
+import { BASE_COLS, BASE_ROWS, INNER_CITY_MAX, INNER_CITY_MIN, findCoreBuilding } from '../core/model/Base';
 import { getItem } from '../core/model/Grid';
 import { itemCanDrag, itemIsBubble } from '../core/model/Item';
 import {
@@ -304,6 +304,22 @@ export class Base3DRenderer implements IBoardItemHost {
     );
     this.border.position.y = 0.05;
     this.tscene.add(this.border);
+
+    // 内城/外城分界：中央 9×9 的内城描一圈金线（内城只合成，炮塔只能建在外城环带）
+    {
+      const inner = INNER_CITY_MAX - INNER_CITY_MIN + 1; // 9
+      const innerCenter = (INNER_CITY_MIN + INNER_CITY_MAX) / 2; // 6
+      const frame = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(inner + 0.06, 0.02, inner + 0.06)),
+        new THREE.LineBasicMaterial({ color: 0xd4a94e, transparent: true, opacity: 0.75 })
+      );
+      frame.position.set(
+        cellToWorld13(innerCenter, innerCenter).x,
+        0.075,
+        cellToWorld13(innerCenter, innerCenter).z
+      );
+      this.tscene.add(frame);
+    }
 
     this.placementHints.renderOrder = 2;
     this.tscene.add(this.placementHints);
